@@ -1,0 +1,32 @@
+# VCS & tooling
+.git
+.gitignore
+.ai
+
+# Dart/Flutter build artifacts & caches (rebuilt inside the image)
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# Non-web platform folders (web is the only build target)
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Tests aren't needed for the image build
+test/
+integration_test/
+
+# Editor / OS cruft
+.idea/
+.vscode/
+*.iml
+
+# Docs
+*.md

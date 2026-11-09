@@ -1,0 +1,73 @@
+<Layouts.admin
+  flash={@flash}
+  active={:dashboard}
+  current_user={@current_user}
+  permissions={@permissions}
+  active_organization_id={@active_organization_id}
+  member_orgs={@member_orgs}
+>
+  <.header>
+    Dashboard
+    <:subtitle>Data summary (sample — dummy data).</:subtitle>
+  </.header>
+
+  <%!-- Stat cards --%>
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div :for={s <- @stats} class="card bg-base-200">
+      <div class="card-body gap-1 p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm opacity-70">{s.label}</span>
+          <.icon name={s.icon} class="size-5 opacity-60" />
+        </div>
+        <div class="text-2xl font-bold">{s.value}</div>
+        <div class="text-xs text-success">{s.delta} vs last month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <%!-- Pie chart (conic-gradient) --%>
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title text-base">Users by Role</h2>
+        <div class="flex flex-wrap items-center gap-6">
+          <div
+            class="size-40 shrink-0 rounded-full shadow-inner"
+            style={"background: #{pie_gradient(@pie)}"}
+            role="img"
+            aria-label="User distribution by role"
+          >
+          </div>
+          <ul class="space-y-2 text-sm">
+            <li :for={s <- @pie} class="flex items-center gap-2">
+              <span class="inline-block size-3 rounded" style={"background: #{s.color}"}></span>
+              <span class="font-medium">{s.label}</span>
+              <span class="opacity-60">{pct(s.value, @pie_total)}%</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Bar chart --%>
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title text-base">Registrations (6 months)</h2>
+        <div class="space-y-2 pt-4">
+          <div class="flex h-48 items-end gap-3">
+            <div
+              :for={b <- @bars}
+              class="flex-1 rounded-t bg-primary transition-all"
+              style={"height: #{bar_height(b.value, @bar_max)}%"}
+              title={"#{b.value}"}
+            >
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <span :for={b <- @bars} class="flex-1 text-center text-xs opacity-60">{b.label}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.admin>

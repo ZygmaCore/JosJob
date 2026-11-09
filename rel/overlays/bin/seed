@@ -1,0 +1,5 @@
+#!/bin/sh
+# Seed superuser via Stellar.Release.seed (tanpa Mix). Idempoten.
+set -eu
+cd -P -- "$(dirname -- "$(readlink -f -- "$0")")"
+exec ./stellar eval Stellar.Release.seed

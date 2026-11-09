@@ -1,0 +1,100 @@
+# =============================================================================
+# Compose apps umbrella — dipakai untuk BUILD (di CI) dan DEPLOY (di server).
+#
+# BUILD (di CI, docker-in-docker) — service `apps` punya `build:` yang
+# menunjuk ke deployment/docker_elixir/Dockerfile.dev, lalu di-push ke registry:
+#   docker compose -f docker-compose.dev.yml build apps
+#   docker compose -f docker-compose.dev.yml push apps
+#
+# DEPLOY (di server, via SSH) — memakai image hasil build + file envs/.env:
+#   docker compose --env-file envs/.env -f docker-compose.dev.yml pull
+#   docker compose --env-file envs/.env -f docker-compose.dev.yml run --rm apps /app/bin/migrate
+#   docker compose --env-file envs/.env -f docker-compose.dev.yml up -d
+#
+# File env: envs/.env (berasal dari variable CI/CD ENV_DEV, di-copy oleh pipeline).
+# Key yang dibaca:
+#   BACKEND_IMAGE       -> path image:tag apps umbrella (di-append oleh pipeline)
+#   POSTGRES_USER/PASSWORD/DB -> kredensial DB: dipakai container paradedb DAN
+#                          dibaca release apps (runtime.exs merakit koneksi).
+#                          Host/port dipaksa ke `paradedb:5432` via `environment`.
+#   SECRET_KEY_BASE     -> dibaca release apps (WAJIB)
+#   TOKEN_SIGNING_SECRET-> dibaca release apps (WAJIB)
+#   PORT / POOL_SIZE / ECTO_IPV6 / DNS_CLUSTER_QUERY -> opsional
+# =============================================================================
+
+services:
+  paradedb:
+    image: paradedb/paradedb:latest
+    container_name: stellar-paradedb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-stellar_dev}
+    volumes:
+      - paradedb_data:/var/lib/postgresql/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-stellar_dev}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    # Publish DB HANYA ke loopback server (127.0.0.1) -> tidak publik ke internet.
+    # Akses dari luar lewat SSH tunnel (DBeaver: SSH ke server, lalu host
+    # localhost:5432). Ganti ke "5432:5432" HANYA jika sengaja mau publik
+    # (amankan dengan firewall).
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  # Backend umbrella (Elixir release, menjalankan endpoint Phoenix stellar_web).
+  apps:
+    image: ${BACKEND_IMAGE:-stellar-backend:local}
+    container_name: stellar-backend
+    # `build:` hanya dipakai saat CI (docker compose build). Di server, image
+    # sudah ada dari registry (pull), jadi `up`/`pull` tidak mem-build ulang.
+    build:
+      context: .
+      dockerfile: deployment/docker_elixir/Dockerfile.dev
+    # env_file memuat env ke dalam container; runtime.exs (Dotenvy) memakai
+    # System.get_env() paling akhir sehingga env container ini yang menang.
+    env_file:
+      - envs/.env
+    # `environment` MENIMPA env_file. Host/port DB dipaksa ke service `paradedb`
+    # (bukan localhost) — kredensial (USER/PASSWORD/DB) tetap dari POSTGRES_* di
+    # envs/.env. Jadi POSTGRES_HOST yang salah di .env tak bisa mengarah ke host lain.
+    environment:
+      POSTGRES_HOST: paradedb
+      POSTGRES_PORT: "5432"
+    depends_on:
+      paradedb:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    # Health gate deploy (CI) membaca status ini. Tanpa healthcheck, status =
+    # `none` -> gate cuma deteksi crash-loop. `/` (PageController :home) publik,
+    # balas 200 -> membuktikan endpoint + router + app benar-benar melayani.
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://localhost:4000/" ]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  stellar_fe:
+    build:
+      context: ./apps/stellar_fe
+      # Local-build fallback only (deploy pulls the CI-built FE_IMAGE, which
+      # already baked these). Substituted from envs/.env via the deploy's
+      # `docker compose --env-file envs/.env` invocation.
+      args:
+        API_BASE_URL: ${API_BASE_URL:-http://localhost:4000}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    # Deploy menimpa tag ini via FE_IMAGE di envs/.env (image registry hasil
+    # child pipeline). Default :local hanya untuk build/dev lokal.
+    image: ${FE_IMAGE:-stellar-fe:local}
+    ports:
+      - "8081:8080" # host 8081 -> nginx 8080 in the container
+    restart: unless-stopped
+
+volumes:
+  paradedb_data:

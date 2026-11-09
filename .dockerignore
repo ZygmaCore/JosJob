@@ -1,0 +1,25 @@
+# Artefak build & deps -> dibuat ulang di dalam image
+_build/
+deps/
+.elixir_ls/
+*.plt
+
+# VCS & tooling
+.git/
+.gitignore
+
+# Node / asset node_modules (asset dibuild di image)
+**/node_modules/
+
+# Flutter frontends -> tidak ikut release Elixir
+apps/*_fe/
+extensions/
+
+# Env & rahasia -> di-inject saat runtime, jangan masuk image
+envs/.env
+.env
+*.env
+
+# Lain-lain
+*.log
+docs/

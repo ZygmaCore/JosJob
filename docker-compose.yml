@@ -1,0 +1,62 @@
+# Local dev / preview: Postgres + Elixir backend + unified Flutter-web app.
+#
+#   docker compose --env-file envs/.env up -d --build
+#     paradedb  (Postgres/ParadeDB)     -> localhost:5438
+#     stellar_be (Elixir/Phoenix API)   -> http://localhost:4000
+#     stellar_fe (Flutter web, unified) -> http://localhost:8081
+#
+# The backend runs in a Linux/glibc container on purpose: the xberg Rust NIF has
+# no Windows-MSVC precompiled binary (and is force-built from source), so it
+# won't `mix compile` on a native Windows box — the container sidesteps that.
+# See the root Dockerfile header for details.
+#
+# The FE bakes API_BASE_URL at build time; to talk to THIS local backend it must
+# be http://localhost:4000 (the compose default). If your root .env points it at
+# a remote backend, override it and rebuild: `API_BASE_URL=http://localhost:4000
+# docker compose up -d --build stellar_fe`.
+
+services:
+  paradedb:
+    image: paradedb/paradedb:latest
+    container_name: paradedb
+    # Kredensial dari POSTGRES_* (satu sumber). Agar terbaca dari envs/.env:
+    #   docker compose --env-file envs/.env up -d paradedb
+    # Tanpa --env-file, memakai default di bawah (cocok dengan default runtime.exs).
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-stellar_dev}
+    ports:
+      - "${POSTGRES_PORT:-5438}:5432"
+    volumes:
+      - paradedb_data:/var/lib/postgresql/
+    # Gate the backend's startup (migrate/seed) until Postgres actually accepts
+    # connections — depends_on: condition: service_healthy waits on this.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-stellar_dev}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  stellar_fe:
+    build:
+      context: ./apps/stellar_fe
+      # Baked into the web bundle at BUILD time (Dart String.fromEnvironment).
+      # Substituted from the root .env (auto-loaded) or envs/.env via:
+      #   docker compose --env-file envs/.env up --build
+      # Without either they fall back to localhost/empty defaults, so Google
+      # sign-in shows "coming soon" until a real GOOGLE_CLIENT_ID is given.
+      args:
+        API_BASE_URL: ${API_BASE_URL:-http://localhost:4000}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    image: stellar-fe:local
+    ports:
+      - "8081:8080" # host 8081 -> nginx 8080 in the container
+    restart: unless-stopped
+
+volumes:
+  paradedb_data:

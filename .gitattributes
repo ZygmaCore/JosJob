@@ -1,0 +1,7 @@
+# Shell scripts must keep LF line endings: they run inside Linux containers and
+# OTP releases, where a CRLF shebang (`#!/bin/sh\r`) makes the loader fail with
+# "no such file or directory". Windows checkouts otherwise get CRLF via
+# core.autocrlf. Run `git add --renormalize .` once after adding this file.
+*.sh            text eol=lf
+docker-entrypoint.sh text eol=lf
+rel/overlays/bin/* text eol=lf

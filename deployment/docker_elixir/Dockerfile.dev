@@ -1,0 +1,122 @@
+# syntax=docker/dockerfile:1.7-labs
+# =============================================================================
+# Build image untuk release umbrella `stellar` (semua apps + endpoint Phoenix).
+#
+# Multi-stage:
+#   builder : copy source umbrella -> mix release stellar (MIX_ENV=prod)
+#   runner  : image minimal, hanya berisi hasil release (tanpa source/Elixir)
+#
+# Versi Elixir/OTP diselaraskan dengan .tool-versions (elixir 1.19.5-otp-27).
+# UBUNTU_VERSION dipakai untuk builder (hexpm/elixir) DAN runner (ubuntu) -> tag
+# tanggal build harus ada di kedua repo. Diverifikasi ada per 2026-06-10:
+#   hexpm/elixir:1.19.5-erlang-27.3.4.14-ubuntu-noble-20260610
+#   ubuntu:noble-20260610
+# Cek tag terbaru di https://hub.docker.com/r/hexpm/elixir/tags bila perlu.
+# =============================================================================
+ARG ELIXIR_VERSION=1.19.5
+ARG OTP_VERSION=27.3.4.14
+ARG UBUNTU_VERSION=noble-20260610
+
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-ubuntu-${UBUNTU_VERSION}"
+ARG RUNNER_IMAGE="ubuntu:${UBUNTU_VERSION}"
+
+FROM ${BUILDER_IMAGE} AS builder
+
+# install build dependencies (picosat_elixir dsb butuh compiler C; curl utk rustup)
+RUN apt-get update -y && \
+    apt-get install -y build-essential git curl cmake pkg-config libde265-dev libx265-dev libjpeg-dev libpng-dev && \
+    curl -L -O https://github.com/strukturag/libheif/releases/download/v1.21.2/libheif-1.21.2.tar.gz && \
+    tar -xzf libheif-1.21.2.tar.gz && \
+    cd libheif-1.21.2 && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j2 && \
+    make install && \
+    ldconfig && \
+    cd ../.. && \
+    rm -rf libheif-1.21.2* && \
+    apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Toolchain Rust untuk kompilasi NIF (stellar_rag -> xberg -> rustler). Dipasang
+# via rustup (stable minimal) agar deps.compile bisa build NIF dari source bila
+# rustler_precompiled tak menemukan binary prebuilt untuk target.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --profile minimal --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV RUSTLER_PRECOMPILED_FORCE_BUILD_ALL=1
+
+WORKDIR /app
+
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Build sebagai prod (release deploy). PENTING: builder & runner harus MIX_ENV sama.
+ENV MIX_ENV="prod"
+
+# --- Resolusi dependency ---
+# Salin mix.exs umbrella + SEMUA child mix.exs dulu agar layer deps ter-cache
+# dan tidak ikut ter-invalidasi tiap kali kode berubah.
+COPY mix.exs mix.lock ./
+# Salin SEMUA apps/*/mix.exs sekaligus (BuildKit --parents mempertahankan path).
+# Tak perlu diedit lagi saat menambah app umbrella baru.
+COPY --parents apps/*/mix.exs ./
+RUN mix deps.get --only $MIX_ENV
+
+# Config compile-time dulu supaya perubahan config memicu rekompilasi deps.
+COPY config config
+RUN mix deps.compile
+
+# --- Source lengkap ---
+COPY apps apps
+
+# Build & digest asset stellar_web (tailwind + esbuild + phx.digest).
+# Dijalankan di dalam app-nya; config/deps/build tetap mengacu ke root umbrella.
+RUN cd apps/stellar_web && mix assets.setup && mix assets.deploy
+
+# Overlays (rel/overlays/bin/server, bin/migrate) ikut disalin ke release.
+COPY rel rel
+
+# Rakit release umbrella `stellar`.
+RUN mix release stellar
+
+# =============================================================================
+# Runner — image final minimal (tanpa source code / Elixir / build tools).
+# =============================================================================
+FROM ${RUNNER_IMAGE}
+
+RUN apt-get update -y && \
+    apt-get install -y libstdc++6 openssl locales ca-certificates curl build-essential cmake pkg-config libde265-dev libx265-dev libjpeg-dev libpng-dev && \
+    curl -L -O https://github.com/strukturag/libheif/releases/download/v1.21.2/libheif-1.21.2.tar.gz && \
+    tar -xzf libheif-1.21.2.tar.gz && \
+    cd libheif-1.21.2 && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j2 && \
+    make install && \
+    ldconfig && \
+    cd ../.. && \
+    rm -rf libheif-1.21.2* && \
+    apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Set the locale
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+WORKDIR "/app"
+RUN chown nobody /app
+
+ENV MIX_ENV="prod"
+
+# Hanya salin hasil release (folder rel/stellar) dari builder.
+COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/stellar ./
+
+USER nobody
+
+# Start endpoint Phoenix (bin/server men-set PHX_SERVER=true).
+ENV PHX_SERVER=true
+EXPOSE 4000
+
+CMD ["/app/bin/server"]

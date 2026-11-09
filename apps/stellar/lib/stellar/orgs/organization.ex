@@ -1,0 +1,49 @@
+defmodule Stellar.Orgs.Organization do
+  @moduledoc "Organisasi (tenant). `owner` = pembuat; keanggotaan via memberships."
+  use Ash.Resource,
+    otp_app: :stellar,
+    data_layer: AshPostgres.DataLayer,
+    domain: Stellar.Orgs
+
+  postgres do
+    table("organizations")
+    repo(Stellar.Repo)
+  end
+
+  attributes do
+    uuid_primary_key(:id)
+    attribute(:name, :string, allow_nil?: false, public?: true)
+    attribute(:phone, :string, public?: true)
+    attribute(:address, :string, public?: true)
+    attribute(:additional_info, :string, public?: true)
+
+    create_timestamp(:created_at)
+    update_timestamp(:updated_at)
+
+    # Audit trail: id user pembuat & pengubah terakhir (diisi otomatis dari actor).
+    attribute(:created_by, :uuid, allow_nil?: true, public?: true)
+    attribute(:updated_by, :uuid, allow_nil?: true, public?: true)
+  end
+
+  relationships do
+    belongs_to :owner, Stellar.Accounts.User do
+      source_attribute(:user_id)
+      allow_nil?(false)
+      public?(true)
+    end
+
+    belongs_to :industry, Stellar.Orgs.Industry do
+      allow_nil?(true)
+      public?(true)
+    end
+  end
+
+  changes do
+    change(Stellar.Changes.StampActor)
+  end
+
+  actions do
+    defaults([:create, :read, :update, :destroy])
+    default_accept([:name, :phone, :address, :additional_info, :user_id, :industry_id])
+  end
+end
