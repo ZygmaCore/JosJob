@@ -25,4 +25,4 @@ services:
       PHX_HOST: ${PHX_HOST:-api-dev.mzkrl.my.id}
       PHX_SCHEME: ${PHX_SCHEME:-https}
       PHX_PORT: ${PHX_PORT:-443}
-      CHECK_ORIGIN: ${CHECK_ORIGIN:-https://dev.mzkrl.my.id}
+      CHECK_ORIGIN: ${CHECK_ORIGIN:-https://api-dev.mzkrl.my.id,https://dev.mzkrl.my.id}
