@@ -27,8 +27,13 @@ ARG GOOGLE_CLIENT_ID=
 # the offline service worker only causes stale-build confusion (it keeps serving
 # cached JS after a rebuild); without it a plain browser refresh always loads the
 # latest bundle.
+# --no-wasm-dry-run: Flutter 3.44 defaults to compiling a throwaway Wasm build
+# even for JS-only output (`--wasm-dry-run` defaults to true). That dry run is
+# memory-hungry (700+ MB, heavy swap on the 2 GB dev VPS) and produces nothing
+# we ship, so skip it. Add `--wasm` explicitly if we ever want a Wasm bundle.
 RUN flutter build web --release \
       --pwa-strategy=none \
+      --no-wasm-dry-run \
       --dart-define=API_BASE_URL="$API_BASE_URL" \
       --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
 
