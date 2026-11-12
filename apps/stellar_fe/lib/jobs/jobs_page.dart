@@ -9,7 +9,7 @@ import '../services/jobs_api.dart';
 import '../services/session.dart';
 
 // =========================================================================
-// JOSJOB — Authenticated job browsing and employer listing management.
+// JOSJOB - Authenticated job browsing and employer listing management.
 //
 // The standalone browse-roles surface reached from the dashboard's Jobs view
 // ("Browse all roles") and the landing "Jobs" nav, registered at /jobs. A
@@ -27,7 +27,7 @@ part 'screens/job_detail.dart';
 part 'screens/job_editor.dart';
 
 // =========================================================================
-// Public entry point — registered as the /jobs route in main.dart.
+// Public entry point - registered as the /jobs route in main.dart.
 // =========================================================================
 class JobsPage extends StatelessWidget {
   const JobsPage({super.key});
@@ -36,7 +36,41 @@ class JobsPage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.bg,
     appBar: AppBar(
-      title: const Text('Jobs'),
+      toolbarHeight: Bp.navHeight,
+      title: Text(
+        'Explore jobs',
+        style: GoogleFonts.poppins(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: AppColors.navy,
+        ),
+      ),
+      actions: [
+        if (MediaQuery.sizeOf(context).width >= 600)
+          Padding(
+            padding: const EdgeInsets.only(right: 28),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome,
+                  color: AppColors.brandBlue,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Atveti Stellar',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.brandBlue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+      foregroundColor: AppColors.navy,
+      surfaceTintColor: Colors.transparent,
       backgroundColor: AppColors.surface,
     ),
     body: const SafeArea(child: SingleChildScrollView(child: JobsView())),

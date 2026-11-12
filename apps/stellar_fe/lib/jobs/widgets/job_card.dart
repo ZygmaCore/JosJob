@@ -1,9 +1,6 @@
 part of '../jobs_page.dart';
 
-// =========================================================================
-// A tappable role card on the board: company logo, title, match badge, a
-// short summary and meta (type / salary / location).
-// =========================================================================
+/// API-backed opportunity card using the catalog and dashboard design tokens.
 class _JobCard extends StatelessWidget {
   final JobListing job;
   final VoidCallback onTap;
@@ -11,135 +8,188 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-            boxShadow: const [_cardShadow],
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: _logoGradient(job.company.length),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Text(
-                      _initials(job.company),
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+    final radius = BorderRadius.circular(20);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: const [_cardShadow],
+      ),
+      child: Material(
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: const BorderSide(color: AppColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          hoverColor: AppColors.tintBlue.withValues(alpha: 0.4),
+          focusColor: AppColors.focus,
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: _logoGradient(job.company.length),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        _initials(job.company),
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          job.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.navy,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            job.company,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.5,
+                              color: AppColors.body,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${job.company} · ${job.location}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: AppColors.body,
+                          const SizedBox(height: 4),
+                          Text(
+                            job.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              height: 1.4,
+                              color: AppColors.navy,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              if (job.synthetic || job.status != 'active') ...[
-                const SizedBox(height: 12),
+                  ],
+                ),
+                const SizedBox(height: 18),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
+                    _tag(job.employmentType),
+                    _tag(job.workMode),
                     if (job.synthetic) const _JobBadge('Synthetic demo'),
                     if (job.status != 'active') _JobBadge(job.status),
                   ],
                 ),
-              ],
-              const SizedBox(height: 14),
-              Text(
-                job.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 13.5,
-                  height: 1.5,
-                  color: AppColors.body,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  _meta(Icons.schedule_outlined, job.employmentType),
-                  _meta(Icons.payments_outlined, job.salaryLabel),
-                  _meta(Icons.place_outlined, job.location),
-                  _meta(Icons.business_center_outlined, job.workMode),
-                ],
-              ),
-              if (job.requirements.isNotEmpty) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Text(
-                  job.requirements.take(3).join(' · '),
-                  maxLines: 1,
+                  job.description,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: AppColors.brandBlue,
+                    fontSize: 13,
+                    height: 1.7,
+                    color: AppColors.body,
                   ),
                 ),
+                const SizedBox(height: 16),
+                _meta(Icons.place_outlined, job.location),
+                if (job.industry.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _meta(Icons.business_center_outlined, job.industry),
+                ],
+                if (job.requirements.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final skill in job.requirements.take(3))
+                        _tag(skill, skill: true),
+                      if (job.requirements.length > 3)
+                        _tag(
+                          '+${job.requirements.length - 3} more',
+                          skill: true,
+                        ),
+                    ],
+                  ),
+                ],
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18),
+                  child: Divider(height: 1, color: AppColors.border),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        job.salaryLabel,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          height: 1.6,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Tooltip(
+                      message: 'View role details',
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 20,
+                        color: AppColors.brandBlue,
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _meta(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 15, color: AppColors.body),
-        const SizedBox(width: 5),
-        Text(
+  Widget _tag(String label, {bool skill = false}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: skill ? AppColors.bg : AppColors.tintBlue,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      label,
+      style: GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: skill ? AppColors.body : AppColors.brandBlue,
+      ),
+    ),
+  );
+
+  Widget _meta(IconData icon, String label) => Row(
+    children: [
+      Icon(icon, size: 16, color: AppColors.iconBlue),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
           label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.poppins(fontSize: 12.5, color: AppColors.body),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }

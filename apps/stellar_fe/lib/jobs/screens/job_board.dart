@@ -24,7 +24,7 @@ class _JobsViewState extends State<JobsView> {
   JobsPageResult? _result;
   String? _error;
   String _type = '', _mode = '', _currency = '', _sort = 'newest';
-  bool _manage = false, _loading = true;
+  bool _manage = false, _loading = true, _showFilters = false;
   int _page = 1, _request = 0;
 
   @override
@@ -144,17 +144,23 @@ class _JobsViewState extends State<JobsView> {
     final canManage = orgs.any((o) => o.canPost || o.canManage);
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1120),
+        constraints: const BoxConstraints(maxWidth: Bp.maxContent),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(
+            MediaQuery.sizeOf(context).width < 600 ? 16 : 28,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                padding: const EdgeInsets.all(28),
+                padding: EdgeInsets.all(
+                  MediaQuery.sizeOf(context).width < 600 ? 22 : 36,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppColors.navy, AppColors.brandBlue],
+                    colors: [AppColors.tintBlue, AppColors.surface],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -162,9 +168,9 @@ class _JobsViewState extends State<JobsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'JOSJOB / OPPORTUNITIES',
+                      'EXPLORE YOUR NEXT OPPORTUNITY',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: AppColors.brandBlue,
                         fontSize: 12,
                         letterSpacing: 2,
                       ),
@@ -175,18 +181,20 @@ class _JobsViewState extends State<JobsView> {
                           ? 'Build your next great team.'
                           : 'Your next chapter starts here.',
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 28,
+                        color: AppColors.navy,
+                        fontSize: MediaQuery.sizeOf(context).width < 600
+                            ? 28
+                            : 38,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _manage
-                          ? 'Create and manage your organization’s opportunities.'
+                          ? 'Create and manage opportunities for your organization.'
                           : 'Explore opportunities from your organizations. Find a role worth growing into.',
                       style: GoogleFonts.poppins(
-                        color: Colors.white70,
+                        color: AppColors.body,
                         fontSize: 14,
                         height: 1.6,
                       ),
@@ -228,69 +236,7 @@ class _JobsViewState extends State<JobsView> {
                 ),
               ),
               const SizedBox(height: 24),
-              _SearchField(
-                controller: _query,
-                onChanged: (_) => _filter(debounce: true),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _select('Employment type', _type, const {
-                    '': 'All types',
-                    'full-time': 'Full-time',
-                    'part-time': 'Part-time',
-                    'internship': 'Internship',
-                    'contract': 'Contract',
-                    'freelance': 'Freelance',
-                  }, (v) => _type = v),
-                  _select('Work mode', _mode, const {
-                    '': 'All modes',
-                    'remote': 'Remote',
-                    'hybrid': 'Hybrid',
-                    'onsite': 'Onsite',
-                  }, (v) => _mode = v),
-                ],
-              ),
-              ExpansionTile(
-                title: const Text('More filters'),
-                tilePadding: EdgeInsets.zero,
-                children: [
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _textFilter('Location', _location),
-                      _textFilter('Industry', _industry),
-                      _select(
-                        'Currency',
-                        _currency,
-                        const {
-                          '': 'All currencies',
-                          'IDR': 'IDR',
-                          'USD': 'USD',
-                          'AUD': 'AUD',
-                          'EUR': 'EUR',
-                          'GBP': 'GBP',
-                        },
-                        (v) {
-                          _currency = v;
-                          if (v.isEmpty) {
-                            _salary.clear();
-                            _sort = 'newest';
-                          }
-                        },
-                      ),
-                      _textFilter(
-                        'Minimum monthly salary',
-                        _salary,
-                        number: true,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              _filterPanel(),
               const SizedBox(height: 20),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
@@ -300,7 +246,11 @@ class _JobsViewState extends State<JobsView> {
                 children: [
                   Text(
                     _manage
-                        ? 'Your organization’s listings'
+                        ? 'Organization listings'
+                        : _loading
+                        ? 'Finding opportunities...'
+                        : _error != null
+                        ? 'Opportunities'
                         : '${_result?.total ?? 0} opportunities',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
@@ -313,10 +263,6 @@ class _JobsViewState extends State<JobsView> {
                     spacing: 8,
                     runSpacing: 12,
                     children: [
-                      TextButton(
-                        onPressed: _reset,
-                        child: const Text('Clear filters'),
-                      ),
                       _select(
                         'Sort by',
                         _sort,
@@ -336,6 +282,10 @@ class _JobsViewState extends State<JobsView> {
                 ],
               ),
               const SizedBox(height: 16),
+              if (_activeFilters.isNotEmpty) ...[
+                Wrap(spacing: 8, runSpacing: 8, children: _activeFilters),
+                const SizedBox(height: 16),
+              ],
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.all(40),
@@ -358,6 +308,8 @@ class _JobsViewState extends State<JobsView> {
                   Icons.work_outline,
                   _manage
                       ? 'No listings yet. Create your first opportunity.'
+                      : orgs.isEmpty
+                      ? 'No opportunities are available to your account yet. Your organization needs to grant jobs access.'
                       : 'No jobs found. Try a broader role, location or industry.',
                   'Clear filters',
                   _reset,
@@ -366,7 +318,7 @@ class _JobsViewState extends State<JobsView> {
               else ...[
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final width = constraints.maxWidth > 800
+                    final width = constraints.maxWidth >= 760
                         ? (constraints.maxWidth - 16) / 2
                         : constraints.maxWidth;
                     return Wrap(
@@ -423,6 +375,174 @@ class _JobsViewState extends State<JobsView> {
     );
   }
 
+  Widget _filterPanel() {
+    final type = _select('Employment type', _type, const {
+      '': 'All types',
+      'full-time': 'Full-time',
+      'part-time': 'Part-time',
+      'internship': 'Internship',
+      'contract': 'Contract',
+      'freelance': 'Freelance',
+    }, (v) => _type = v);
+    final mode = _select('Work mode', _mode, const {
+      '': 'All modes',
+      'remote': 'Remote',
+      'hybrid': 'Hybrid',
+      'onsite': 'Onsite',
+    }, (v) => _mode = v);
+    final search = _SearchField(
+      controller: _query,
+      onChanged: (_) => _filter(debounce: true),
+    );
+    return Container(
+      key: const ValueKey('jobs-filter-panel'),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 850;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (wide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: search),
+                    const SizedBox(width: 16),
+                    Expanded(child: type),
+                    const SizedBox(width: 16),
+                    Expanded(child: mode),
+                  ],
+                )
+              else ...[
+                search,
+                const SizedBox(height: 16),
+                _filterGrid([type, mode], maxColumns: 2),
+              ],
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  TextButton.icon(
+                    key: const ValueKey('jobs-more-filters'),
+                    onPressed: () =>
+                        setState(() => _showFilters = !_showFilters),
+                    icon: Icon(
+                      _showFilters ? Icons.expand_less : Icons.tune_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _showFilters ? 'Fewer filters' : 'More filters',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _reset,
+                    child: Text(
+                      'Clear filters',
+                      style: GoogleFonts.poppins(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              if (_showFilters) ...[
+                const Divider(height: 24, color: AppColors.border),
+                _filterGrid([
+                  _textFilter('Location', _location),
+                  _textFilter('Industry', _industry),
+                  _select(
+                    'Currency',
+                    _currency,
+                    const {
+                      '': 'All currencies',
+                      'IDR': 'IDR',
+                      'USD': 'USD',
+                      'AUD': 'AUD',
+                      'EUR': 'EUR',
+                      'GBP': 'GBP',
+                    },
+                    (v) {
+                      _currency = v;
+                      if (v.isEmpty) {
+                        _salary.clear();
+                        _sort = 'newest';
+                      }
+                    },
+                  ),
+                  _textFilter('Minimum monthly salary', _salary, number: true),
+                ]),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _filterGrid(List<Widget> fields, {int maxColumns = 4}) =>
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = constraints.maxWidth >= 850
+              ? maxColumns
+              : constraints.maxWidth >= 340
+              ? 2
+              : 1;
+          final width = (constraints.maxWidth - 16 * (columns - 1)) / columns;
+          return Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              for (final field in fields) SizedBox(width: width, child: field),
+            ],
+          );
+        },
+      );
+
+  List<Widget> get _activeFilters {
+    Widget chip(String label, VoidCallback clear) => InputChip(
+      label: Text(
+        label,
+        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.navy),
+      ),
+      backgroundColor: AppColors.tintBlue,
+      side: BorderSide.none,
+      deleteIcon: const Icon(Icons.close, size: 16),
+      onDeleted: () {
+        setState(clear);
+        _filter();
+      },
+    );
+    return [
+      if (_query.text.trim().isNotEmpty)
+        chip('Search: ${_query.text.trim()}', _query.clear),
+      if (_type.isNotEmpty) chip(_type, () => _type = ''),
+      if (_mode.isNotEmpty) chip(_mode, () => _mode = ''),
+      if (_location.text.trim().isNotEmpty)
+        chip('Location: ${_location.text.trim()}', _location.clear),
+      if (_industry.text.trim().isNotEmpty)
+        chip('Industry: ${_industry.text.trim()}', _industry.clear),
+      if (_salary.text.isNotEmpty)
+        chip('From $_currency ${_salary.text}/month', _salary.clear),
+      if (_currency.isNotEmpty)
+        chip(_currency, () {
+          _currency = '';
+          _salary.clear();
+          _sort = 'newest';
+        }),
+    ];
+  }
+
   Widget _select(
     String label,
     String value,
@@ -436,10 +556,27 @@ class _JobsViewState extends State<JobsView> {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.brandBlue, width: 1.5),
+        ),
         filled: true,
         fillColor: AppColors.surface,
+        labelStyle: GoogleFonts.poppins(fontSize: 12, color: AppColors.body),
       ),
+      style: GoogleFonts.poppins(fontSize: 13, color: AppColors.navy),
       items: options.entries
           .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
           .toList(),
@@ -464,9 +601,25 @@ class _JobsViewState extends State<JobsView> {
       inputFormatters: number ? [FilteringTextInputFormatter.digitsOnly] : null,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.brandBlue, width: 1.5),
+        ),
         filled: true,
         fillColor: AppColors.surface,
+        labelStyle: GoogleFonts.poppins(fontSize: 12, color: AppColors.body),
       ),
       onChanged: (_) {
         if (number && controller.text.isNotEmpty && _currency.isEmpty) {
@@ -494,7 +647,15 @@ class _JobsViewState extends State<JobsView> {
       children: [
         Icon(icon, size: 40, color: AppColors.iconBlue),
         const SizedBox(height: 16),
-        Text(text, textAlign: TextAlign.center),
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: AppColors.body,
+            height: 1.6,
+          ),
+        ),
         const SizedBox(height: 12),
         TextButton(onPressed: onTap, child: Text(action)),
       ],

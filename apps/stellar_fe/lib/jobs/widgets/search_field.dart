@@ -1,8 +1,7 @@
 part of '../jobs_page.dart';
 
 // =========================================================================
-// Search input for the board. Filters the sample list client-side by role,
-// company or location.
+// Search input for debounced, server-side role and company discovery.
 // =========================================================================
 class _SearchField extends StatelessWidget {
   final ValueChanged<String> onChanged;
@@ -21,12 +20,15 @@ class _SearchField extends StatelessWidget {
       onChanged: onChanged,
       style: GoogleFonts.poppins(fontSize: 14.5, color: AppColors.ink),
       decoration: InputDecoration(
-        hintText: 'Search roles, companies or locations…',
+        hintText: 'Search roles, companies or keywords',
         hintStyle: GoogleFonts.poppins(fontSize: 14, color: AppColors.body),
         prefixIcon: const Icon(Icons.search, color: AppColors.body),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
         border: border(AppColors.border),
         enabledBorder: border(AppColors.border),
         focusedBorder: border(AppColors.brandBlue, 1.5),
