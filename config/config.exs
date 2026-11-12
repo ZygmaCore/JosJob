@@ -120,8 +120,9 @@ config :josjob_rag, :atomic,
   base_url: System.get_env("ATOMIC_BASE_URL", "https://stellar-rag.onprem.vip"),
   api_token: System.get_env("ATOMIC_API_TOKEN", "default_token")
 
-# Force building xberg NIF from source since precompiled target for x86_64-apple-darwin is missing
-config :rustler_precompiled, :force_build, xberg: true
+# Prefer the published NIF on supported platforms. Source builds remain opt-in
+# for custom targets/toolchains via XBERG_BUILD=true.
+config :rustler_precompiled, :force_build, xberg: System.get_env("XBERG_BUILD") in ["1", "true"]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

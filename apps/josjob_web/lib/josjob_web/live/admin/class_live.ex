@@ -676,9 +676,7 @@ defmodule JosjobWeb.Admin.ClassLive do
             <:col :let={e} label="Enrolled">{JosjobWeb.Format.datetime(e.enrolled_at)}</:col>
             <:action :let={e}>
               <.link
-                :if={
-                  JosjobWeb.Perms.can?(@permissions, ["enrollments:update", "enrollments:manage"])
-                }
+                :if={JosjobWeb.Perms.can?(@permissions, ["enrollments:update", "enrollments:manage"])}
                 phx-click="set_enrollment_status"
                 phx-value-enr_id={e.id}
                 phx-value-status={if e.status == :active, do: "completed", else: "active"}
@@ -689,9 +687,7 @@ defmodule JosjobWeb.Admin.ClassLive do
             </:action>
             <:action :let={e}>
               <.link
-                :if={
-                  JosjobWeb.Perms.can?(@permissions, ["enrollments:delete", "enrollments:manage"])
-                }
+                :if={JosjobWeb.Perms.can?(@permissions, ["enrollments:delete", "enrollments:manage"])}
                 phx-click="remove_enrollment"
                 phx-value-enr_id={e.id}
                 data-confirm="Delete this enrollment?"

@@ -74,6 +74,8 @@ dalam refactor nama ini.
 Pemeriksaan sintaks terhadap 273 file Elixir/config/test berhasil. Seluruh
 846 file yang dilacak sebelum refactor tersedia di path hasil rename;
 sepuluh app umbrella dan dependency lokalnya memiliki nama/folder yang cocok.
-`mix precommit` belum dapat berjalan melewati pemeriksaan dependency karena
-dependency Elixir belum terpasang di lingkungan ini. Backend runtime,
-Android/iOS build, dan transisi data instalasi lama belum diuji.
+Validasi lanjutan pada hari yang sama berhasil menjalankan `mix precommit`
+di Debian WSL: 234 test dan 7 doctest lolos setelah dependency native tersedia
+dan bootstrap database test diperbaiki. Startup HTTP juga diverifikasi;
+lihat [testing backend](BACKEND_TESTING.md). Android/iOS build dan transisi
+data instalasi lama belum diuji.

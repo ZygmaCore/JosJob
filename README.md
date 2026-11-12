@@ -204,6 +204,11 @@ Dari root, jalankan pemeriksaan backend yang diwajibkan repositori:
 mix precommit
 ```
 
+Untuk Windows, gunakan Linux/WSL untuk dependency native dan lihat
+[panduan testing backend](docs/BACKEND_TESTING.md). Alias test di root
+membuat database test dan menjalankan migrasi sebelum app umbrella pertama
+dimulai, sehingga checkout dengan database kosong dapat langsung diuji.
+
 Alias ini berjalan dalam environment test dan menjalankan compile dengan
 warnings sebagai error, `deps.unlock --unused`, format dan test. Periksa diff
 setelahnya karena alias dapat mengubah file. `mix test` dapat dipakai untuk

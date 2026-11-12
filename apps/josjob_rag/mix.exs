@@ -26,7 +26,7 @@ defmodule JosjobRag.MixProject do
   defp deps do
     [
       {:rustler, "~> 0.38.0", runtime: false},
-      {:xberg, "~> 1.0.0-rc.14", force_build: true},
+      {:xberg, "~> 1.0.0-rc.14"},
       {:josjob, in_umbrella: true}
     ]
   end

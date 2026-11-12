@@ -91,6 +91,9 @@ defmodule Josjob.Umbrella.MixProject do
     [
       # run `mix setup` in all child apps
       setup: ["cmd mix setup"],
+      # Bootstrap the shared Repo before the first umbrella app starts its tests.
+      # Child-app aliases run too late when an earlier app starts the core Repo.
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end
