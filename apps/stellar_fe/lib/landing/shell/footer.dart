@@ -1,7 +1,7 @@
 part of '../landing_page_ascent.dart';
 
 // -------------------------------------------------------------------------
-// Footer (navy)
+// Footer (warm paper)
 // -------------------------------------------------------------------------
 class _Footer extends StatelessWidget {
   const _Footer();
@@ -10,7 +10,7 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final mobile = _isMobile(context);
     return ColoredBox(
-      color: AppColors.navy,
+      color: AppColors.paper2,
       child: _Bounded(
         child: Padding(
           padding: const EdgeInsets.only(top: 56, bottom: 48),
@@ -26,17 +26,18 @@ class _Footer extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _Logo(color: Colors.white),
+                        const _Logo(),
                         const SizedBox(height: 16),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 320),
                           child: Text(
-                            'One platform to build job-ready skills and get '
-                            'matched with the employers who are hiring.',
-                            style: GoogleFonts.poppins(
+                            'Explore opportunities, understand role requirements, '
+                            'and connect your job search with learning.',
+                            style: TextStyle(
+                              fontFamily: 'General Sans',
                               fontSize: 14,
                               height: 1.6,
-                              color: AppColors.onNavyDim,
+                              color: AppColors.muted,
                             ),
                           ),
                         ),
@@ -44,28 +45,30 @@ class _Footer extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: mobile ? 0 : 40, height: mobile ? 32 : 0),
-                  const _FooterCol('Platform', [
-                    'Online Learning',
-                    'Live Coaching',
-                    'Job Placement',
-                    'Certifications',
-                  ]),
+                  _FooterCol(
+                    'Explore',
+                    ['Jobs', 'Learning'],
+                    onTap: (label) {
+                      Navigator.of(
+                        context,
+                      ).pushNamed(label == 'Jobs' ? '/register' : '/explore');
+                    },
+                  ),
                   SizedBox(width: mobile ? 0 : 40, height: mobile ? 24 : 0),
-                  const _FooterCol('Company', [
-                    'About',
-                    'Contact',
-                    'Careers',
-                    'Partners',
-                  ]),
+                  _FooterCol(
+                    'Your next step',
+                    ['Create an account', 'Sign in'],
+                    onTap: (label) {
+                      Navigator.of(
+                        context,
+                      ).pushNamed(label == 'Sign in' ? '/login' : '/register');
+                    },
+                  ),
                   SizedBox(width: mobile ? 0 : 40, height: mobile ? 24 : 0),
-                  const _FooterCol('Get in touch', [
-                    'hello@atveti.com',
-                    '+61 439 158 812',
-                  ]),
                 ],
               ),
               const SizedBox(height: 40),
-              Divider(color: Colors.white.withValues(alpha: 0.15)),
+              Divider(color: AppColors.rule),
               const SizedBox(height: 20),
               Flex(
                 direction: mobile ? Axis.vertical : Axis.horizontal,
@@ -73,18 +76,20 @@ class _Footer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '© 2026 Atveti Stellar. All rights reserved.',
-                    style: GoogleFonts.poppins(
+                    'JosJob · A job search connected to learning.',
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: 13,
-                      color: AppColors.onNavyDim,
+                      color: AppColors.muted,
                     ),
                   ),
                   SizedBox(height: mobile ? 8 : 0),
                   Text(
-                    'Online Learning & Job Placement',
-                    style: GoogleFonts.poppins(
+                    'Built on the Stellar learning platform',
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: 13,
-                      color: AppColors.onNavyDim,
+                      color: AppColors.muted,
                     ),
                   ),
                 ],

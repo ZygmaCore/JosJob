@@ -19,7 +19,8 @@ class _PortalMock extends StatelessWidget {
         children: [
           Text(
             '9:41',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'General Sans',
               color: AppColors.onNavyDim,
               fontSize: 12,
             ),
@@ -27,7 +28,8 @@ class _PortalMock extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Learning Modules',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'General Sans',
               color: Colors.white,
               fontSize: 21,
               fontWeight: FontWeight.w700,
@@ -35,7 +37,8 @@ class _PortalMock extends StatelessWidget {
           ),
           Text(
             'Self-paced modules, quizzes & assessments.',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'General Sans',
               color: AppColors.onNavyDim,
               fontSize: 12,
             ),
@@ -53,7 +56,8 @@ class _PortalMock extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Search modules…',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     color: AppColors.onNavyDim,
                     fontSize: 13,
                   ),
@@ -75,7 +79,8 @@ class _PortalMock extends StatelessWidget {
               children: [
                 Text(
                   'CONSTRUCTION · WHS',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     color: Colors.white70,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -84,7 +89,8 @@ class _PortalMock extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Work Health & Safety · Module 1',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -101,7 +107,8 @@ class _PortalMock extends StatelessWidget {
                   child: Text(
                     'Continue module →',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -140,7 +147,8 @@ class _PortalMock extends StatelessWidget {
                       children: [
                         Text(
                           row.$1,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'General Sans',
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -148,7 +156,8 @@ class _PortalMock extends StatelessWidget {
                         ),
                         Text(
                           row.$2,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'General Sans',
                             color: AppColors.onNavyDim,
                             fontSize: 11,
                           ),

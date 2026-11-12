@@ -21,7 +21,8 @@ class _Sent extends StatelessWidget {
           Flexible(
             child: Text(
               "Thanks! We'll be in touch at $email to get you started.",
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'General Sans',
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

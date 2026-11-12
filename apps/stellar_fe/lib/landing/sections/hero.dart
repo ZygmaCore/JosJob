@@ -13,18 +13,19 @@ class _Hero extends StatelessWidget {
     final desktop = _zig(context);
     return DecoratedBox(
       decoration: const BoxDecoration(
+        color: AppColors.desk,
         gradient: RadialGradient(
-          center: Alignment(-0.2, -0.6),
-          radius: 1.2,
-          colors: [AppColors.tintBlue, AppColors.bg],
-          stops: [0.0, 1.0],
+          center: Alignment(-0.8, -0.7),
+          radius: 1.35,
+          colors: [AppColors.cotton, AppColors.desk, AppColors.paper3],
+          stops: [0, .54, 1],
         ),
       ),
       child: _Bounded(
         child: Padding(
           padding: EdgeInsets.only(
-            top: desktop ? 64 : 36,
-            bottom: desktop ? 40 : 24,
+            top: desktop ? 76 : 48,
+            bottom: desktop ? 64 : 44,
           ),
           child: desktop
               ? Row(
@@ -44,14 +45,9 @@ class _Hero extends StatelessWidget {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Center(
-                      child: _ReadinessGauge(
-                        value: _readyTarget,
-                        compact: true,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
                     _HeroCopy(onCta: onCta, onHowItWorks: onHowItWorks),
+                    const SizedBox(height: 28),
+                    const Center(child: _Basecamp()),
                   ],
                 ),
         ),

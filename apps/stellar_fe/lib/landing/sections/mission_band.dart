@@ -22,7 +22,8 @@ class _MissionBand extends StatelessWidget {
               '"We turn your skills into your next role — helping you learn '
               'what matters, earn the certifications that count, and get '
               'matched with the employers who are hiring."',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'General Sans',
                 fontSize: _isMobile(context) ? 20 : 30,
                 height: 1.4,
                 fontWeight: FontWeight.w600,
@@ -44,7 +45,8 @@ class _MissionBand extends StatelessWidget {
                 children: [
                   Text(
                     'The Atveti Stellar team',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -52,7 +54,8 @@ class _MissionBand extends StatelessWidget {
                   ),
                   Text(
                     'Online Learning & Job Placement',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: 14,
                       color: AppColors.accent,
                     ),

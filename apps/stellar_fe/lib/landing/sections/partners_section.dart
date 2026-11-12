@@ -11,7 +11,8 @@ class _PartnersSection extends StatelessWidget {
         children: [
           Text(
             'ACCREDITED & TRUSTED BY',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'General Sans',
               fontSize: 13,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.5,
@@ -46,7 +47,8 @@ class _PartnersSection extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         p,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'General Sans',
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: AppColors.body,

@@ -23,7 +23,8 @@ class _ContactChip extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'General Sans',
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

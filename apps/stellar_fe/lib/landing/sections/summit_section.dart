@@ -69,7 +69,8 @@ class _SummitSectionState extends State<_SummitSection> {
                 const SizedBox(height: 20),
                 Text(
                   'GET STARTED',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -109,7 +110,8 @@ class _SummitSectionState extends State<_SummitSection> {
                 const SizedBox(height: 26),
                 Text(
                   'Prefer to talk?',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     color: Colors.white70,
                     fontSize: 14,
                   ),

@@ -1,9 +1,11 @@
 part of '../landing_page_ascent.dart';
 
 /// Skills-readiness gauge (climbs onboarding → certified).
+// ignore: unused_element
 class _ReadinessGauge extends StatelessWidget {
   final double value; // 0..1
   final bool compact;
+  // ignore: unused_element_parameter
   const _ReadinessGauge({required this.value, this.compact = false});
 
   @override
@@ -36,7 +38,8 @@ class _ReadinessGauge extends StatelessWidget {
               children: [
                 Text(
                   'Skills',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     fontSize: 12,
                     color: AppColors.body,
                     fontWeight: FontWeight.w600,
@@ -44,7 +47,8 @@ class _ReadinessGauge extends StatelessWidget {
                 ),
                 Text(
                   '$pct%',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     fontSize: compact ? 24 : 32,
                     fontWeight: FontWeight.w700,
                     color: AppColors.navy,
@@ -52,7 +56,8 @@ class _ReadinessGauge extends StatelessWidget {
                 ),
                 Text(
                   'Certified',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     fontSize: 12,
                     color: AppColors.accent,
                   ),

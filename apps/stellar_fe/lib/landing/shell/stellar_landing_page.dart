@@ -13,30 +13,11 @@ class StellarLandingPage extends StatefulWidget {
 class _StellarLandingPageState extends State<StellarLandingPage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _controller = ScrollController();
-  final _fraction = ValueNotifier<double>(0);
-  final List<GlobalKey> _milestoneKeys = List.generate(
-    _milestoneCount,
-    (_) => GlobalKey(),
-  );
   final _summitKey = GlobalKey();
 
   @override
-  void initState() {
-    super.initState();
-    _controller.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final max = _controller.position.maxScrollExtent;
-    final f = max <= 0 ? 0.0 : (_controller.offset / max).clamp(0.0, 1.0);
-    if ((f - _fraction.value).abs() > 0.002) _fraction.value = f;
-  }
-
-  @override
   void dispose() {
-    _controller.removeListener(_onScroll);
     _controller.dispose();
-    _fraction.dispose();
     super.dispose();
   }
 
@@ -56,43 +37,69 @@ class _StellarLandingPageState extends State<StellarLandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: AppColors.bg,
-      endDrawer: _isMobile(context)
-          ? _MobileDrawer(
-              onCta: () => Navigator.of(context).pushNamed('/register'),
-              onLogin: () => Navigator.of(context).pushNamed('/login'),
-            )
-          : null,
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            controller: _controller,
-            child: Column(
-              children: [
-                const SizedBox(height: Bp.navHeight),
-                _Hero(
-                  onCta: () => Navigator.of(context).pushNamed('/register'),
-                  onHowItWorks: () => _jumpTo(_milestoneKeys[4]),
-                ),
-                const _ProductsBand(),
-                _SpineTrack(fraction: _fraction, milestoneKeys: _milestoneKeys),
-                _ProofTail(summitKey: _summitKey),
-                const _Footer(),
-              ],
-            ),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: AppColors.board,
+          secondary: AppColors.primaryDeep,
+          surface: AppColors.cotton,
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.primaryDeep, width: 2),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _TopNav(
-              onMenu: () => _scaffoldKey.currentState?.openEndDrawer(),
-              onLogin: () => Navigator.of(context).pushNamed('/login'),
+        ),
+      ),
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: AppColors.paper,
+        endDrawer: _isMobile(context)
+            ? _MobileDrawer(
+                onCta: () => Navigator.of(context).pushNamed('/register'),
+                onLogin: () => Navigator.of(context).pushNamed('/login'),
+                onHowItWorks: () => _jumpTo(_summitKey),
+              )
+            : null,
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _controller,
+              child: Column(
+                children: [
+                  const SizedBox(height: Bp.navHeight),
+                  _Hero(
+                    onCta: () => Navigator.of(context).pushNamed('/register'),
+                    onHowItWorks: () => _jumpTo(_summitKey),
+                  ),
+                  const _ProductsBand(),
+                  _RankingPreview(
+                    onBrowse: () =>
+                        Navigator.of(context).pushNamed('/register'),
+                    onUpload: () =>
+                        Navigator.of(context).pushNamed('/register'),
+                  ),
+                  _HowItWorks(key: _summitKey),
+                  _FinalCta(
+                    onGetStarted: () =>
+                        Navigator.of(context).pushNamed('/register'),
+                  ),
+                  const _Footer(),
+                ],
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _TopNav(
+                onMenu: () => _scaffoldKey.currentState?.openEndDrawer(),
+                onLogin: () => Navigator.of(context).pushNamed('/login'),
+                onHowItWorks: () => _jumpTo(_summitKey),
+                onRegister: () => Navigator.of(context).pushNamed('/register'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

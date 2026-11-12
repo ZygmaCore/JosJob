@@ -38,7 +38,8 @@ class _PhotoTile extends StatelessWidget {
                 bottom: 14,
                 child: Text(
                   caption,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 15,

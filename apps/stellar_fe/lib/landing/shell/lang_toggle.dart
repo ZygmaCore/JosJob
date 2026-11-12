@@ -43,7 +43,8 @@ class _LangToggleState extends State<_LangToggle> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: 'General Sans',
             fontSize: 13,
             fontWeight: active ? FontWeight.w700 : FontWeight.w600,
             color: active ? Colors.white : AppColors.body,

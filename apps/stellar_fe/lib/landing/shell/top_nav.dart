@@ -6,15 +6,22 @@ part of '../landing_page_ascent.dart';
 class _TopNav extends StatelessWidget {
   final VoidCallback onMenu;
   final VoidCallback onLogin;
-  const _TopNav({required this.onMenu, required this.onLogin});
+  final VoidCallback onHowItWorks;
+  final VoidCallback onRegister;
+  const _TopNav({
+    required this.onMenu,
+    required this.onLogin,
+    required this.onHowItWorks,
+    required this.onRegister,
+  });
 
   @override
   Widget build(BuildContext context) {
     final mobile = _isMobile(context);
     return Material(
-      color: AppColors.bg.withValues(alpha: 0.92),
+      color: AppColors.paper.withValues(alpha: 0.92),
       elevation: 2,
-      shadowColor: AppColors.navy.withValues(alpha: 0.12),
+      shadowColor: AppColors.landingInk.withValues(alpha: 0.12),
       child: _Bounded(
         child: SizedBox(
           height: Bp.navHeight,
@@ -28,21 +35,26 @@ class _TopNav extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: _NavLink(
                       item,
-                      onTap: item == 'Programs'
-                          ? () => Navigator.of(context).pushNamed('/explore')
-                          : null,
+                      onTap: switch (item) {
+                        'Learn' => () => Navigator.of(
+                          context,
+                        ).pushNamed('/explore'),
+                        'Jobs' => () => Navigator.of(
+                          context,
+                        ).pushNamed('/register'),
+                        _ => onHowItWorks,
+                      },
                     ),
                   ),
                 const SizedBox(width: 12),
-                const _LangToggle(),
-                const SizedBox(width: 10),
-                const _MoonToggle(),
                 const SizedBox(width: 14),
                 _PillButton('Log in', onPressed: onLogin),
+                const SizedBox(width: 8),
+                _PillButton('Sign up', onPressed: onRegister),
               ] else
                 IconButton(
                   onPressed: onMenu,
-                  icon: const Icon(Icons.menu, color: AppColors.ink),
+                  icon: const Icon(Icons.menu, color: AppColors.landingInk),
                   tooltip: 'Open menu',
                   iconSize: 28,
                 ),

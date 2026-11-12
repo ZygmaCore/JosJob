@@ -12,6 +12,25 @@ import 'package:flutter/material.dart';
 // =========================================================================
 
 class AppColors {
+  // JosJob landing page: Hallmark inspired Warm Cream × Deep Blue system.
+  static const paper = Color(0xFFFFF8E9);
+  static const paper2 = Color(0xFFF8EEDA);
+  static const paper3 = Color(0xFFEFE3C8);
+  static const cotton = Color(0xFFFFFDF7);
+  static const desk = Color(0xFFF4EAD2);
+  static const landingInk = Color(0xFF13213B);
+  static const ink2 = Color(0xFF2A3A5C);
+  static const muted = Color(0xFF586480);
+  static const rule = Color(0xFFE3D8BF);
+  static const rule2 = Color(0xFFD0C3A5);
+  static const primary = Color(0xFF2457A7);
+  static const primaryDeep = Color(0xFF183F7C);
+  static const sky = Color(0xFF8EC5F0);
+  static const amberGap = Color(0xFFF2B544);
+  static const board = Color(0xFF0F2547);
+  static const boardText = Color(0xFFFFF8E9);
+  static const success = Color(0xFF1F7A5A);
+  static const danger = Color(0xFFB83A2A);
   static const heroBlue = Color(0xFF1385E0);
   static const brandBlue = Color(0xFF1877D4);
   static const accent = Color(0xFF1E9BF0);

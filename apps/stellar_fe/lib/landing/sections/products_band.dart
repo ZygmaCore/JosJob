@@ -11,18 +11,18 @@ class _ProductsBand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
-      color: AppColors.bg,
+      color: AppColors.paper,
       child: Column(
         children: [
-          const _Eyebrow('ONE PLATFORM · TWO WAYS TO GROW'),
+          const _Eyebrow('SEARCH · SKILLS · LEARNING'),
           const SizedBox(height: 14),
-          _Title('Learn the skills, then land the role', center: true),
+          _Title('A job search connected to learning', center: true),
           const SizedBox(height: 12),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Text(
-              'From your first module to your first day on the job — Atveti '
-              'Stellar takes you the whole way, in one place.',
+              'Find opportunities, understand the skills they call for, and '
+              'explore learning that can help you prepare.',
               textAlign: TextAlign.center,
               style: _lead(context),
             ),

@@ -5,6 +5,7 @@ part of '../landing_page_ascent.dart';
 // The line lives ONLY in the gaps between milestones (never behind content);
 // nodes activate and connectors fill as you scroll.
 // -------------------------------------------------------------------------
+// ignore: unused_element
 class _SpineTrack extends StatelessWidget {
   final ValueNotifier<double> fraction;
   final List<GlobalKey> milestoneKeys;

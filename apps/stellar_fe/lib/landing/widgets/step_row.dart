@@ -18,7 +18,8 @@ class _StepRow extends StatelessWidget {
         children: [
           Text(
             n,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
+              fontFamily: 'General Sans',
               fontSize: 17,
               fontWeight: FontWeight.w700,
               color: AppColors.brandBlue,
@@ -31,10 +32,11 @@ class _StepRow extends StatelessWidget {
               children: [
                 Text(
                   t,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     fontSize: 16.5,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
+                    color: AppColors.landingInk,
                   ),
                 ),
                 const SizedBox(height: 4),

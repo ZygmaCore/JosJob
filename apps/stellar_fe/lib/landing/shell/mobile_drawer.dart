@@ -3,12 +3,17 @@ part of '../landing_page_ascent.dart';
 class _MobileDrawer extends StatelessWidget {
   final VoidCallback onCta;
   final VoidCallback onLogin;
-  const _MobileDrawer({required this.onCta, required this.onLogin});
+  final VoidCallback onHowItWorks;
+  const _MobileDrawer({
+    required this.onCta,
+    required this.onLogin,
+    required this.onHowItWorks,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.cotton,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -21,7 +26,7 @@ class _MobileDrawer extends StatelessWidget {
                   const _Logo(),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: AppColors.ink),
+                    icon: const Icon(Icons.close, color: AppColors.landingInk),
                     tooltip: 'Close menu',
                   ),
                 ],
@@ -33,23 +38,25 @@ class _MobileDrawer extends StatelessWidget {
                   minVerticalPadding: 14,
                   title: Text(
                     item,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: 17,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.ink,
+                      color: AppColors.landingInk,
                     ),
                   ),
                   onTap: () {
                     Navigator.of(context).pop();
-                    if (item == 'Programs') {
+                    if (item == 'Learn') {
                       Navigator.of(context).pushNamed('/explore');
+                    } else if (item == 'Jobs') {
+                      onCta();
+                    } else {
+                      onHowItWorks();
                     }
                   },
                 ),
               const SizedBox(height: 12),
-              const Row(
-                children: [_LangToggle(), SizedBox(width: 12), _MoonToggle()],
-              ),
               const SizedBox(height: 20),
               _PillButton(
                 'Log in',
