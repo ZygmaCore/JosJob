@@ -1,111 +1,186 @@
 part of '../jobs_page.dart';
 
-// =========================================================================
-// Role detail: a header card (logo, title, company, match, meta) followed by
-// the summary and two bullet lists, then a demo apply/save action bar.
-// =========================================================================
-class _JobDetailPage extends StatelessWidget {
-  final _Job job;
-  const _JobDetailPage(this.job);
-
+class _JobDetailPage extends StatefulWidget {
+  final String jobId;
+  final JobsApi api;
+  final JobAuthorizer authorize;
+  final List<JobOrganization> organizations;
+  const _JobDetailPage({
+    required this.jobId,
+    required this.api,
+    required this.authorize,
+    required this.organizations,
+  });
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: AppColors.surface,
-        elevation: 0.5,
-        foregroundColor: AppColors.ink,
-        title: Text(
-          'Role details',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.navy,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-              children: [
-                _HeaderCard(job),
-                const SizedBox(height: 24),
-                _DetailSection(
-                  'About the role',
-                  child: Text(
-                    job.summary,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14.5,
-                      height: 1.6,
-                      color: AppColors.body,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _DetailSection(
-                  'What you\'ll do',
-                  child: _BulletList(job.highlights),
-                ),
-                const SizedBox(height: 24),
-                _DetailSection(
-                  'What you\'ll need',
-                  child: _BulletList(job.requirements),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () =>
-                            _demo(context, 'Application sent (demo).'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.brandBlue,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(52),
-                          shape: const StadiumBorder(),
-                          textStyle: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        child: const Text('Apply now'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    OutlinedButton(
-                      onPressed: () => _demo(context, 'Saved (demo).'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.ink,
-                        minimumSize: const Size(0, 52),
-                        padding: const EdgeInsets.symmetric(horizontal: 22),
-                        side: const BorderSide(color: AppColors.border),
-                        shape: const StadiumBorder(),
-                        textStyle: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: const Text('Save'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+  State<_JobDetailPage> createState() => _JobDetailPageState();
+}
+
+class _JobDetailPageState extends State<_JobDetailPage> {
+  late Future<JobListing> _job = _fetch();
+  bool _deleting = false;
+  Future<JobListing> _fetch() =>
+      widget.authorize((token) => widget.api.get(token, widget.jobId));
+
+  Future<void> _edit(JobListing job) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _JobEditor(
+          api: widget.api,
+          authorize: widget.authorize,
+          organizations: widget.organizations,
+          job: job,
         ),
       ),
     );
+    if (saved == true && mounted) setState(() => _job = _fetch());
   }
+
+  Future<void> _delete(JobListing job) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this listing?'),
+        content: Text('“${job.title}” will be permanently removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deleting = true);
+    try {
+      await widget.authorize((token) => widget.api.delete(token, job.id));
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      _demo(context, e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.bg,
+    appBar: AppBar(title: const Text('Role details')),
+    body: FutureBuilder<JobListing>(
+      future: _job,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    snapshot.error.toString(),
+                    key: const ValueKey('job-detail-error'),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() => _job = _fetch()),
+                    child: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        final job = snapshot.data!;
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    key: const ValueKey('job-detail'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _HeaderCard(job),
+                      const SizedBox(height: 24),
+                      _DetailSection(
+                        'About the role',
+                        child: Text(
+                          job.description,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.5,
+                            height: 1.7,
+                            color: AppColors.body,
+                          ),
+                        ),
+                      ),
+                      if (job.highlights.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _DetailSection(
+                          'What you’ll do',
+                          child: _BulletList(job.highlights),
+                        ),
+                      ],
+                      if (job.requirements.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _DetailSection(
+                          'Skills you’ll need',
+                          child: _BulletList(job.requirements),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      if (job.canManage)
+                        Wrap(
+                          spacing: 12,
+                          children: [
+                            FilledButton.icon(
+                              key: const ValueKey('edit-job'),
+                              onPressed: _deleting ? null : () => _edit(job),
+                              icon: const Icon(Icons.edit_outlined),
+                              label: const Text('Edit listing'),
+                            ),
+                            OutlinedButton.icon(
+                              key: const ValueKey('delete-job'),
+                              onPressed: _deleting ? null : () => _delete(job),
+                              icon: const Icon(Icons.delete_outline),
+                              label: Text(
+                                _deleting ? 'Deleting…' : 'Delete listing',
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            'CV matching and in-platform applications are coming next. Browse the requirements to prepare for this opportunity.',
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 // Header card with the role identity + meta.
 class _HeaderCard extends StatelessWidget {
-  final _Job job;
+  final JobListing job;
   const _HeaderCard(this.job);
 
   @override
@@ -129,7 +204,7 @@ class _HeaderCard extends StatelessWidget {
                 height: 54,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  gradient: _logoGradient(job.seed),
+                  gradient: _logoGradient(job.company.length),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Text(
@@ -167,7 +242,8 @@ class _HeaderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _MatchBadge(job.matchPct),
+              if (job.synthetic) const _JobBadge('Synthetic demo'),
+              if (job.status != 'active') _JobBadge(job.status),
             ],
           ),
           const SizedBox(height: 18),
@@ -176,8 +252,9 @@ class _HeaderCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               _meta(Icons.place_outlined, job.location),
-              _meta(Icons.schedule_outlined, job.type),
-              _meta(Icons.payments_outlined, job.salary),
+              _meta(Icons.schedule_outlined, job.employmentType),
+              _meta(Icons.business_center_outlined, job.workMode),
+              _meta(Icons.payments_outlined, job.salaryLabel),
             ],
           ),
         ],

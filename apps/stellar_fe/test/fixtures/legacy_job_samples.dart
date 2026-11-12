@@ -1,11 +1,41 @@
-part of '../jobs_page.dart';
+// Historical synthetic fixtures only. Never imported by production jobs UI.
+// Match percentages below are invented examples, not computed analysis.
+
+// =========================================================================
+// Sample-data model for a job posting. Plain and immutable — a hand-authored
+// fixture, not a fetched entity.
+// =========================================================================
+class LegacyJobSample {
+  final String title;
+  final String company;
+  final String location;
+  final String type; // Full-time / Part-time / Contract
+  final String salary;
+  final int matchPct; // 0..100
+  final int seed; // picks the logo gradient (see _logoGradient)
+  final String summary;
+  final List<String> highlights;
+  final List<String> requirements;
+  const LegacyJobSample({
+    required this.title,
+    required this.company,
+    required this.location,
+    required this.type,
+    required this.salary,
+    required this.matchPct,
+    required this.seed,
+    required this.summary,
+    required this.highlights,
+    required this.requirements,
+  });
+}
 
 // =========================================================================
 // Hard-coded sample roles for the board, spanning the platform's industries
 // (hospitality, construction, healthcare). Nothing is fetched or persisted.
 // =========================================================================
-const _jobs = <_Job>[
-  _Job(
+const legacyJobSamples = <LegacyJobSample>[
+  LegacyJobSample(
     title: 'Front Office Associate',
     company: 'Hospitality Group',
     location: 'Sydney, NSW',
@@ -27,7 +57,7 @@ const _jobs = <_Job>[
       'Availability for rotating shifts',
     ],
   ),
-  _Job(
+  LegacyJobSample(
     title: 'Site Supervisor',
     company: 'BuildCorp',
     location: 'Melbourne, VIC',
@@ -49,7 +79,7 @@ const _jobs = <_Job>[
       'Ability to read plans and coordinate trades',
     ],
   ),
-  _Job(
+  LegacyJobSample(
     title: 'Support Worker',
     company: 'HealthFirst Care',
     location: 'Brisbane, QLD',
@@ -71,7 +101,7 @@ const _jobs = <_Job>[
       'Driver licence and police check',
     ],
   ),
-  _Job(
+  LegacyJobSample(
     title: 'Guest Services Lead',
     company: 'Coastline Resorts',
     location: 'Gold Coast, QLD',
@@ -93,7 +123,7 @@ const _jobs = <_Job>[
       'Weekend and holiday availability',
     ],
   ),
-  _Job(
+  LegacyJobSample(
     title: 'Warehouse Coordinator',
     company: 'Logistics Co',
     location: 'Perth, WA',
@@ -115,7 +145,7 @@ const _jobs = <_Job>[
       'Organised and detail-focused',
     ],
   ),
-  _Job(
+  LegacyJobSample(
     title: 'Enrolled Nurse',
     company: 'HealthFirst Care',
     location: 'Adelaide, SA',

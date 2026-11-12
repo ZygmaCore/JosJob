@@ -156,6 +156,16 @@ defmodule StellarWeb.Router do
     end
 
     # Katalog student (Bearer).
+    scope "/jobs" do
+      pipe_through :api_auth
+
+      get "/", JobController, :index
+      get "/:id", JobController, :show
+      post "/", JobController, :create
+      patch "/:id", JobController, :update
+      delete "/:id", JobController, :delete
+    end
+
     scope "/catalog" do
       pipe_through :api_auth
 

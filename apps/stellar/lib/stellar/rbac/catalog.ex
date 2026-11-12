@@ -69,7 +69,7 @@ defmodule Stellar.Rbac.Catalog do
     {"countries:manage", "master", "Manage countries (placeholder)"},
     {"professions:manage", "master", "Manage professions (placeholder)"},
 
-    # Jobs (modul stub — placeholder)
+    # Jobs — organization-scoped listing access and employer management.
     {"jobs:read", "jobs", "View job listings"},
     {"jobs:post", "jobs", "Post job listings"},
     {"jobs:manage", "jobs", "Manage job listings"},

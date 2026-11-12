@@ -1,147 +1,249 @@
-# Stellar — Online Learning & AI Job Placement
+# JosJob - Learning & Job Placement on Stellar
 
-Platform terpadu untuk pembelajaran online dan penempatan kerja berbasis AI, digerakkan oleh
-Elixir/Phoenix + Ash Framework (backend) dan Flutter (frontend web). Sistem mendukung banyak
-peran (employer, coordinator, worker, graduate, superuser) dengan otentikasi Google OAuth, API
-token JWT untuk klien mobile, serta notifikasi real-time via WebSocket.
+JosJob mengembangkan platform Stellar untuk menghubungkan pencarian kerja dan
+pembelajaran. Backend memakai Elixir/Phoenix, Ash Framework, dan PostgreSQL;
+frontend terpadu memakai Flutter. Arah produk adalah **Match -> Gap -> Learn ->
+Re-match**: mencocokkan CV dengan lowongan, mengenali kekurangan skill,
+merekomendasikan pembelajaran, lalu mencocokkan ulang.
 
-## Arsitektur singkat
+**Status saat ini:** katalog pembelajaran, enrollment, dokumen, integrasi media,
+dan CRUD lowongan sudah tersedia. Analisis CV, ranking AI, rekomendasi berbasis
+gap skill, saved jobs, dan pengiriman lamaran masih merupakan pekerjaan terencana.
 
-- `apps/stellar` — domain inti, context, dan otorisasi berbasis Ash.
-- `apps/stellar_web` — endpoint Phoenix, LiveView, dan CMS admin (AshAdmin).
-- `apps/stellar_lrn` — modul pembelajaran: katalog kursus, kelas, enrollment, dokumen, dan VOD.
-- `apps/stellar_fe` — frontend Flutter web terpadu (auth, dashboard per peran, katalog, dokumen, VOD, offline sync).
-- `config/` + `envs/.env` — konfigurasi runtime; database ParadeDB/PostgreSQL via Docker.
+## Fitur dan batas implementasi
 
-Dokumentasi rinci: lihat folder `docs/` (api, laporan, rencana pengembangan).
+| Area | Implementasi saat ini |
+| --- | --- |
+| Akun dan organisasi | Registrasi/login email-password pada API, Google OAuth, JWT dengan refresh token, membership dan izin berbasis organisasi |
+| Onboarding | Progress dan jawaban dengan outbox lokal Drift/SQLite, retry dan sinkronisasi saat tersambung kembali |
+| Lowongan | Pencarian, filter, pagination, detail, serta editor employer untuk membuat, memperbarui dan menghapus lowongan |
+| Pembelajaran | Section, course, class, enrollment, materi, undangan teacher dan pembayaran enrollment melalui Stripe |
+| Dokumen | Metadata, upload melalui URL bertanda tangan ke storage kompatibel S3, serta akses berdasarkan pemilik, organisasi dan grant |
+| Media | Upload VOD Cloudflare Stream dan signaling kelas live melalui Cloudflare Realtime |
+| RAG | Ekstraksi dan ingestion dokumen ke Atomic Server; asisten percakapan lengkap belum tersedia |
+| Admin | LiveView dengan pemeriksaan membership/permission dan akses superuser sesuai route |
 
-## Struktur repo
+Lowongan dibatasi oleh organisasi dan izin `jobs:read`, `jobs:post` atau
+`jobs:manage`. Pengguna tanpa organisasi/izin yang sesuai menerima daftar kosong.
+Lowongan baru berstatus draft; employer berizin dapat mempublikasikannya melalui
+editor. Data contoh lama hanya menjadi fixture test, bukan hasil matching AI atau
+lowongan yang otomatis di-seed. Lihat [kontrak jobs API](docs/api/jobs.md).
 
-```
-.
-├── apps/
-│   ├── stellar/        # domain + Ash resources
-│   ├── stellar_web/    # Phoenix endpoint + admin UI
-│   ├── stellar_lrn/    # learning management (katalog, kelas, dokumen, VOD)
-│   └── stellar_fe/     # Flutter web frontend
-├── config/             # runtime + env config
-├── deployment/         # Dockerfile backend (dev/prod)
-├── docs/               # dokumentasi API, laporan, dan rencana
-├── e2e/                # pengujian end-to-end (Playwright)
-├── extensions/         # ekstensi tambahan
-├── rel/                # Elixir release
-├── docker-compose.yml
-├── docker-compose.dev.yml
-├── docker-compose.fullstack.yml
-└── mix.exs             # umbrella project
-```
+Outbox offline saat ini hanya mencakup progress dan jawaban onboarding.
+Channel notifikasi tersedia sebagai fondasi join/ping, belum sebagai sistem
+pengiriman notifikasi lengkap. Integrasi eksternal memerlukan kredensial masing-masing.
 
-# Cara Pakai (How to Use)
+## Arsitektur dan struktur repositori
 
-Panduan menjalankan backend umbrella (Elixir/Phoenix + Ash) secara lokal.
+Backend merupakan modular monolith: sepuluh aplikasi Elixir dalam satu umbrella,
+satu release OTP `stellar`, satu endpoint Phoenix, dan database bersama melalui
+`Stellar.Repo`. Flutter berada di repositori yang sama tetapi di luar daftar app Mix.
 
-## Prasyarat
+| Direktori | Tanggung jawab |
+| --- | --- |
+| `apps/stellar` | Akun, organisasi, RBAC, pembayaran, Repo, migrasi dan seed |
+| `apps/stellar_web` | HTTP/JSON API, LiveView admin, autentikasi web dan Phoenix Channels |
+| `apps/stellar_job` | Resource lowongan, pencarian dan operasi employer dengan pembatasan organisasi |
+| `apps/stellar_lrn` | Katalog, kelas, enrollment dan materi pembelajaran |
+| `apps/stellar_doc` | Dokumen dan grant akses |
+| `apps/stellar_ms` | Provider media Cloudflare dan storage kompatibel S3 |
+| `apps/stellar_rag` | Ekstraksi dan ingestion dokumen |
+| `apps/stellar_ai` | Kerangka agent Jido; analisis CV dan matching masih direncanakan |
+| `apps/stellar_quiz`, `apps/stellar_rt` | App scaffold; signaling aktif berada di `stellar_web` |
+| `apps/stellar_fe` | Flutter client, layanan API, session dan outbox onboarding |
+| `config/`, `rel/`, `deployment/` | Konfigurasi, helper release dan berkas deployment |
+| `docs/`, `PRD/`, `e2e/` | Dokumentasi teknis, spesifikasi produk dan Playwright |
 
-- **Docker** & **docker compose** (untuk database ParadeDB).
-- **asdf** dengan versi sesuai `.tool-versions`: `elixir 1.19.5-otp-27`, `erlang 27.3.4.3`.
-  ```bash
-  asdf install
-  ```
+Migrasi database berada di `apps/stellar/priv/repo/migrations`.
+[Project map](docs/PROJECT_MAP.md) menyediakan penelusuran fitur dan sumber;
+beberapa inventarisnya mendeskripsikan snapshot lama. Gunakan source dan test
+terkini untuk memverifikasi perilaku.
 
-## 1. Konfigurasi environment
+## Menjalankan stack lokal dengan Docker
 
-Buat/isi `envs/.env` (dibaca runtime lewat Dotenvy). Contoh minimal:
+Gunakan Docker dengan dukungan Linux containers dan Docker Compose v2 yang
+mendukung `env_file.required`. Cara ini juga menghindari kendala build native
+Windows pada dependensi Rust/NIF `xberg`.
 
-```env
-PORT=4000
+1. Buat direktori `envs` dan file `envs/.env` di root repositori.
+2. Isi konfigurasi lokal berikut, lalu sesuaikan akun seed bila diperlukan:
 
-# Kredensial DB — SATU skema (POSTGRES_*) untuk semua environment. Nilai berbeda
-# per-environment karena tiap env memuat file .env sendiri (lokal / dev / prod).
-# Lokal: HOST=localhost PORT=5438; di server, docker-compose memaksa HOST=paradedb.
-# (Alternatif: set DATABASE_URL untuk override penuh, mis. managed DB.)
+```dotenv
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=stellar_dev
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5438
-
-SECRET_KEY_BASE=<hasil: mix phx.gen.secret>
-TOKEN_SIGNING_SECRET=<hasil: mix phx.gen.secret>
-
-# Google OAuth (login). GOOGLE_REDIRECT_URI = BASE ke AuthPlug (bukan callback penuh).
-GOOGLE_CLIENT_ID=<client id google>
-GOOGLE_CLIENT_SECRET=<client secret google>
-GOOGLE_REDIRECT_URI=http://localhost:4000/auth
-
-# TTL token API (detik). Default: access 1 jam, refresh 30 hari.
-ACCESS_TOKEN_TTL=3600
-REFRESH_TOKEN_TTL=2592000
-
-# Email superuser awal (di-seed). Login via Google dengan email ini = akses CMS.
+PORT=4000
+API_BASE_URL=http://localhost:4000
+FE_BASE_URL=http://localhost:8081
 SEED_SUPERUSER_EMAIL=admin@example.com
+SEED_SUPERUSER_PASSWORD=local-dev-password-123
 ```
 
-> **Google Cloud Console** — di OAuth Client ID, daftarkan **Authorized redirect URI**:
-> `http://localhost:4000/auth/user/google/callback` (URL FINAL; app merakitnya dari base di atas).
+`envs/` diabaikan Git. Compose full stack menyediakan secret default untuk
+preview lokal; deployment memerlukan `SECRET_KEY_BASE` dan
+`TOKEN_SIGNING_SECRET` sendiri. Keduanya dapat dibuat dengan `mix phx.gen.secret`.
 
-## 2. Database + dependency
+3. Jalankan dari root repositori:
 
 ```bash
-docker compose --env-file envs/.env up -d paradedb   # ParadeDB pakai kredensial POSTGRES_* dari envs/.env
+docker compose -f docker-compose.fullstack.yml --env-file envs/.env up -d --build
+docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f stellar_be
+```
+
+| Layanan | Alamat lokal |
+| --- | --- |
+| Flutter web | http://localhost:8081 |
+| Phoenix API dan login web | http://localhost:4000 |
+| ParadeDB/PostgreSQL | `localhost:5438` |
+
+Backend menunggu database sehat, menjalankan migrasi, mencoba seed, lalu
+menjalankan server. Kegagalan seed dicatat tetapi tidak menghentikan server;
+periksa log jika akun awal atau data katalog tidak muncul. Seed membuat akun
+superuser yang dapat login melalui Flutter dengan email/password di atas.
+
+Gunakan `-f docker-compose.fullstack.yml` secara eksplisit: `docker-compose.yml`
+hanya mendefinisikan database dan frontend. Di jaringan container, backend
+mengakses database melalui `paradedb:5432`; port `5438` dipakai dari host.
+
+Untuk menghentikan stack tanpa menghapus volume database:
+
+```bash
+docker compose -f docker-compose.fullstack.yml --env-file envs/.env down
+```
+
+## Pengembangan backend di host
+
+Gunakan Linux/WSL atau lingkungan dengan toolchain native yang kompatibel.
+Versi tool dipatok di [`.tool-versions`](.tool-versions): Elixir
+`1.19.5-otp-27`, Erlang `27.3.4.3`, Node `24.13.0`, dan Rust `1.96.1`.
+`xberg` dibangun dari source sehingga memerlukan Rust serta dependensi build native.
+Database harus mendukung PostgreSQL 16+.
+
+Dengan `envs/.env` seperti di atas dan database berjalan:
+
+```bash
+docker compose --env-file envs/.env up -d paradedb
 mix deps.get
-mix ecto.setup                         # create + migrate + seed (superuser)
-# atau: mix ecto.migrate && mix run apps/stellar/priv/repo/seeds.exs
-```
-
-## 3. Menjalankan server
-
-```bash
+mix ecto.setup
+mix assets.setup
+mix assets.build
 iex -S mix phx.server
 ```
 
-Aplikasi di `http://localhost:4000`.
+`mix ecto.setup` membuat database, menjalankan migrasi dan seed.
+Konfigurasi runtime dibaca dari `envs/.env`, file
+`envs/.<environment>.overrides.env` dan environment proses; environment proses
+memiliki prioritas tertinggi. `DATABASE_URL` dapat menggantikan `POSTGRES_*`.
+Variabel `SEED_SUPERUSER_*` dibaca langsung dari environment proses: untuk
+seed di host, export/set variabel tersebut pada shell sebelum `mix ecto.setup`.
 
-## 4. Alur otentikasi (CMS / web)
+## Pengembangan Flutter
 
-- **Home**: `http://localhost:4000/` — ada tombol **Login** (di samping Changelog).
-- **Login**: `/sign-in` → **Sign in with Google** (login FULL Google OAuth, tanpa password).
-- **Admin/CMS**: `/admin` (AshAdmin) — hanya bisa diakses **superuser**. Login dengan akun Google yang emailnya sama dengan `SEED_SUPERUSER_EMAIL`.
-- **Logout**: buka `/sign-out` (langsung keluar → kembali ke `/sign-in`).
-
-Role RBAC: `employer`, `coordinator`, `worker`, `graduate`, `superuser` (+ `default` untuk user baru). Hanya `superuser` yang boleh masuk CMS.
-
-## 5. API mobile (Flutter) — token
-
-- **Login**: `POST /api/auth/google` body `{"id_token": "<id_token Google>", "access_token": "..."}`
-  → verifikasi id_token → `{ user, token (access 1 jam), refresh_token (30 hari) }`.
-- **Refresh**: `POST /api/auth/refresh` body `{"refresh_token": "..."}` → pasangan baru (rotasi; refresh lama dicabut).
-
-Contoh:
+Gunakan Flutter dengan Dart yang memenuhi `^3.12.0` sesuai
+[`pubspec.yaml`](apps/stellar_fe/pubspec.yaml).
 
 ```bash
-curl -X POST http://localhost:4000/api/auth/google \
-  -H 'content-type: application/json' -d '{"id_token":"<id_token>"}'
+cd apps/stellar_fe
+flutter pub get
+flutter run -d chrome --web-port=8081 --dart-define=API_BASE_URL=http://localhost:4000
 ```
 
-## 6. WebSocket (real-time)
+`API_BASE_URL` dan `GOOGLE_CLIENT_ID` adalah konfigurasi saat build. Untuk
+Google sign-in, tambahkan `--dart-define=GOOGLE_CLIENT_ID=<google-web-client-id>`.
+Pada Docker, isi variabel yang sama di `envs/.env`, lalu rebuild `stellar_fe`.
+Mengubah environment backend saja tidak memperbarui bundle Flutter.
+Lihat [panduan frontend](apps/stellar_fe/README.md) untuk defines file dan aset
+SQLite WASM/Drift.
 
-Handshake membawa JWT (access token) sebagai query param:
+## Autentikasi dan integrasi
 
-```
-ws://localhost:4000/socket/websocket?token=<access_token>
-```
+Login browser Phoenix berada di `/` dan memakai Google OAuth; logout di
+`/sign-out`. Admin menggunakan route LiveView seperti `/users`, `/organizations`
+dan `/courses` dengan gate masing-masing. Tidak ada route `/admin` atau `/sign-in`.
 
-Channel contoh: `user:notifications:<user_id>` (hanya pemilik topik yang boleh join).
+Untuk OAuth browser, isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan
+`GOOGLE_REDIRECT_URI=http://localhost:4000/auth`. Daftarkan callback
+`http://localhost:4000/auth/user/google/callback` pada Google OAuth client.
+Untuk Flutter web, daftarkan juga origin `http://localhost:8081`.
 
-## 7. Test
+| Endpoint API | Kegunaan |
+| --- | --- |
+| `POST /api/auth/register` | Registrasi email/password |
+| `POST /api/auth/login` | Login email/password |
+| `POST /api/auth/google` | Login menggunakan Google `id_token` |
+| `POST /api/auth/refresh` | Rotasi refresh token dan penerbitan pasangan token baru |
+| `/api/jobs` | Browse dan CRUD lowongan dengan Bearer access token |
+
+TTL default access token adalah 1 jam dan refresh token 30 hari, dapat diubah
+melalui `ACCESS_TOKEN_TTL` dan `REFRESH_TOKEN_TTL` (detik).
+Socket terautentikasi tersedia di
+`ws://localhost:4000/socket/websocket?token=<access_token>`, dengan topik
+`user:notifications:<user_id>` dan `live_room:class:<class_id>`.
+
+Konfigurasi integrasi ada di [`config/runtime.exs`](config/runtime.exs):
+
+| Integrasi | Variabel utama |
+| --- | --- |
+| Pembayaran Stripe | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Cloudflare Stream VOD | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_TOKEN` |
+| Cloudflare Realtime | `CLOUDFLARE_REALTIME_APP_ID`, `CLOUDFLARE_REALTIME_APP_SECRET`, `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_TOKEN` |
+| Storage dokumen | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`; opsional `S3_REGION`, `S3_PUBLIC_BASE_URL` |
+| Email undangan | `SMTP_RELAY`, `SMTP_USERNAME`, `SMTP_PASSWORD`; opsi TLS/port dan alamat pengirim di runtime config |
+
+RAG memerlukan Atomic Server; URL dan `ATOMIC_API_TOKEN` dikonfigurasi di
+[`config/config.exs`](config/config.exs), termasuk pembacaan environment saat
+konfigurasi build. Compose full stack tidak menyediakan Atomic Server.
+
+## Pemeriksaan dan test
+
+Dari root, jalankan pemeriksaan backend yang diwajibkan repositori:
 
 ```bash
-MIX_ENV=test mix ecto.create && MIX_ENV=test mix ecto.migrate   # sekali di awal
-mix test
+mix precommit
 ```
 
-## 8. CI/CD & Deploy
+Alias ini berjalan dalam environment test dan menjalankan compile dengan
+warnings sebagai error, `deps.unlock --unused`, format dan test. Periksa diff
+setelahnya karena alias dapat mengubah file. `mix test` dapat dipakai untuk
+menjalankan suite secara terpisah.
 
-Pipeline CI/CD menjalankan `audit → build → deploy` saat push/merge ke branch **`develop`**.
-Deploy memakai `docker-compose.dev.yml` dengan variable CI `ENV_DEV` (file `.env`) via SSH
-ke server, termasuk health-gate dan rollback otomatis bila backend tidak sehat.
+Database test memakai `stellar_test` dengan suffix opsional
+`MIX_TEST_PARTITION`. Konfigurasi test membaca `POSTGRES_*` langsung dari
+environment proses; set pada shell jika berbeda dari default
+`postgres/postgres` di `localhost:5438`.
+
+Dari `apps/stellar_fe`:
+
+```bash
+flutter analyze
+flutter test
+```
+
+Test `_tmp_register_flow_test.dart` memiliki keterbatasan import browser-only
+pada Flutter VM; lihat [catatan verifikasi jobs](docs/api/jobs.md#verification).
+Untuk E2E, jalankan stack terlebih dahulu, lalu dari `e2e`:
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Set `BASE_URL=http://localhost:8081`, `TEST_EMAIL` dan `TEST_PASSWORD` pada
+shell atau `e2e/.env` sebelum test. Test login menargetkan DOM semantics Flutter;
+default port `4000` pada konfigurasi Playwright perlu di-override.
+
+## Dokumentasi dan deployment
+
+- [Project map dan hubungan fitur](docs/PROJECT_MAP.md)
+- [PRD utama](PRD/PRD.md) dan [keputusan produk](PRD/DECISIONS.md)
+- [API autentikasi](docs/api/auth.md), [pembelajaran](docs/api/learning.md), dan [lowongan](docs/api/jobs.md)
+- [Konfigurasi Compose full stack](docker-compose.fullstack.yml) dan [Compose deployment dev](docker-compose.dev.yml)
+
+Release backend bernama `stellar`; helper migrasi, seed dan server berada di
+`rel/overlays/bin`. Checkout ini tidak menyertakan workflow CI/CD, sehingga
+pipeline deploy otomatis tidak dapat diasumsikan tersedia.
+
+Lisensi: [GNU Affero General Public License v3](LICENSE).

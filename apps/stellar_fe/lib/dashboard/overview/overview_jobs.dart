@@ -18,8 +18,8 @@ class _OverviewJobs extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _GreetingHeader(
-          title: name.isEmpty ? 'Your job matches' : 'Hi $name!',
-          subtitle: 'Roles matched to your profile',
+          title: name.isEmpty ? 'Job placement preview' : 'Hi $name!',
+          subtitle: 'Sample overview. Browse jobs for live opportunities.',
           trailing: const _OpenToWorkChip(),
         ),
         const SizedBox(height: 24),

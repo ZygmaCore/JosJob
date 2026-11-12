@@ -60,6 +60,7 @@ defmodule StellarWeb.MixProject do
       {:stellar, in_umbrella: true},
       {:stellar_doc, in_umbrella: true},
       {:stellar_lrn, in_umbrella: true},
+      {:stellar_job, in_umbrella: true},
       {:stellar_ms, in_umbrella: true},
       {:stellar_rag, in_umbrella: true},
       {:ash_authentication_phoenix, "~> 2.0"},
