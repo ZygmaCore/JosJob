@@ -5,9 +5,9 @@ part of '../jobs_page.dart';
 // short summary and meta (type / salary / location).
 // =========================================================================
 class _JobCard extends StatelessWidget {
-  final _Job job;
+  final JobListing job;
   final VoidCallback onTap;
-  const _JobCard({required this.job, required this.onTap});
+  const _JobCard({super.key, required this.job, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class _JobCard extends StatelessWidget {
                     height: 46,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      gradient: _logoGradient(job.seed),
+                      gradient: _logoGradient(job.company.length),
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Text(
@@ -54,7 +54,7 @@ class _JobCard extends StatelessWidget {
                       children: [
                         Text(
                           job.title,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
@@ -75,13 +75,22 @@ class _JobCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  _MatchBadge(job.matchPct),
                 ],
               ),
+              if (job.synthetic || job.status != 'active') ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (job.synthetic) const _JobBadge('Synthetic demo'),
+                    if (job.status != 'active') _JobBadge(job.status),
+                  ],
+                ),
+              ],
               const SizedBox(height: 14),
               Text(
-                job.summary,
+                job.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
@@ -95,11 +104,24 @@ class _JobCard extends StatelessWidget {
                 spacing: 16,
                 runSpacing: 8,
                 children: [
-                  _meta(Icons.schedule_outlined, job.type),
-                  _meta(Icons.payments_outlined, job.salary),
+                  _meta(Icons.schedule_outlined, job.employmentType),
+                  _meta(Icons.payments_outlined, job.salaryLabel),
                   _meta(Icons.place_outlined, job.location),
+                  _meta(Icons.business_center_outlined, job.workMode),
                 ],
               ),
+              if (job.requirements.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  job.requirements.take(3).join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppColors.brandBlue,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

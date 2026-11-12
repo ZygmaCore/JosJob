@@ -1,27 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../services/jobs_api.dart';
+import '../services/session.dart';
 
 // =========================================================================
-// ATVETI STELLAR — Jobs board (AI Job Placement)  ·  UI only, no backend
+// JOSJOB — Authenticated job browsing and employer listing management.
 //
 // The standalone browse-roles surface reached from the dashboard's Jobs view
 // ("Browse all roles") and the landing "Jobs" nav, registered at /jobs. A
-// searchable (stub) list of matched roles → a role detail screen. All data is
-// hard-coded sample content; the design system (AppColors, Poppins, pill
-// buttons, rounded cards) is shared with the rest of the app.
+// Search, filters and pagination are served by JobsApi; details are refetched
+// on open. The design system is shared with the rest of the app.
 //
 // One library assembled from `part` files; this file owns every import and the
 // public entry widget. Part files carry no imports of their own.
 // =========================================================================
 
-part 'data/models.dart';
-part 'data/jobs_data.dart';
 part 'widgets/search_field.dart';
 part 'widgets/job_card.dart';
 part 'screens/job_board.dart';
 part 'screens/job_detail.dart';
+part 'screens/job_editor.dart';
 
 // =========================================================================
 // Public entry point — registered as the /jobs route in main.dart.
@@ -30,7 +33,14 @@ class JobsPage extends StatelessWidget {
   const JobsPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const _JobBoard();
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.bg,
+    appBar: AppBar(
+      title: const Text('Jobs'),
+      backgroundColor: AppColors.surface,
+    ),
+    body: const SafeArea(child: SingleChildScrollView(child: JobsView())),
+  );
 }
 
 // =========================================================================
@@ -69,8 +79,8 @@ String _initials(String name) {
       .toUpperCase();
 }
 
-/// Standard "no backend" feedback for demo-only buttons.
-void _demo(BuildContext c, [String msg = 'Demo — no backend yet.']) {
+/// Error feedback for asynchronous listing actions.
+void _demo(BuildContext c, String msg) {
   ScaffoldMessenger.of(c)
     ..clearSnackBars()
     ..showSnackBar(
@@ -90,10 +100,10 @@ void _demo(BuildContext c, [String msg = 'Demo — no backend yet.']) {
     );
 }
 
-/// Green match-score pill, e.g. "96% match". Shared by the card and detail.
-class _MatchBadge extends StatelessWidget {
-  final int pct;
-  const _MatchBadge(this.pct);
+/// Listing state and synthetic-data label shared by the card and detail.
+class _JobBadge extends StatelessWidget {
+  final String label;
+  const _JobBadge(this.label);
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +114,7 @@ class _MatchBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        '$pct% match',
+        label,
         style: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w700,

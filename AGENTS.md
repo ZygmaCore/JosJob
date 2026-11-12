@@ -1,5 +1,10 @@
 This is a web application written using the Phoenix web framework.
 
+## Project orientation
+
+- Read `docs/PROJECT_MAP.md` for the source-verified architecture, feature connections, current implementation gaps, and Graphify index/memory status. Check its analyzed commit against the current checkout.
+- Current product intent and decisions live in `PRD/PRD.md` and `PRD/DECISIONS.md`; use current code/tests to verify implemented behavior because older documentation contains stale descriptions.
+
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues

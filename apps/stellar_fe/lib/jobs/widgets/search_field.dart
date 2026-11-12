@@ -6,7 +6,8 @@ part of '../jobs_page.dart';
 // =========================================================================
 class _SearchField extends StatelessWidget {
   final ValueChanged<String> onChanged;
-  const _SearchField({required this.onChanged});
+  final TextEditingController controller;
+  const _SearchField({required this.onChanged, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +16,8 @@ class _SearchField extends StatelessWidget {
       borderSide: BorderSide(color: c, width: w),
     );
     return TextField(
+      key: const ValueKey('jobs-search'),
+      controller: controller,
       onChanged: onChanged,
       style: GoogleFonts.poppins(fontSize: 14.5, color: AppColors.ink),
       decoration: InputDecoration(

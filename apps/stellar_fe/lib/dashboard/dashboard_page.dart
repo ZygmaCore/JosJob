@@ -13,6 +13,7 @@ import '../live/live_call_page.dart' show LiveCallPage;
 import '../live/data/live_models.dart'
     show LiveRoomMode, ParticipantRole, classRoomId;
 import '../services/session.dart';
+import '../jobs/jobs_page.dart' show JobsView;
 import '../services/auth_api.dart' show AccountType, AuthException;
 import '../services/classes_api.dart';
 import '../services/courses_api.dart'
@@ -180,9 +181,8 @@ void _documents(BuildContext c) => Navigator.of(c).pushNamed('/documents');
 /// don't map to specific backend lectures, so the player resolves the first
 /// available lecture from the API itself.
 void _resumeCourse(BuildContext c) {
-  Navigator.of(
-    c,
-  ).push(MaterialPageRoute(builder: (_) => const VodPlayerPage()));
+  Navigator.of(c)
+      .push(MaterialPageRoute(builder: (_) => const VodPlayerPage()));
 }
 
 /// Jump straight into a live classroom quiz session (the "Join" action on a

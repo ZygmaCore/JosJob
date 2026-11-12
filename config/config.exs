@@ -35,6 +35,8 @@ config :stellar_doc, ash_domains: [StellarDoc.Documents]
 # Ekosistem course (Section/Course/Class/Enrollment) di app :stellar_lrn, pakai Stellar.Repo.
 config :stellar_lrn, ash_domains: [StellarLrn.Learning]
 
+config :stellar_job, ash_domains: [StellarJob]
+
 config :stellar,
        :token_signing_secret,
        "a_long_enough_random_signing_secret_for_jwt_tokens_to_work_properly"
@@ -68,7 +70,8 @@ config :stellar_web,
     Stellar.Rbac,
     Stellar.Invitations,
     StellarDoc.Documents,
-    StellarLrn.Learning
+    StellarLrn.Learning,
+    StellarJob
   ]
 
 # Configures the endpoint
