@@ -1,8 +1,8 @@
 # Starting User Flow After Onboarding — implementation notes
 
 **Branch:** `77-starting-user-flow-after-onboarding` · **Status:** working-tree changes,
-**not committed** · **Scope:** backend (`stellar`, `stellar_lrn`, `stellar_ms`,
-`stellar_web`) + Flutter frontend (`stellar_fe`) + config.
+**not committed** · **Scope:** backend (`josjob`, `josjob_lrn`, `josjob_ms`,
+`josjob_web`) + Flutter frontend (`josjob_fe`) + config.
 
 This document records the changes made on this branch. The theme is **what a user
 does once onboarding is finished**: where each role lands, and the first real
@@ -30,7 +30,7 @@ Five threads make up the change:
 
 ## 1. Role-adaptive landing (the "starting" seam)
 
-`apps/stellar_fe/lib/main.dart` was reworked around a single `_homeFor(session)`
+`apps/josjob_fe/lib/main.dart` was reworked around a single `_homeFor(session)`
 resolver, and every auth response now carries the user's system role keys so the
 client can branch on them.
 
@@ -42,12 +42,12 @@ org account, not approved    → OrgPendingPage
 otherwise                    → onboarding → DashboardPage
 ```
 
-- **Roles on every auth response.** `StellarWeb.Api.UserSerializer.to_json/1`
-  (new, `apps/stellar_web/lib/stellar_web/controllers/api/user_serializer.ex`) is now
+- **Roles on every auth response.** `JosjobWeb.Api.UserSerializer.to_json/1`
+  (new, `apps/josjob_web/lib/josjob_web/controllers/api/user_serializer.ex`) is now
   the single user-JSON shape for login / register / refresh / google / invitation-accept.
-  It adds `roles: Stellar.Authz.role_keys(user)` and `approved`. `auth_controller.ex`
+  It adds `roles: Josjob.Authz.role_keys(user)` and `approved`. `auth_controller.ex`
   dropped its local `user_json/1` + `approved?/1` and delegates here.
-- **`Stellar.Authz.role_keys/1`** (new) returns the distinct **system** role keys
+- **`Josjob.Authz.role_keys/1`** (new) returns the distinct **system** role keys
   across the user's *active* memberships (org-agnostic), e.g. `["teacher"]`.
 - **Flutter `AuthUser`** gained `List<String> roles` + `bool get isTeacher =>
   roles.contains('teacher')` (`services/auth_api.dart`).
@@ -65,7 +65,7 @@ live one, and the `Course` resource gained the two fields the catalog needs
 
 ### 2.1 Backend
 
-`apps/stellar_web/lib/stellar_web/controllers/api/catalog_controller.ex`:
+`apps/josjob_web/lib/josjob_web/controllers/api/catalog_controller.ex`:
 
 - **Visibility rule** (both `index/2` and `show/2`): a course is returned when
   `is_active == true AND (is_public == true OR organizations.id in org_ids)`.
@@ -77,13 +77,13 @@ live one, and the `Course` resource gained the two fields the catalog needs
 - Both summary and detail JSON now emit `price_cents`, `currency`, and `is_free`
   (`is_free = is_nil(price_cents) or price_cents <= 0`).
 
-Org scope comes from `StellarWeb.Api.StudentScope.org_ids/1` (organizations where a
+Org scope comes from `JosjobWeb.Api.StudentScope.org_ids/1` (organizations where a
 `Membership` is `status == :active`). Catalog reads use `Ash.read!(authorize?: false)`
 and rely on this manual scope + the `is_public`/`is_active` filter (not Ash policies).
 
 ### 2.2 `Course` resource + migrations
 
-`apps/stellar_lrn/lib/stellar_lrn/learning/course.ex` — three new attributes, all
+`apps/josjob_lrn/lib/josjob_lrn/learning/course.ex` — three new attributes, all
 added to `default_accept`:
 
 | Attribute | Type | Notes |
@@ -125,16 +125,16 @@ re-keyed its local saved/bookmark set from course **title → id**.
 
 ### 2.4 Sample-catalog seeder
 
-`apps/stellar_lrn/lib/stellar_lrn/seeds.ex` (new) — `StellarLrn.Seeds.seed/0` is an
+`apps/josjob_lrn/lib/josjob_lrn/seeds.ex` (new) — `JosjobLrn.Seeds.seed/0` is an
 **idempotent** seeder that populates 4 sections and 8 courses (1 class each) into the
 org named **"Atveti"**, links `Section/Course/Industry` join rows via upsert, and makes
 the Atveti owner (the seeded superuser) an active member so the seeded courses are
 visible. All seeded courses are `is_public: true`; two carry a price (`4900`, `9900`).
 It no-ops (returns 0) if the "Atveti" org doesn't exist yet.
 
-It is dispatched from `Stellar.Release.seed/0` via **runtime `apply/3`**
+It is dispatched from `Josjob.Release.seed/0` via **runtime `apply/3`**
 (`Code.ensure_loaded?` + `function_exported?`), guarded by `rescue`, so that:
-(a) `:stellar` never references `:stellar_lrn` at compile time — which would form an
+(a) `:josjob` never references `:josjob_lrn` at compile time — which would form an
 umbrella dependency cycle (see `CLAUDE.md`); and (b) a catalog-seed failure never
 aborts the critical superuser/RBAC/master-data seed.
 
@@ -177,11 +177,11 @@ sequenceDiagram
   `metadata.class_id == path id` — the client's success signal is not trusted alone.
   `visible_class/2` was widened so enrolment is allowed for a public+active course
   (not just org-member classes).
-- **`StellarWeb.Enrollments.fulfill/2`** (new,
-  `apps/stellar_web/lib/stellar_web/enrollments.ex`) — the single **idempotent**
+- **`JosjobWeb.Enrollments.fulfill/2`** (new,
+  `apps/josjob_web/lib/josjob_web/enrollments.ex`) — the single **idempotent**
   enrolment-creation seam. Returns the existing `Enrollment` for a (class, student)
-  pair or creates one. It lives in `stellar_web` (which depends on both `stellar_lrn`
-  and `stellar`) so payments can trigger an enrolment without an umbrella cycle.
+  pair or creates one. It lives in `josjob_web` (which depends on both `josjob_lrn`
+  and `josjob`) so payments can trigger an enrolment without an umbrella cycle.
 - **`stripe_webhook_controller.ex`** — on a verified `payment_intent.succeeded`
   event whose metadata carries `class_id` + `user_id`, calls the same
   `Enrollments.fulfill/2` as a best-effort backstop (rescue-logged; never fails the
@@ -194,7 +194,7 @@ sequenceDiagram
 
 > [!IMPORTANT]
 > **Three-tier fulfilment, one idempotent path.** Both the synchronous `/enroll/confirm`
-> and the webhook route through `StellarWeb.Enrollments.fulfill/2`, so a double-call
+> and the webhook route through `JosjobWeb.Enrollments.fulfill/2`, so a double-call
 > returns the existing enrolment rather than erroring. The Stripe client explicitly
 > disables Req auto-retry on `POST /v1/payment_intents` to avoid double charges.
 
@@ -233,7 +233,7 @@ flowchart TD
     E -- "nil" --> H["reject: unauthorized"]
 ```
 
-- **`StellarLrn.Learning.live_role/2`** (new) → `:host` if the caller is the class
+- **`JosjobLrn.Learning.live_role/2`** (new) → `:host` if the caller is the class
   `instructor_id`, else `:guest` if `enrolled?/2`, else `nil`. Wrapped in `rescue` so a
   malformed (non-UUID) class id maps to `nil` rather than crashing the join.
 - **`enrolled?/2`** counts **only** `status == :active` — a `:completed` enrollment
@@ -264,7 +264,7 @@ flowchart TD
 - `dashboard/screens/my_courses_screen.dart` became stateful and self-fetches
   `GET /api/me/enrollments` via `CoursesApi.listEnrollments`.
 
-Domain test: `apps/stellar_lrn/test/stellar_lrn/learning/live_gate_test.exs` covers
+Domain test: `apps/josjob_lrn/test/josjob_lrn/learning/live_gate_test.exs` covers
 `live_role/2` and `enrolled?/2`. **Gap:** there is no channel-level test for the
 `class:<id>` reject path (the existing channel test only exercises the legacy free-room
 path).
@@ -301,7 +301,7 @@ sequenceDiagram
 
 ### 5.1 Invitation domain
 
-`apps/stellar/lib/stellar/invitations/` (new `Stellar.Invitations` Ash domain):
+`apps/josjob/lib/josjob/invitations/` (new `Josjob.Invitations` Ash domain):
 
 - **`Invitation`** resource (table `invitations`, migration
   `20260725143443_create_invitations.exs`): `email` (`:ci_string`), `role_key`
@@ -315,7 +315,7 @@ sequenceDiagram
   invite for the same email+org instead of duplicating), `get_by_token/1`, `accept/2`
   (new email → register + force-complete onboarding + provision + auto-login;
   existing email → provision role only, **no** auto-login). All provisioning runs in a
-  `Stellar.Repo.transaction`.
+  `Josjob.Repo.transaction`.
 - **`Email`** — Swoosh builder; the accept link is a **hash route**
   `<fe_base_url>/#/invite?token=…` (the Flutter web build reads routes from the URL
   fragment). Delivery is best-effort (logs the URL, never raises).
@@ -331,16 +331,16 @@ sequenceDiagram
 ### 5.2 RBAC catalog refactor
 
 To share one role/permission definition between the release seeder and per-invite
-provisioning, the catalog was **extracted out of `Stellar.Release`**:
+provisioning, the catalog was **extracted out of `Josjob.Release`**:
 
-- **`Stellar.Rbac.Catalog`** (new) — single source of truth for `@permissions` and
+- **`Josjob.Rbac.Catalog`** (new) — single source of truth for `@permissions` and
   `@roles`. In the move, the **`teacher` role gained `documents:read` +
   `documents:manage`**.
-- **`Stellar.Rbac.Provisioning`** (new) — idempotent `ensure_permissions!/0` and
+- **`Josjob.Rbac.Provisioning`** (new) — idempotent `ensure_permissions!/0` and
   `ensure_org_role!/2` (upserts a per-org system `Role` + its `RolePermission` links).
   System roles are **per-organization**, so accepting an invite lazily creates the
   `teacher` role in the superuser-chosen org if it doesn't exist yet.
-- `Stellar.Release` now delegates `seed_rbac/1` to `Provisioning`, and seeds the
+- `Josjob.Release` now delegates `seed_rbac/1` to `Provisioning`, and seeds the
   superuser via `:register_with_email` + `SEED_SUPERUSER_PASSWORD` (default
   `superuser123`) so it can log into the Flutter app and land on the invitations admin.
 
@@ -352,25 +352,25 @@ provisioning, the catalog was **extracted out of `Stellar.Release`**:
   (new, superuser) — list/create/resend invitations; list orgs for the invite dropdown.
 - `controllers/api/invitation_controller.ex` (new, **public**) — token show + accept.
 
-Tests: `Stellar.Invitations.ServiceTest`,
-`StellarWeb.Api.InvitationControllerTest` (admin 201 / non-superuser 403 / no-token 401;
-public show + accept), `StellarWeb.Api.DocumentUploadTest`, `StellarMs.S3StorageTest`.
+Tests: `Josjob.Invitations.ServiceTest`,
+`JosjobWeb.Api.InvitationControllerTest` (admin 201 / non-superuser 403 / no-token 401;
+public show + accept), `JosjobWeb.Api.DocumentUploadTest`, `JosjobMs.S3StorageTest`.
 
 ### 5.4 Object storage (S3 / MinIO) for non-video docs
 
 Teachers upload **video** via the existing Cloudflare Stream path, and **pdf/doc**
 via a new S3-compatible facade:
 
-- **`StellarMs.Storage`** (new) — provider-agnostic facade, kept separate from the
-  `StellarMs` video facade and `StellarMs.Realtime` so their `configured?/0` don't
-  collide. Delegates to `StellarMs.S3Storage`.
-- **`StellarMs.S3Storage`** (new) — presigned **PUT** URLs for R2 / S3 / MinIO.
+- **`JosjobMs.Storage`** (new) — provider-agnostic facade, kept separate from the
+  `JosjobMs` video facade and `JosjobMs.Realtime` so their `configured?/0` don't
+  collide. Delegates to `JosjobMs.S3Storage`.
+- **`JosjobMs.S3Storage`** (new) — presigned **PUT** URLs for R2 / S3 / MinIO.
   Signs `AWS4-HMAC-SHA256` query-string URLs **locally via `:crypto`** — no AWS SDK,
-  no network call — keeping `stellar_ms` a leaf app. Config under the `:stellar_ms`
+  no network call — keeping `josjob_ms` a leaf app. Config under the `:josjob_ms`
   otp_app key.
 - `document_controller.ex` — new `create_upload/2` (`POST /api/documents/upload-url`,
   mints the presigned URL) and `create/2` (`POST /api/documents`, persists a standalone
-  `StellarDoc.Documents.Document` with `course_id: nil`). Both require the caller to
+  `JosjobDoc.Documents.Document` with `course_id: nil`). Both require the caller to
   belong to an org (`Authz.active_org_id`).
 - FE: `services/documents_api.dart` gained `requestUploadUrl` / `uploadBytes` (raw PUT
   to the presigned URL) / `createDocument`; `teacher/upload_document_page.dart` (new)
@@ -381,7 +381,7 @@ via a new S3-compatible facade:
 
 ## 6. New / changed HTTP API surface
 
-All routes are in `apps/stellar_web/lib/stellar_web/router.ex`. New pipeline
+All routes are in `apps/josjob_web/lib/josjob_web/router.ex`. New pipeline
 `:require_superuser_api`.
 
 | Method | Path | Auth (pipeline) | Purpose |
@@ -416,7 +416,7 @@ Superuser pipeline = `[:api, :api_auth, :require_superuser_api]`.
 | `courses` | `+ price_cents bigint NULL`, `+ currency text NOT NULL default 'usd'` | `20260726160000_add_course_price.exs` |
 | `invitations` | **New table** (email, role_key, token, status, expires_at, audit uuids, `organization_id` FK) | `20260725143443_create_invitations.exs` |
 
-Resource snapshots added under `apps/stellar/priv/resource_snapshots/repo/` for
+Resource snapshots added under `apps/josjob/priv/resource_snapshots/repo/` for
 `courses/` (both migrations) and `invitations/`. No schema change to `Enrollment`,
 `Membership`, `MembershipRole`, `Payment`, or `Document` — those are reused as-is.
 
@@ -426,25 +426,25 @@ Resource snapshots added under `apps/stellar/priv/resource_snapshots/repo/` for
 
 `config/config.exs`:
 
-- `Stellar.Invitations` added to `ash_domains` for **both** `:stellar` and `:stellar_web`.
-- `config :stellar, :mail_from, {"Stellar", "no-reply@stellar.local"}`.
-- `config :stellar, :fe_base_url, "http://localhost:8081"` (used to build invite links).
+- `Josjob.Invitations` added to `ash_domains` for **both** `:josjob` and `:josjob_web`.
+- `config :josjob, :mail_from, {"JosJob", "no-reply@josjob.local"}`.
+- `config :josjob, :fe_base_url, "http://localhost:8081"` (used to build invite links).
 
 `config/runtime.exs`:
 
-- `FE_BASE_URL` overrides `:stellar, :fe_base_url`.
-- New `config :stellar_ms, StellarMs.S3Storage` block (all optional; unset ⇒
+- `FE_BASE_URL` overrides `:josjob, :fe_base_url`.
+- New `config :josjob_ms, JosjobMs.S3Storage` block (all optional; unset ⇒
   `configured?/0` is `false` and real doc uploads are skipped).
 
 | Env var | Consumed by | Default |
 | :--- | :--- | :--- |
 | `FE_BASE_URL` | invite accept link | `http://localhost:8081` |
-| `S3_ENDPOINT` | `StellarMs.S3Storage` | — |
-| `S3_REGION` | `StellarMs.S3Storage` | `auto` |
-| `S3_BUCKET` | `StellarMs.S3Storage` | — |
-| `S3_ACCESS_KEY_ID` | `StellarMs.S3Storage` | — |
-| `S3_SECRET_ACCESS_KEY` | `StellarMs.S3Storage` | — |
-| `S3_PUBLIC_BASE_URL` | `StellarMs.S3Storage` | — |
+| `S3_ENDPOINT` | `JosjobMs.S3Storage` | — |
+| `S3_REGION` | `JosjobMs.S3Storage` | `auto` |
+| `S3_BUCKET` | `JosjobMs.S3Storage` | — |
+| `S3_ACCESS_KEY_ID` | `JosjobMs.S3Storage` | — |
+| `S3_SECRET_ACCESS_KEY` | `JosjobMs.S3Storage` | — |
+| `S3_PUBLIC_BASE_URL` | `JosjobMs.S3Storage` | — |
 | `SEED_SUPERUSER_PASSWORD` | release seeder | `superuser123` |
 
 > [!NOTE]
@@ -452,7 +452,7 @@ Resource snapshots added under `apps/stellar/priv/resource_snapshots/repo/` for
 > `STRIPE_WEBHOOK_SECRET`, `STRIPE_API_BASE`) are **pre-existing** (payments gateway
 > branch) and are only *consumed* here — this branch did not add them.
 
-Other: `apps/stellar_fe/Dockerfile` adds `--pwa-strategy=none` to `flutter build web`
+Other: `apps/josjob_fe/Dockerfile` adds `--pwa-strategy=none` to `flutter build web`
 so a browser refresh always loads the latest bundle; the admin course form
 (`admin/course_html.ex`) gained an `is_public` checkbox.
 
@@ -462,8 +462,8 @@ so a browser refresh always loads the latest bundle; the admin course form
 
 **New backend files:**
 `invitations.ex` + `invitations/{invitation,service,email}.ex`, `rbac/catalog.ex`,
-`rbac/provisioning.ex`, `stellar_lrn/seeds.ex`, `stellar_ms/{storage,s3_storage}.ex`,
-`stellar_web/enrollments.ex`, `plugs/require_superuser_api.ex`,
+`rbac/provisioning.ex`, `josjob_lrn/seeds.ex`, `josjob_ms/{storage,s3_storage}.ex`,
+`josjob_web/enrollments.ex`, `plugs/require_superuser_api.ex`,
 `controllers/api/{class_controller,invitation_controller,user_serializer}.ex`,
 `controllers/api/admin/{invitation_controller,organization_controller}.ex`,
 3 migrations + 3 snapshots, 5 test files.
@@ -487,9 +487,9 @@ Explore + dashboard Dart parts.
 
 ## 10. Verification & housekeeping
 
-- **Tests present** (not run while writing this doc): `Stellar.Invitations.ServiceTest`,
-  `StellarLrn.Learning.LiveGateTest`, `StellarWeb.Api.InvitationControllerTest`,
-  `StellarWeb.Api.DocumentUploadTest`, `StellarMs.S3StorageTest`.
+- **Tests present** (not run while writing this doc): `Josjob.Invitations.ServiceTest`,
+  `JosjobLrn.Learning.LiveGateTest`, `JosjobWeb.Api.InvitationControllerTest`,
+  `JosjobWeb.Api.DocumentUploadTest`, `JosjobMs.S3StorageTest`.
 - **Known test gaps:** no seeder test; no channel-level test for the `class:<id>` live
   gate (covered only at the domain layer).
 - **Not committed** — everything above is uncommitted working-tree changes.

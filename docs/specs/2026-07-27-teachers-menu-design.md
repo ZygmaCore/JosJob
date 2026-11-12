@@ -14,7 +14,7 @@ mereka ajar, tanpa menelusuri menu Memberships/Membership Roles/Classes satu
 per satu. "Teacher" **bukan entitas baru** — ia adalah user dengan membership
 `active` yang mengemban role `key == "teacher"` di sebuah org (pola yang sama
 dengan pencarian pengajar di form class, lihat `teacher_users/1` di
-`StellarWeb.Admin.ClassController`). Fitur ini murni view + dua aksi di atas
+`JosjobWeb.Admin.ClassController`). Fitur ini murni view + dua aksi di atas
 data yang sudah ada; tidak ada perubahan schema selain seed permission baru.
 
 ## Ruang lingkup
@@ -60,7 +60,7 @@ link dari list sudah membawa org yang tepat).
   - Jadwal: render array `schedule` per sesi (hari/tanggal + jam, sesuai bentuk
     map yang dipakai form Classes).
   - Judul class menjadi link ke `/classes/:id/edit` bila user punya izin
-    kelola class (cek `StellarWeb.Perms.can?` yang sama dengan list Classes).
+    kelola class (cek `JosjobWeb.Perms.can?` yang sama dengan list Classes).
 - Tanpa form apa pun.
 
 ## Delete
@@ -91,15 +91,15 @@ baru lewat menu Classes.
 
 ## Implementasi (arah, bukan rencana rinci)
 
-- Controller baru `StellarWeb.Admin.TeacherController` (index, show, delete).
+- Controller baru `JosjobWeb.Admin.TeacherController` (index, show, delete).
 - Ekstrak helper privat pencarian teacher di `ClassController`
   (`teacher_users/1`, `teacher_membership_ids/1`, `active_user_ids/2`,
   `teacher_role_query/2`, `teacher_pairs/1`) ke modul bersama
-  `StellarWeb.Teachers`, dipakai kedua controller — satu sumber kebenaran
+  `JosjobWeb.Teachers`, dipakai kedua controller — satu sumber kebenaran
   "siapa itu teacher".
 - Query class per teacher: `Class` filter `organization_id` + `instructor_id`,
   load `course` + hitung enrollment aktif (pakai pola `seats_left`/count yang
-  sudah ada di `StellarLrn.Learning`).
+  sudah ada di `JosjobLrn.Learning`).
 
 ## Testing
 

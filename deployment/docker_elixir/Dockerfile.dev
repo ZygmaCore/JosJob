@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7-labs
 # =============================================================================
-# Build image untuk release umbrella `stellar` (semua apps + endpoint Phoenix).
+# Build image untuk release umbrella `josjob` (semua apps + endpoint Phoenix).
 #
 # Multi-stage:
-#   builder : copy source umbrella -> mix release stellar (MIX_ENV=prod)
+#   builder : copy source umbrella -> mix release josjob (MIX_ENV=prod)
 #   runner  : image minimal, hanya berisi hasil release (tanpa source/Elixir)
 #
 # Versi Elixir/OTP diselaraskan dengan .tool-versions (elixir 1.19.5-otp-27).
@@ -37,7 +37,7 @@ RUN apt-get update -y && \
     rm -rf libheif-1.21.2* && \
     apt-get clean && rm -f /var/lib/apt/lists/*_*
 
-# Toolchain Rust untuk kompilasi NIF (stellar_rag -> xberg -> rustler). Dipasang
+# Toolchain Rust untuk kompilasi NIF (josjob_rag -> xberg -> rustler). Dipasang
 # via rustup (stable minimal) agar deps.compile bisa build NIF dari source bila
 # rustler_precompiled tak menemukan binary prebuilt untuk target.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
@@ -69,15 +69,15 @@ RUN mix deps.compile
 # --- Source lengkap ---
 COPY apps apps
 
-# Build & digest asset stellar_web (tailwind + esbuild + phx.digest).
+# Build & digest asset josjob_web (tailwind + esbuild + phx.digest).
 # Dijalankan di dalam app-nya; config/deps/build tetap mengacu ke root umbrella.
-RUN cd apps/stellar_web && mix assets.setup && mix assets.deploy
+RUN cd apps/josjob_web && mix assets.setup && mix assets.deploy
 
 # Overlays (rel/overlays/bin/server, bin/migrate) ikut disalin ke release.
 COPY rel rel
 
-# Rakit release umbrella `stellar`.
-RUN mix release stellar
+# Rakit release umbrella `josjob`.
+RUN mix release josjob
 
 # =============================================================================
 # Runner — image final minimal (tanpa source code / Elixir / build tools).
@@ -110,8 +110,8 @@ RUN chown nobody /app
 
 ENV MIX_ENV="prod"
 
-# Hanya salin hasil release (folder rel/stellar) dari builder.
-COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/stellar ./
+# Hanya salin hasil release (folder rel/josjob) dari builder.
+COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/josjob ./
 
 USER nobody
 

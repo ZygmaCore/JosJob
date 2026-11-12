@@ -41,14 +41,14 @@ graph TD
 
 ```elixir
 # Quiz Resource
-defmodule Stellar.Assessments.Quiz do
+defmodule Josjob.Assessments.Quiz do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "quizzes"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -58,9 +58,9 @@ defmodule Stellar.Assessments.Quiz do
   end
 
   relationships do
-    belongs_to :course, Stellar.Courses.Course
-    belongs_to :lecture, Stellar.Courses.Lecture # Optional, only for lecture-level
-    has_many :questions, Stellar.Assessments.Question
+    belongs_to :course, Josjob.Courses.Course
+    belongs_to :lecture, Josjob.Courses.Lecture # Optional, only for lecture-level
+    has_many :questions, Josjob.Assessments.Question
   end
 
   actions do
@@ -70,14 +70,14 @@ defmodule Stellar.Assessments.Quiz do
 end
 
 # Question Resource
-defmodule Stellar.Assessments.Question do
+defmodule Josjob.Assessments.Question do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "questions"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -90,7 +90,7 @@ defmodule Stellar.Assessments.Question do
   end
 
   relationships do
-    belongs_to :quiz, Stellar.Assessments.Quiz
+    belongs_to :quiz, Josjob.Assessments.Quiz
   end
 
   actions do
@@ -100,14 +100,14 @@ defmodule Stellar.Assessments.Question do
 end
 
 # Student Assessment Submission Resource
-defmodule Stellar.Assessments.Submission do
+defmodule Josjob.Assessments.Submission do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "submissions"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -118,8 +118,8 @@ defmodule Stellar.Assessments.Submission do
   end
 
   relationships do
-    belongs_to :student, Stellar.Accounts.User
-    belongs_to :quiz, Stellar.Assessments.Quiz
+    belongs_to :student, Josjob.Accounts.User
+    belongs_to :quiz, Josjob.Assessments.Quiz
   end
 
   actions do
@@ -160,7 +160,7 @@ Any ingress event that changes quiz or poll state (e.g., starting a question, en
 def handle_in("start_question", payload, socket) do
   # Evaluates permissions using Ash actor and rbac credentials
   actor = socket.assigns.actor
-  if actor.role in ["instructor", "admin"] or Stellar.Courses.is_assigned_ta?(actor.id, socket.assigns.course_id) do
+  if actor.role in ["instructor", "admin"] or Josjob.Courses.is_assigned_ta?(actor.id, socket.assigns.course_id) do
     # Proceed to broadcast question_start
     {:reply, :ok, socket}
   else

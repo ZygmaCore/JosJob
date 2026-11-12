@@ -65,7 +65,7 @@ listing slice. The open PRD publication-policy question has not been recorded
 as a team decision.
 
 The former hard-coded board data is preserved under
-`apps/stellar_fe/test/fixtures/legacy_job_samples.dart` as clearly labeled
+`apps/josjob_fe/test/fixtures/legacy_job_samples.dart` as clearly labeled
 synthetic fixtures and is never imported by production UI. No synthetic jobs
 are inserted into a database automatically.
 

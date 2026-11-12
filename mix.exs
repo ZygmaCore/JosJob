@@ -1,20 +1,20 @@
-defmodule Stellar.Umbrella.MixProject do
+defmodule Josjob.Umbrella.MixProject do
   use Mix.Project
 
   def project do
     [
       apps_path: "apps",
       apps: [
-        :stellar,
-        :stellar_job,
-        :stellar_lrn,
-        :stellar_ai,
-        :stellar_doc,
-        :stellar_ms,
-        :stellar_quiz,
-        :stellar_rag,
-        :stellar_rt,
-        :stellar_web
+        :josjob,
+        :josjob_job,
+        :josjob_lrn,
+        :josjob_ai,
+        :josjob_doc,
+        :josjob_ms,
+        :josjob_quiz,
+        :josjob_rag,
+        :josjob_rt,
+        :josjob_web
       ],
       version: "0.1.0",
       start_permanent: Mix.env() == :prod,
@@ -29,24 +29,24 @@ defmodule Stellar.Umbrella.MixProject do
     ]
   end
 
-  # Definisi release umbrella. Satu release `stellar` yang memuat SEMUA app
-  # umbrella (termasuk stellar_web yang menjalankan endpoint Phoenix).
-  # Dibangun di Dockerfile via `MIX_ENV=prod mix release stellar`.
+  # Definisi release umbrella. Satu release `josjob` yang memuat SEMUA app
+  # umbrella (termasuk josjob_web yang menjalankan endpoint Phoenix).
+  # Dibangun di Dockerfile via `MIX_ENV=prod mix release josjob`.
   defp releases do
     [
-      stellar: [
+      josjob: [
         version: "0.1.0",
         applications: [
-          stellar: :permanent,
-          stellar_ai: :permanent,
-          stellar_doc: :permanent,
-          stellar_job: :permanent,
-          stellar_lrn: :permanent,
-          stellar_ms: :permanent,
-          stellar_quiz: :permanent,
-          stellar_rag: :permanent,
-          stellar_rt: :permanent,
-          stellar_web: :permanent
+          josjob: :permanent,
+          josjob_ai: :permanent,
+          josjob_doc: :permanent,
+          josjob_job: :permanent,
+          josjob_lrn: :permanent,
+          josjob_ms: :permanent,
+          josjob_quiz: :permanent,
+          josjob_rag: :permanent,
+          josjob_rt: :permanent,
+          josjob_web: :permanent
         ]
       ]
     ]

@@ -43,14 +43,14 @@ terdokumentasi), bukan magic number di tengah fungsi.
 - Placement quiz, lecture/section quiz, live quiz & poll, gamifikasi
   leaderboard, progress heartbeat, gating (90%/70%/75%), sertifikat PDF
   bertanda SHA256 + verifikasi QR.
-- Status saat ini: desain + UI Flutter sample saja; `stellar_quiz` masih
+- Status saat ini: desain + UI Flutter sample saja; `josjob_quiz` masih
   stub. Bila dikerjakan nanti, resource `Quiz/Question/Submission/
   EnrollmentProgress/Certificate` harus dibuat dari nol, dan gating harus
   divalidasi server-side (bukan hanya di UI).
 
 ## 4. RAG Q&A streaming (desain di docs/09)
 
-- Ingestion ke Atomic Server sudah ada (`stellar_rag`). Yang belum ada:
+- Ingestion ke Atomic Server sudah ada (`josjob_rag`). Yang belum ada:
   retrieval visibility-aware + streaming jawaban via channel
   `user:ai_assistant:*` (channel itu tidak terpasang di `UserSocket`).
 - Bila dikerjakan nanti: retrieval harus menghormati visibility per-course
@@ -75,7 +75,7 @@ terdokumentasi), bukan magic number di tengah fungsi.
   monitoring/observability (log, metrik, alert), rate limit di edge
   (Cloudflare), dan rencana kalau VPS down saat demo/penjurian.
 - Cloudflare: DNS + TLS + CDN di depan VPS, bareng streaming yang sudah ada
-  di Stellar.
+  di Josjob.
 - Pertimbangkan: apakah 9Router tetap di VPS yang sama atau dipisah?
   Bila dipisah, akses localhost-only tidak lagi berlaku dan butuh desain
   jaringan + autentikasi antar service yang baru.

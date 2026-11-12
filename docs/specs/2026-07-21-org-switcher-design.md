@@ -10,9 +10,9 @@
 - Tanpa perubahan skema.
 
 ## Komponen
-1. **`Stellar.Authz.member_orgs/1`** → daftar `%{id, name}` organisasi tempat user member **aktif** (urut nama). Non-member/`nil` → `[]`.
+1. **`Josjob.Authz.member_orgs/1`** → daftar `%{id, name}` organisasi tempat user member **aktif** (urut nama). Non-member/`nil` → `[]`.
 2. **Plug `AssignActiveOrg`** → tambah `conn.assigns.member_orgs` (superuser → `[]`, tanpa query).
-3. **`POST /switch-org`** (gate `[:browser, :require_member]`), `StellarWeb.OrgSwitchController.update/2`:
+3. **`POST /switch-org`** (gate `[:browser, :require_member]`), `JosjobWeb.OrgSwitchController.update/2`:
    - Validasi `organization_id` ∈ `member_orgs(user)` (kalau bukan → abaikan, tak set).
    - `put_session("active_organization_id", org_id)` → redirect `/dashboard`.
 4. **UI** (`Layouts.admin` top bar): dropdown bila `length(member_orgs) >= 2`; menampilkan nama org aktif; tiap item = `<.form method="post" action={~p"/switch-org"}>` + hidden `organization_id` (CSRF otomatis). Org aktif ditandai.
