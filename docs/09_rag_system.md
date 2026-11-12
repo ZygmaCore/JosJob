@@ -86,14 +86,14 @@ USING hnsw (embedding vector_cosine_ops);
 
 ### Ash Resource Map
 ```elixir
-defmodule Stellar.AI.DocumentEmbedding do
+defmodule Josjob.AI.DocumentEmbedding do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "document_embeddings"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -105,9 +105,9 @@ defmodule Stellar.AI.DocumentEmbedding do
   end
 
   relationships do
-    belongs_to :course, Stellar.Courses.Course
-    belongs_to :lecture, Stellar.Courses.Lecture
-    belongs_to :instructor, Stellar.Accounts.User
+    belongs_to :course, Josjob.Courses.Course
+    belongs_to :lecture, Josjob.Courses.Lecture
+    belongs_to :instructor, Josjob.Accounts.User
   end
 
   actions do
@@ -124,13 +124,13 @@ end
 When searching vectors, the PostgreSQL query applies metadata filters based on the user's authentication and active enrollments:
 
 ```elixir
-defmodule Stellar.AI.RAGService do
-  alias Stellar.AI.DocumentEmbedding
+defmodule Josjob.AI.RAGService do
+  alias Josjob.AI.DocumentEmbedding
 
   # Queries the database for relevant chunks, enforcing access controls using Ash
   def retrieve_context(query_vector, user_id, current_course_id) do
-    # Fetch user enrollments using Stellar.Courses domain
-    enrolled_course_ids = Stellar.Courses.list_enrolled_course_ids(user_id)
+    # Fetch user enrollments using Josjob.Courses domain
+    enrolled_course_ids = Josjob.Courses.list_enrolled_course_ids(user_id)
 
     DocumentEmbedding
     # Vector similarity selection using <=> (cosine distance via fragment)

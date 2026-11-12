@@ -48,17 +48,17 @@ implementasi, dan pengujian — sesuai rincian tugas di Notion.
 | Lomba | STACK 2026, GDGoC ITB (Solution Technology Arena for Coding & Knowledge) |
 | Tema | "Agent of the Ocean: Vibing Beyond the Code" — proyek **tidak wajib** soal kelautan, AI agent **tidak wajib** |
 
-### 2.2 Fondasi: Stellar (renovasi, bukan bangun ulang)
+### 2.2 Fondasi: JosJob (renovasi, bukan bangun ulang)
 
-Project lomba ini ditaruh **ON TOP dari Stellar yang sudah ada** — singkatnya
-Stellar direnovasi. Stellar adalah project lama teman tim:
+Project lomba ini ditaruh **ON TOP dari JosJob yang sudah ada** — singkatnya
+JosJob direnovasi. JosJob adalah project lama teman tim:
 
 - Repo: `https://github.com/ZygmaCore/job-seeker-ai` (publik, 1 commit init
   `11e9529`, 9 November 2026, 823 file).
-- Nama di repo: **Stellar / Atveti Stellar** — "Online Learning & AI Job
+- Nama di repo: **JosJob / JosJob** — "Online Learning & AI Job
   Placement".
 - Stack: Elixir/Phoenix 1.8 + Ash Framework (umbrella, 10 apps, satu rilis OTP
-  `stellar`) + Flutter Web (satu aplikasi unified).
+  `josjob`) + Flutter Web (satu aplikasi unified).
 - Yang **sudah jalan** (terverifikasi di code): learning terstruktur
   `Section → Course → Class → Enrollment`, katalog org-scoped, enroll gratis
   atau berbayar Stripe, dokumen sebagai materi + sharing per-grant, VOD HLS
@@ -67,15 +67,15 @@ Stellar direnovasi. Stellar adalah project lama teman tim:
   wajib, RAG ingestion per-course ke Atomic Server, offline-first Flutter
   (Drift + SQLite outbox), CMS LiveView + AshAdmin.
 - Yang **belum jalan** (stub / UI-only, jangan diklaim sebagai fitur jadi):
-  backend jobs (`apps/stellar_job` stub kosong), quiz (`stellar_quiz` stub),
-  realtime (`stellar_rt` stub); Jobs board Flutter hanya UI dengan 6 lowongan
+  backend jobs (`apps/josjob_job` stub kosong), quiz (`josjob_quiz` stub),
+  realtime (`josjob_rt` stub); Jobs board Flutter hanya UI dengan 6 lowongan
   hard-coded; agent `HeadHunter`/`TeacherAssistant` (Jido) minimal dengan TODO
   skill-matching; RAG Q&A streaming, sertifikat, dan FCM hanya ada di
   `docs/01–10` sebagai desain.
 
 **Keputusan arsitektur yang sudah final:** stack microservices polyglot
 (Go/TypeScript/Python, Kong, RabbitMQ) dari PRD awal **gugur**. Yang dipakai
-adalah stack Stellar (Elixir/Phoenix + Ash + Flutter, modular monolith).
+adalah stack JosJob (Elixir/Phoenix + Ash + Flutter, modular monolith).
 Abstrak menyebut "monorepo of independently deployable microservices" —
 wording itu milik abstrak sebagai dokumen submission; code yang berlaku untuk
 build adalah monolith satu rilis OTP. Perbedaan ini dicatat sebagai ketegangan
@@ -84,7 +84,7 @@ yang diketahui, bukan disembunyikan (lihat `NOTES.md`).
 ### 2.3 Data lowongan
 
 - **Scraping Glints/Upwork/board lain: BATAL.** Itu plan lama saja.
-- Plan terbaru mengacu ke abstrak + ringkasan Stellar: lowongan berasal dari
+- Plan terbaru mengacu ke abstrak + ringkasan JosJob: lowongan berasal dari
   **employer yang memposting sendiri** dan **data synthetic** selama
   development/demo (sesuai abstrak: "development uses synthetic data").
 - Semua data demo harus diidentifikasi dengan jelas sebagai synthetic
@@ -117,7 +117,7 @@ apa yang diminta employer dan apa yang dipelajari graduate.
   di dokumen resmi manapun.** Abstrak yang diupload masih memuat baris
   disclaimer bahwa nama/angka/data di dalamnya diciptakan untuk contoh gaya;
   baris itu harus dihapus sebelum submission.
-- Bukti dari repo: learning platform Stellar sudah berjalan (lihat §2.2).
+- Bukti dari repo: learning platform JosJob sudah berjalan (lihat §2.2).
   Tidak ada data riset pengguna/wawancara, analitik produk, atau angka dampak
   lain di repo — semuanya harus ditandai sebagai "perlu diisi tim" bila ingin
   dicantumkan.
@@ -207,7 +207,7 @@ Prioritas: **M** = Must (MVP), **S** = Should (bila waktu memungkinkan),
 | F5 | Upload CV (PDF), simpan, hapus, reuse untuk apply | M | frontdev + backdev |
 | F6 | AI CV Analyzer: ekstraksi terstruktur (skill, pengalaman, pendidikan) | M | backdev |
 | F7 | Ranking perusahaan/lowongan + penjelasan skor + skill yang hilang | M | backdev + frontdev |
-| F8 | Hook skill hilang → learning path (kursus/kelas Stellar) | M | frontdev + backdev |
+| F8 | Hook skill hilang → learning path (kursus/kelas JosJob) | M | frontdev + backdev |
 | F9 | Apply lamaran + riwayat lamaran + status lamaran | M | frontdev + backdev |
 | F10 | Employer: posting/kelola lowongan, lihat pelamar, ubah status | M | backdev + frontdev |
 | F11 | Learning: katalog, enroll class (gratis/berbayar Stripe), materi, VOD, live | M (sudah ada) | — (renovasi) |
@@ -225,14 +225,14 @@ Prioritas: **M** = Must (MVP), **S** = Should (bila waktu memungkinkan),
 | Privasi | Patuh GDPR (keputusan tim). Consent eksplisit sebelum CV diproses (checkbox). CV **tidak** dihapus otomatis setelah ekstraksi — user boleh hapus atau biarkan; CV yang disimpan dapat dipakai ulang untuk apply. "Hapus" harus menghapus file, teks hasil ekstraksi, dan embedding-nya. CV dikirim ke pihak ketiga (Gemini / provider di 9Router) — harus diungkap di Privacy Policy. Lokasi hanya dari jawaban user, disimpan di local browser saja, bukan di server. IP lookup: DIBUANG. |
 | Performa | Analisis CV berjalan asinkron (Oban) — user tidak menunggu di halaman upload. Embedding CV dihitung sekali per versi CV; embedding lowongan sekali saat dibuat. Target angka performa belum disepakati — lihat `METRICS.md`. |
 | Reliabilitas | Fallback berlapis: Gemini → 9Router (round-robin model gratis) → keyword/skill overlap. Kegagalan satu provider tidak boleh menggantung antrean. |
-| Deployment | VPS (sudah dites build + deploy Stellar oleh user, jalan tanpa user — cukup untuk demo). Domain sudah ada. Cloudflare dipakai nanti (bareng streaming yang sudah ada di Stellar). Bila menang dan go public, arsitektur deployment dimatangkan lagi. |
+| Deployment | VPS (sudah dites build + deploy JosJob oleh user, jalan tanpa user — cukup untuk demo). Domain sudah ada. Cloudflare dipakai nanti (bareng streaming yang sudah ada di JosJob). Bila menang dan go public, arsitektur deployment dimatangkan lagi. |
 | Keterujian | Test manual untuk full flag (dengan model asli). **Tanpa** model Gemini di CI/CD (hindari rate limit). AI di CI diganti mock/stub. Lihat `backdev/PRD.md` §9. |
 | Aksesibilitas & UX | Ranking harus bisa dijelaskan tiap itemnya. Semua state (loading, kosong, error, tidak terbaca) punya pesan yang jelas. |
 
 ## 7. Model bisnis
 
 Monetisasi ada di sisi **pembelajaran/course** — kompetensi pengguna mengikuti
-pekerjaan yang diimpikan. Mekanisme ini sudah ada di Stellar: course berbayar
+pekerjaan yang diimpikan. Mekanisme ini sudah ada di JosJob: course berbayar
 via `price_cents` + Stripe (PaymentIntent/Checkout/Subscription). Sisi job
 (match, ranking, apply) gratis untuk graduate. Tidak ada angka harga atau
 pendapatan di dokumen ini — tidak ada datanya di repo.
@@ -240,17 +240,17 @@ pendapatan di dokumen ini — tidak ada datanya di repo.
 ## 8. Arsitektur (ringkas)
 
 ```
-Flutter Web (renovasi, apps/stellar_fe) — landing, auth, onboarding,
+Flutter Web (renovasi, apps/josjob_fe) — landing, auth, onboarding,
 dashboard Learn | Jobs, jobs, CV upload, apply, kursus
         │
         ▼  HTTPS + Bearer JWT
-Phoenix 1.8 API + LiveView (apps/stellar_web, :4000) — /api/*, /socket
+Phoenix 1.8 API + LiveView (apps/josjob_web, :4000) — /api/*, /socket
         │
         ▼
-Domain Ash (apps/stellar, stellar_lrn, stellar_doc, stellar_ms, stellar_rag)
-  ├─ stellar_job — BARU (hackathon): Job, Application, Company listing
-  ├─ stellar_ai  — BARU (hackathon): CV extraction + matching (Jido agents)
-  └─ stellar_lrn / stellar_doc / stellar_ms — sudah ada (renovasi)
+Domain Ash (apps/josjob, josjob_lrn, josjob_doc, josjob_ms, josjob_rag)
+  ├─ josjob_job — BARU (hackathon): Job, Application, Company listing
+  ├─ josjob_ai  — BARU (hackathon): CV extraction + matching (Jido agents)
+  └─ josjob_lrn / josjob_doc / josjob_ms — sudah ada (renovasi)
         │
         ▼
 ParadeDB (PostgreSQL) :5438 + Cloudflare Stream/Realtime + S3-compatible
@@ -260,7 +260,7 @@ ParadeDB (PostgreSQL) :5438 + Cloudflare Stream/Realtime + S3-compatible
   bind 127.0.0.1:20128, hanya backend yang dapat menjangkau)
 ```
 
-Keputusan: **modular monolith**, satu rilis OTP `stellar`, deploy via Docker
+Keputusan: **modular monolith**, satu rilis OTP `josjob`, deploy via Docker
 Compose di VPS. Bukan microservices yang di-deploy terpisah. Detail ada di
 `backdev/PRD.md` §2. Diagram alur AI ada di `backdev/PRD.md` §4.
 
@@ -300,7 +300,7 @@ Compose di VPS. Bukan microservices yang di-deploy terpisah. Detail ada di
 - CV: file PDF + teks hasil ekstraksi + skill terstruktur + embedding (satu
   per versi CV). Disimpan selama user tidak menghapusnya; dapat dipakai ulang
   untuk apply.
-- Skill taxonomy: pakai master data Stellar yang sudah ada
+- Skill taxonomy: pakai master data JosJob yang sudah ada
   (industries/skills/professions) sebagai dasar.
 - Model data lengkap: `backdev/PRD.md` §6.
 
@@ -334,9 +334,9 @@ dengan jujur di sini, bukan ditutup-tutupi.
 | Jenis | Isi |
 | --- | --- |
 | Asumsi | Kuota Gemini free tier cukup untuk demo (puluhan CV). Satu model embedding + satu LLM cukup untuk v1. VPS yang sudah dites cukup untuk demo tanpa user. |
-| Batasan | Gemini free tier: rate limit, tanpa SLA. 9Router: butuh key provider sendiri; CVE-2026-49352 pernah dilaporkan di 9Router; integrasi gaya MITM untuk langganan IDE tertentu harus dicek kebijakannya. Handbook: proyek harus baru untuk STACK 2026 — Stellar adalah basis yang sudah ada dan harus diatribusi, bukan disajikan sebagai karya orisinil tim. |
-| Dependensi | VPS + domain + Cloudflare (nanti); key Gemini; key provider di 9Router; repo Stellar; keputusan backdev/frontdev yang masih terbuka (lihat `DECISIONS.md`). |
-| Risiko | **Originality** (terbesar dari sisi lomba): reuse Stellar vs aturan "existing projects may not be resubmitted/renamed/repackaged" — mitigasi: klaim hanya pekerjaan baru selama lomba, atribusi Stellar, Declaration of Originality di semifinal, riwayat dev yang bisa diverifikasi. **Konsistensi skor** dari round-robin free model. **Rate limit** Gemini di tengah demo. **Angka BPS** belum terverifikasi. **Deadline**: semifinal 30 Nov (proposal + video), Final Day 16 Des. |
+| Batasan | Gemini free tier: rate limit, tanpa SLA. 9Router: butuh key provider sendiri; CVE-2026-49352 pernah dilaporkan di 9Router; integrasi gaya MITM untuk langganan IDE tertentu harus dicek kebijakannya. Handbook: proyek harus baru untuk STACK 2026 — JosJob adalah basis yang sudah ada dan harus diatribusi, bukan disajikan sebagai karya orisinil tim. |
+| Dependensi | VPS + domain + Cloudflare (nanti); key Gemini; key provider di 9Router; repo JosJob; keputusan backdev/frontdev yang masih terbuka (lihat `DECISIONS.md`). |
+| Risiko | **Originality** (terbesar dari sisi lomba): reuse JosJob vs aturan "existing projects may not be resubmitted/renamed/repackaged" — mitigasi: klaim hanya pekerjaan baru selama lomba, atribusi JosJob, Declaration of Originality di semifinal, riwayat dev yang bisa diverifikasi. **Konsistensi skor** dari round-robin free model. **Rate limit** Gemini di tengah demo. **Angka BPS** belum terverifikasi. **Deadline**: semifinal 30 Nov (proposal + video), Final Day 16 Des. |
 | Pertanyaan terbuka | Lihat `DECISIONS.md` (level tim), `backdev/OPEN-QUESTIONS.md`, `frontdev/OPEN-QUESTIONS.md`. |
 
 ## 14. Timeline lomba (23:59 WIB)
@@ -365,6 +365,6 @@ dengan jujur di sini, bukan ditutup-tutupi.
 - Repo `ZygmaCore/job-seeker-ai` — `README.md`, `docs/ringkasan-project-untuk-abstrak.md`,
   `docs/01–10`, `docs/api/*`, `docs/specs/*`, `CLAUDE.md`.
 - Plan awal tim (`plan__sebelum_penambahan_stelar.md`) dan PRD awal
-  (`PRD_awal__sebelum_penambahan_stellar.md`) — keduanya **sebelum**
-  penambahan Stellar; plan scraping dan stack microservices-nya sudah batal.
+  (`PRD_awal__sebelum_penambahan_josjob.md`) — keduanya **sebelum**
+  penambahan JosJob; plan scraping dan stack microservices-nya sudah batal.
 - `NOTES.md` di folder ini — catatan konteks dan intent lengkap.

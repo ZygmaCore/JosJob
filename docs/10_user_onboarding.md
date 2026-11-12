@@ -52,17 +52,17 @@ To enforce isolation between companies (Employers) and academic institutions (Vo
 
 ### Ash Resource Models
 
-#### 1. Tenant Resource (`Stellar.Accounts.Tenant`)
+#### 1. Tenant Resource (`Josjob.Accounts.Tenant`)
 
 ```elixir
-defmodule Stellar.Accounts.Tenant do
+defmodule Josjob.Accounts.Tenant do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "tenants"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -74,7 +74,7 @@ defmodule Stellar.Accounts.Tenant do
   end
 
   relationships do
-    has_many :users, Stellar.Accounts.User
+    has_many :users, Josjob.Accounts.User
   end
 
   actions do
@@ -84,14 +84,14 @@ defmodule Stellar.Accounts.Tenant do
 end
 ```
 
-#### 2. User Resource (`Stellar.Accounts.User`)
+#### 2. User Resource (`Josjob.Accounts.User`)
 
 The User resource implements `strategy :attribute` to filter queries and mutations automatically.
 
 ```elixir
-defmodule Stellar.Accounts.User do
+defmodule Josjob.Accounts.User do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshAuthentication]
 
@@ -102,14 +102,14 @@ defmodule Stellar.Accounts.User do
 
   postgres do
     table "users"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
     uuid_primary_key :id
     attribute :email, :string, allow_nil?: false
     attribute :role, :string, allow_nil?: false        # "employer", "coordinator", "worker", "graduate", "superuser"
-    attribute :tenant_id, :uuid                        # References Stellar.Accounts.Tenant
+    attribute :tenant_id, :uuid                        # References Josjob.Accounts.Tenant
     
     # For Worker & Graduate onboarding
     attribute :level_of_study, :string                 # "high_school", "undergraduate", "postgraduate", etc.
@@ -119,9 +119,9 @@ defmodule Stellar.Accounts.User do
   end
 
   relationships do
-    belongs_to :tenant, Stellar.Accounts.Tenant, allow_nil?: true
-    has_many :certifications, Stellar.Accounts.Certification
-    has_many :skills, Stellar.Accounts.UserSkill
+    belongs_to :tenant, Josjob.Accounts.Tenant, allow_nil?: true
+    has_many :certifications, Josjob.Accounts.Certification
+    has_many :skills, Josjob.Accounts.UserSkill
   end
 
   actions do
@@ -149,15 +149,15 @@ The onboarding process collects profile information in a conversational, progres
 Both organizational and individual users select one or more business industries (e.g., "Software Engineering", "Healthcare", "Manufacturing", "Finance") that apply to their work scope.
 
 ```elixir
-# Join Resource: Stellar.Accounts.UserIndustry
-defmodule Stellar.Accounts.UserIndustry do
+# Join Resource: Josjob.Accounts.UserIndustry
+defmodule Josjob.Accounts.UserIndustry do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "user_industries"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -165,8 +165,8 @@ defmodule Stellar.Accounts.UserIndustry do
   end
 
   relationships do
-    belongs_to :user, Stellar.Accounts.User, allow_nil?: false, primary_key?: true
-    belongs_to :industry, Stellar.Courses.Industry, allow_nil?: false, primary_key?: true
+    belongs_to :user, Josjob.Accounts.User, allow_nil?: false, primary_key?: true
+    belongs_to :industry, Josjob.Courses.Industry, allow_nil?: false, primary_key?: true
   end
 
   actions do
@@ -185,14 +185,14 @@ For individual workers and fresh graduates, the session collects credentials to 
 
 ```elixir
 # Certification Resource
-defmodule Stellar.Accounts.Certification do
+defmodule Josjob.Accounts.Certification do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "certifications"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -204,7 +204,7 @@ defmodule Stellar.Accounts.Certification do
   end
 
   relationships do
-    belongs_to :user, Stellar.Accounts.User
+    belongs_to :user, Josjob.Accounts.User
   end
 
   actions do
@@ -224,15 +224,15 @@ Employers and Coordinators can invite or bulk-register their subordinates under 
 2.  **Coordinator Subordinate Registration**: Coordinators register their university students / fresh graduates (`graduates`). When created, the API applies the coordinator's `tenant_id` automatically.
 
 ```elixir
-defmodule Stellar.Accounts.SubordinateService do
+defmodule Josjob.Accounts.SubordinateService do
   # Bulk registers subordinate users within the manager's tenant scope
   def register_subordinates(manager_user, subordinate_params_list) do
     # Verify manager permissions using ash_rbac
     if manager_user.role in ["employer", "coordinator"] do
       # Set tenant context to enforce attribute-based scoping
-      Ash.run_transaction(Stellar.Accounts, fn ->
+      Ash.run_transaction(Josjob.Accounts, fn ->
         Enum.map(subordinate_params_list, fn params ->
-          Stellar.Accounts.User
+          Josjob.Accounts.User
           |> Ash.Changeset.for_create(:register, %{
             email: params.email,
             role: if(manager_user.role == "employer", do: "worker", else: "graduate"),
@@ -256,9 +256,9 @@ end
 At the final step of organization onboarding, the manager selects from a catalog of courses and programs. The selected programs are linked as `TrainingOfferings` for their subordinates.
 
 ```elixir
-defmodule Stellar.Courses.TrainingOffering do
+defmodule Josjob.Courses.TrainingOffering do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   multitenancy do
@@ -268,7 +268,7 @@ defmodule Stellar.Courses.TrainingOffering do
 
   postgres do
     table "training_offerings"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -280,8 +280,8 @@ defmodule Stellar.Courses.TrainingOffering do
   end
 
   relationships do
-    belongs_to :tenant, Stellar.Accounts.Tenant
-    belongs_to :course, Stellar.Courses.Course
+    belongs_to :tenant, Josjob.Accounts.Tenant
+    belongs_to :course, Josjob.Courses.Course
   end
 
   actions do
@@ -295,9 +295,9 @@ end
 For individuals, the platform queries training programs (courses) and recommends options matching the industry tags they configured during onboarding:
 
 ```elixir
-defmodule Stellar.Courses.RecommendationService do
-  alias Stellar.Courses.Course
-  alias Stellar.Accounts.UserIndustry
+defmodule Josjob.Courses.RecommendationService do
+  alias Josjob.Courses.Course
+  alias Josjob.Accounts.UserIndustry
 
   # Returns recommended courses matching the user's selected onboarding industries
   def get_recommendations(user) do

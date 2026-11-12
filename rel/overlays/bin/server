@@ -2,4 +2,4 @@
 # Start release dengan endpoint Phoenix aktif (PHX_SERVER dibaca runtime.exs).
 set -eu
 cd -P -- "$(dirname -- "$(readlink -f -- "$0")")"
-PHX_SERVER=true exec ./stellar start
+PHX_SERVER=true exec ./josjob start

@@ -17,9 +17,9 @@ Bukan tujuan pilot: memigrasikan menu lain, pagination/sorting/streams.
 
 ## Kondisi sekarang (yang diganti)
 
-- `StellarWeb.Admin.SkillController` (index dengan search `q` + filter
+- `JosjobWeb.Admin.SkillController` (index dengan search `q` + filter
   `industry_id` via query param, new, create, edit, update, delete).
-- `StellarWeb.Admin.SkillHTML` + 3 template (index/new/edit).
+- `JosjobWeb.Admin.SkillHTML` + 3 template (index/new/edit).
 - Route `resources "/skills", SkillController, except: [:show]` di scope
   superuser-only (`pipe_through [:browser, :require_admin]`).
 - Belum ada test untuk skills.
@@ -28,7 +28,7 @@ Bukan tujuan pilot: memigrasikan menu lain, pagination/sorting/streams.
 
 ### Bentuk UI: satu halaman + modal
 
-Satu LiveView `StellarWeb.Admin.SkillLive` (lib/stellar_web/live/admin/skill_live.ex):
+Satu LiveView `JosjobWeb.Admin.SkillLive` (lib/josjob_web/live/admin/skill_live.ex):
 
 - `/skills` (live_action `:index`) — tabel skills (kolom sama seperti sekarang,
   termasuk audit "Created/Updated (by)") + search + filter industri, semuanya live.
@@ -51,8 +51,8 @@ Satu LiveView `StellarWeb.Admin.SkillLive` (lib/stellar_web/live/admin/skill_liv
   live "/skills/:id/edit", SkillLive, :edit
   ```
 
-- **Hook baru `StellarWeb.LiveAuth`** (lib/stellar_web/live/live_auth.ex),
-  `on_mount(:require_admin)`: pakai `Stellar.Authz.superuser?/1` (otoritatif
+- **Hook baru `JosjobWeb.LiveAuth`** (lib/josjob_web/live/live_auth.ex),
+  `on_mount(:require_admin)`: pakai `Josjob.Authz.superuser?/1` (otoritatif
   DB — perilaku sama dengan plug `RequireAdmin`); bukan superuser → `{:halt,
   redirect(socket, to: "/")}` + flash error dengan wording yang SAMA dengan
   plug ("You must be logged in as an administrator to access this page.").
@@ -102,4 +102,4 @@ lama. Item nav `:skills` tidak berubah (path tetap `/skills`).
   `MIX_ENV=test mix test` bersih.
 - Menu Skills berfungsi penuh sebagai LiveView (CRUD + search/filter live).
 - Controller & template lama terhapus; tidak ada route ganda `/skills`.
-- `StellarWeb.LiveAuth.on_mount(:require_admin)` siap dipakai menu lain.
+- `JosjobWeb.LiveAuth.on_mount(:require_admin)` siap dipakai menu lain.

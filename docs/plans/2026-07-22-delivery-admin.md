@@ -4,7 +4,7 @@
 
 **Goal:** Admin web UI for the delivery layer — `Class` CRUD (instructor + schedule + capacity), full `Enrollment` management, and a read-only effective-materials view.
 
-**Architecture:** One controller (`ClassController`) in `apps/stellar_web` mirroring `CourseController` (per-org scoping via `conn.assigns[:permissions]`, `authorize?: false`). Schedule is a jsonb list of `{start_date,end_date,recurring}` edited with dynamic rows (inline JS). Enrollment actions live on the same controller. One domain code change (`Enrollment` gains a `:set_status` action). **No migrations.**
+**Architecture:** One controller (`ClassController`) in `apps/josjob_web` mirroring `CourseController` (per-org scoping via `conn.assigns[:permissions]`, `authorize?: false`). Schedule is a jsonb list of `{start_date,end_date,recurring}` edited with dynamic rows (inline JS). Enrollment actions live on the same controller. One domain code change (`Enrollment` gains a `:set_status` action). **No migrations.**
 
 **Tech Stack:** Phoenix 1.8 controllers + HEEx, AshPhoenix.Form, Ash 3, daisyUI, a little vanilla JS.
 
@@ -14,21 +14,21 @@
 - **No schema changes / no migrations.** Do not touch the dev DB. Runtime checks only on the TEST DB.
 - Verify = `mix compile --warnings-as-errors` + `mix format --check-formatted` clean, then the user smoke-tests. **No controller tests** (repo has none / no auth harness).
 - Reuse permissions `courses:read` (view) + `courses:manage` (create/edit/delete). No new keys.
-- Follow existing helpers: `StellarWeb.Perms.can?/2`, `StellarWeb.Format.datetime/1`, `StellarWeb.Audit.user_labels/0`, `Layouts.admin` assigns.
+- Follow existing helpers: `JosjobWeb.Perms.can?/2`, `JosjobWeb.Format.datetime/1`, `JosjobWeb.Audit.user_labels/0`, `Layouts.admin` assigns.
 
 ---
 
 ### Task 1: `Enrollment` — allow status updates
 
 **Files:**
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning/enrollment.ex`
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning/enrollment.ex`
 
 **Interfaces:**
-- Produces: `StellarLrn.Learning.Enrollment` action `:set_status` accepting `:status`.
+- Produces: `JosjobLrn.Learning.Enrollment` action `:set_status` accepting `:status`.
 
 - [ ] **Step 1: Add the `:set_status` action**
 
-In `apps/stellar_lrn/lib/stellar_lrn/learning/enrollment.ex`, replace the `actions do ... end` block with:
+In `apps/josjob_lrn/lib/josjob_lrn/learning/enrollment.ex`, replace the `actions do ... end` block with:
 
 ```elixir
   actions do
@@ -36,7 +36,7 @@ In `apps/stellar_lrn/lib/stellar_lrn/learning/enrollment.ex`, replace the `actio
 
     create :create do
       accept([:class_id, :student_id, :status])
-      change(StellarLrn.Learning.Changes.CheckCapacity)
+      change(JosjobLrn.Learning.Changes.CheckCapacity)
     end
 
     update :set_status do
@@ -53,7 +53,7 @@ Expected: clean.
 - [ ] **Step 3: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_lrn
+git add apps/josjob_lrn
 git commit -m "feat(lrn): Enrollment :set_status action"
 ```
 
@@ -62,22 +62,22 @@ git commit -m "feat(lrn): Enrollment :set_status action"
 ### Task 2: Class admin (CRUD + scoping + schedule + enrollment + materials)
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/class_controller.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/class_html.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/{index,new,edit}.html.heex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (class scope + enrollment routes)
-- Modify: `apps/stellar_web/lib/stellar_web/components/layouts.ex` (sidebar "Classes")
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/class_controller.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/class_html.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/class_html/{index,new,edit}.html.heex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (class scope + enrollment routes)
+- Modify: `apps/josjob_web/lib/josjob_web/components/layouts.ex` (sidebar "Classes")
 
 **Interfaces:**
-- Consumes: `StellarLrn.Learning.{Class, Course, Enrollment}`, `StellarLrn.Learning.materials_for_class/1`, `Stellar.Orgs.{Organization, Membership}`, `Stellar.Accounts.User`.
-- Produces: routes `/classes` (index/new/create/edit/update/delete) + `/classes/:id/enrollments*`; `StellarWeb.Admin.ClassController`, `StellarWeb.Admin.ClassHTML`.
+- Consumes: `JosjobLrn.Learning.{Class, Course, Enrollment}`, `JosjobLrn.Learning.materials_for_class/1`, `Josjob.Orgs.{Organization, Membership}`, `Josjob.Accounts.User`.
+- Produces: routes `/classes` (index/new/create/edit/update/delete) + `/classes/:id/enrollments*`; `JosjobWeb.Admin.ClassController`, `JosjobWeb.Admin.ClassHTML`.
 
 - [ ] **Step 1: Controller**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_controller.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/class_controller.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.ClassController do
+defmodule JosjobWeb.Admin.ClassController do
   @moduledoc """
   CRUD Class (per-tenant) + kelola Enrollment. Route gate `courses:read`;
   create/edit/delete + enrollment butuh `courses:manage`. Superuser lihat semua &
@@ -87,18 +87,18 @@ defmodule StellarWeb.Admin.ClassController do
   baris dinamis; domain tak menafsirkannya. Materi kelas ditampilkan read-only
   (materials_for_class); materi pengajar dikelola lewat /my/documents.
   """
-  use StellarWeb, :controller
+  use JosjobWeb, :controller
 
   import Phoenix.Component, only: [to_form: 1]
   require Ash.Query
 
-  alias StellarLrn.Learning
-  alias StellarLrn.Learning.{Class, Course, Enrollment}
-  alias Stellar.Orgs.{Organization, Membership}
-  alias Stellar.Accounts.User
+  alias JosjobLrn.Learning
+  alias JosjobLrn.Learning.{Class, Course, Enrollment}
+  alias Josjob.Orgs.{Organization, Membership}
+  alias Josjob.Accounts.User
 
   defp su?(conn), do: conn.assigns[:permissions] == :all
-  defp can_manage?(conn), do: StellarWeb.Perms.can?(conn.assigns[:permissions], "courses:manage")
+  defp can_manage?(conn), do: JosjobWeb.Perms.can?(conn.assigns[:permissions], "courses:manage")
   defp active_org(conn), do: conn.assigns[:active_organization_id]
 
   defp forbid(conn),
@@ -380,11 +380,11 @@ end
 
 - [ ] **Step 2: HTML module + form component (with schedule rows + inline JS)**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/class_html.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.ClassHTML do
-  use StellarWeb, :html
+defmodule JosjobWeb.Admin.ClassHTML do
+  use JosjobWeb, :html
 
   embed_templates "class_html/*"
 
@@ -494,7 +494,7 @@ end
 
 - [ ] **Step 3: index template**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/index.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/class_html/index.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -509,7 +509,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/index.html
     Classes
     <:subtitle>Kelas (penyelenggaraan course oleh pengajar).</:subtitle>
     <:actions>
-      <.link :if={StellarWeb.Perms.can?(@permissions, "courses:manage")} navigate={~p"/classes/new"}>
+      <.link :if={JosjobWeb.Perms.can?(@permissions, "courses:manage")} navigate={~p"/classes/new"}>
         <.button variant="primary">New class</.button>
       </.link>
     </:actions>
@@ -525,7 +525,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/index.html
     <:col :let={c} label="Terdaftar">{length(c.enrollments)}</:col>
     <:action :let={c}>
       <.link
-        :if={StellarWeb.Perms.can?(@permissions, "courses:manage")}
+        :if={JosjobWeb.Perms.can?(@permissions, "courses:manage")}
         navigate={~p"/classes/#{c.id}/edit"}
         class="btn btn-ghost btn-xs"
       >
@@ -534,7 +534,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/index.html
     </:action>
     <:action :let={c}>
       <.link
-        :if={StellarWeb.Perms.can?(@permissions, "courses:manage")}
+        :if={JosjobWeb.Perms.can?(@permissions, "courses:manage")}
         href={~p"/classes/#{c.id}"}
         method="delete"
         data-confirm="Hapus class ini?"
@@ -549,7 +549,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/index.html
 
 - [ ] **Step 4: new template**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/new.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/class_html/new.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -579,7 +579,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/new.html.h
 
 - [ ] **Step 5: edit template (form + enrollments + materials)**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/edit.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/class_html/edit.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -616,7 +616,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/edit.html.
     <.table id="enrollments" rows={@enrollments}>
       <:col :let={e} label="Siswa">{e.student && e.student.full_name}</:col>
       <:col :let={e} label="Status">{e.status}</:col>
-      <:col :let={e} label="Terdaftar">{StellarWeb.Format.datetime(e.enrolled_at)}</:col>
+      <:col :let={e} label="Terdaftar">{JosjobWeb.Format.datetime(e.enrolled_at)}</:col>
       <:action :let={e}>
         <.link
           href={~p"/classes/#{@class.id}/enrollments/#{e.id}?status=#{if e.status == :active, do: "completed", else: "active"}"}
@@ -677,7 +677,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/class_html/edit.html.
 In `router.ex`, add a scope after the courses scope:
 
 ```elixir
-  scope "/", StellarWeb.Admin do
+  scope "/", JosjobWeb.Admin do
     pipe_through [:browser, :require_member, :require_courses_read]
 
     resources "/classes", ClassController, except: [:show]
@@ -710,7 +710,7 @@ Expected: clean.
 - [ ] **Step 9: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_web
+git add apps/josjob_web
 git commit -m "feat(web): class admin + enrollment management + effective materials"
 ```
 
@@ -722,13 +722,13 @@ git commit -m "feat(web): class admin + enrollment management + effective materi
 
 Run:
 ```bash
-cd <path-ke-repo-stellar>
+cd <path-ke-repo-josjob>
 MIX_ENV=test mix run -e '
 require Ash.Query
-alias StellarLrn.Learning.{Class, Enrollment}
+alias JosjobLrn.Learning.{Class, Enrollment}
 fake = Ash.UUID.generate()
 Class |> Ash.Query.filter(organization_id == ^fake) |> Ash.Query.load([:course, :instructor, :enrollments]) |> Ash.read!(authorize?: false) |> length() |> then(&IO.puts("class scope+load OK -> #{&1}"))
-Stellar.Orgs.Membership |> Ash.Query.filter(organization_id == ^fake and status == :active) |> Ash.read!(authorize?: false) |> length() |> then(&IO.puts("members OK -> #{&1}"))
+Josjob.Orgs.Membership |> Ash.Query.filter(organization_id == ^fake and status == :active) |> Ash.read!(authorize?: false) |> length() |> then(&IO.puts("members OK -> #{&1}"))
 '
 ```
 Expected: both lines print `OK`, exit 0.

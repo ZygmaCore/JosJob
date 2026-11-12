@@ -1,5 +1,5 @@
 #!/bin/sh
-# Entrypoint for the Stellar backend release (local dev / preview).
+# Entrypoint for the Josjob backend release (local dev / preview).
 #
 # Runs DB migrations (fatal on failure) then the idempotent seed (best-effort:
 # a hiccup — e.g. a Cloudflare video-seed timeout — must not wedge the API),

@@ -103,7 +103,7 @@ user?
 **Pertanyaan:** Embedding CV/lowongan disimpan di mana?
 
 - Opsi A: ParadeDB + pgvector (image ParadeDB sudah pgvector-capable).
-- Opsi B: Atomic Server (sudah dipakai `stellar_rag` untuk ingestion).
+- Opsi B: Atomic Server (sudah dipakai `josjob_rag` untuk ingestion).
 - Opsi C: kolom di Postgres biasa (vector sebagai array) untuk v1, pindah
   nanti bila perlu.
 

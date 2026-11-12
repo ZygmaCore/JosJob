@@ -3,11 +3,11 @@
 **Status:** approved design, ready for implementation plan
 **Scope:** admin web UI + RBAC gating for the **delivery** layer — `Class` CRUD
 (instructor + schedule + capacity), full `Enrollment` management, and a read-only
-view of a class's effective materials. Built in `apps/stellar_web` following the
+view of a class's effective materials. Built in `apps/josjob_web` following the
 catalog-admin pattern (`CourseController`). No schema changes.
 
-Depends on: `StellarLrn.Learning` domain (built), catalog admin (Section/Course, built),
-`StellarDoc.Documents`.
+Depends on: `JosjobLrn.Learning` domain (built), catalog admin (Section/Course, built),
+`JosjobDoc.Documents`.
 
 ---
 
@@ -30,7 +30,7 @@ Depends on: `StellarLrn.Learning` domain (built), catalog admin (Section/Course,
 - `organization_id`:
   - **non-superuser:** forced to `active_org` (hidden field / set server-side).
     Course options = courses linked to active org (`course_organizations`);
-    instructor options = active-org members (via `Stellar.Orgs.Membership`).
+    instructor options = active-org members (via `Josjob.Orgs.Membership`).
   - **superuser:** an `organization` select (all orgs). Course options = all courses;
     instructor options = all users. (Static dropdowns — no cross-field filtering.)
 - `schedule` — **dynamic add/remove rows** (small inline vanilla JS in the template).
@@ -62,7 +62,7 @@ Full management, gated by the same `editable?/2` as the class:
 - **List:** enrollments for the class (student name, `status`, `enrolled_at`).
 - **Add student:** select from active-org members **not already enrolled** →
   `Enrollment` `:create` with `class_id` + `student_id`. Capacity is enforced by the
-  existing `StellarLrn.Learning.Changes.CheckCapacity`; the unique `(class_id, student_id)`
+  existing `JosjobLrn.Learning.Changes.CheckCapacity`; the unique `(class_id, student_id)`
   identity rejects duplicates. On `{:error, _}` show a flash (e.g. "kelas penuh / sudah terdaftar").
 - **Remove:** `Ash.destroy` the enrollment.
 - **Set status:** update `status` between `:active` and `:completed`.
@@ -84,7 +84,7 @@ All redirect back to `~p"/classes/#{id}/edit"`.
 
 ## 3. Effective materials (read-only, on the Class edit page)
 
-Show `StellarLrn.Learning.materials_for_class(class)` — the union of course materials
+Show `JosjobLrn.Learning.materials_for_class(class)` — the union of course materials
 (`documents.course_id == class.course_id`) and instructor materials
 (`documents.user_id == class.instructor_id AND course_id IS NULL`) — as a read-only list
 (title, mime_type, url). Instructor materials are **managed via the existing
@@ -94,10 +94,10 @@ Show `StellarLrn.Learning.materials_for_class(class)` — the union of course ma
 
 ## 4. Files (indicative)
 
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/class_controller.ex` + `class_html.ex` + `class_html/{index,new,edit}.html.heex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (class scope + enrollment routes)
-- Modify: `apps/stellar_web/lib/stellar_web/components/layouts.ex` (sidebar "Classes")
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning/enrollment.ex` (allow `status` update)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/class_controller.ex` + `class_html.ex` + `class_html/{index,new,edit}.html.heex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (class scope + enrollment routes)
+- Modify: `apps/josjob_web/lib/josjob_web/components/layouts.ex` (sidebar "Classes")
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning/enrollment.ex` (allow `status` update)
 
 ---
 

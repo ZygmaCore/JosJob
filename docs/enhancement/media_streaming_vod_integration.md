@@ -29,7 +29,7 @@ is [`docs/api/vod.md`](../api/vod.md); this doc covers the integration end to en
 
 ## 1. Architecture at a glance
 
-The video bytes **never pass through the Stellar backend** — the client uploads
+The video bytes **never pass through the JosJob backend** — the client uploads
 directly to a one-time, pre-signed Cloudflare URL. The backend only mints that
 URL, records lecture metadata, and learns when transcoding is done (via a
 webhook *or* client polling).
@@ -42,7 +42,7 @@ graph TD
     end
     subgraph BE [Phoenix / Ash backend]
         LC[LectureController<br/>/api/vod/*]
-        CS[StellarMs facade<br/>StellarMs.CloudflareStream · app :stellar_ms]
+        CS[JosjobMs facade<br/>JosjobMs.CloudflareStream · app :josjob_ms]
         LEC[(Lecture resource<br/>state + cf_uid)]
         WH[Webhook<br/>/api/webhooks/cloudflare-stream]
     end
@@ -65,7 +65,7 @@ graph TD
 ## 2. Configuration
 
 All Cloudflare credentials live in the gitignored `envs/.env` and are read at
-runtime (`config/runtime.exs` → `config :stellar_ms, StellarMs.CloudflareStream`,
+runtime (`config/runtime.exs` → `config :josjob_ms, JosjobMs.CloudflareStream`,
 via Dotenvy `env!/3`; OS env wins). Nothing secret is committed.
 
 | Env var | Config key | Purpose |
@@ -88,12 +88,12 @@ via Dotenvy `env!/3`; OS env wins). Nothing secret is committed.
 
 ## 3. Backend
 
-### 3.1 Cloudflare Stream client — `StellarMs.CloudflareStream` (app `:stellar_ms`)
+### 3.1 Cloudflare Stream client — `JosjobMs.CloudflareStream` (app `:josjob_ms`)
 
-Media streaming lives in its own umbrella app, **`apps/stellar_ms`**. Callers use
-the provider-agnostic **`StellarMs`** facade (`StellarMs.create_direct_upload/1`,
+Media streaming lives in its own umbrella app, **`apps/josjob_ms`**. Callers use
+the provider-agnostic **`JosjobMs`** facade (`JosjobMs.create_direct_upload/1`,
 `get_video/1`, `upload_file/2`, `normalize/1`, `verify_webhook/2`, `hls_url_for/1`);
-`apps/stellar_ms/lib/stellar_ms/cloudflare_stream.ex` is the provider client that
+`apps/josjob_ms/lib/josjob_ms/cloudflare_stream.ex` is the provider client that
 wraps the Cloudflare API (`https://api.cloudflare.com/client/v4`) with `Req`.
 
 | Function | Purpose | Returns |
@@ -133,7 +133,7 @@ otherwise the scoped `Bearer` token (default/production).
 
 ### 3.2 Lecture resource + lifecycle
 
-`Stellar.Courses.Lecture` (`apps/stellar/lib/stellar/courses/lecture.ex`) models
+`Josjob.Courses.Lecture` (`apps/josjob/lib/josjob/courses/lecture.ex`) models
 one VOD unit. Migration `20260718021624_add_cloudflare_stream_lecture.exs` adds
 `cf_uid` + `thumbnail_url` and changes the `state` default to `uploading` (the
 `lectures` table and the other VOD columns come from the earlier
@@ -189,9 +189,9 @@ generates time-based checkpoints:
 
 ### 3.3 HTTP API
 
-Three controllers under `StellarWeb.Api`. Public reads sit in the plain `/api`
+Three controllers under `JosjobWeb.Api`. Public reads sit in the plain `/api`
 scope; writes sit in a Bearer-authed `/api/vod` sub-scope
-(`pipe_through :api_auth` = `StellarWeb.Plugs.ApiAuth`). Full request/response
+(`pipe_through :api_auth` = `JosjobWeb.Plugs.ApiAuth`). Full request/response
 shapes are in [`docs/api/vod.md`](../api/vod.md).
 
 | Method | Path | Auth | Purpose |
@@ -216,7 +216,7 @@ shapes are in [`docs/api/vod.md`](../api/vod.md).
 `CloudflareStreamWebhookController.handle/2` authenticates by **signature**, not
 user auth:
 
-1. `StellarWeb.Plugs.CacheBodyReader` caches the **raw** request bytes into
+1. `JosjobWeb.Plugs.CacheBodyReader` caches the **raw** request bytes into
    `conn.assigns.raw_body` for `/api/webhooks/cloudflare-stream` (needed because
    signature is computed over the raw body, not the parsed JSON).
 2. `verify_webhook(raw, sig)` recomputes `HMAC-SHA256(secret, "<time>.<raw>")`
@@ -229,19 +229,19 @@ user auth:
 
 ### 3.5 Seeder + tests
 
-**Seed** (`Stellar.Release.seed/0`, run via `bin/stellar eval Stellar.Release.seed`):
+**Seed** (`Josjob.Release.seed/0`, run via `bin/josjob eval Josjob.Release.seed`):
 creates the course *"Introduction to Data Structures"* (idempotent by title). If
-`StellarMs.configured?()`, it uploads `apps/stellar/priv/media/sample.mp4`
+`JosjobMs.configured?()`, it uploads `apps/josjob/priv/media/sample.mp4`
 (~92 KB, git-tracked), creates the lecture *"Arrays, Lists & Big-O"*, then polls
 `get_video → :sync_from_cloudflare` up to **45×2s ≈ 90s** until `:ready`/`:failed`.
 If not configured (or the course already has a lecture), it skips the upload and
 prints an activation hint. Re-running never re-uploads.
 
 **Tests** (all passing) live with the code they cover. The media-streaming unit
-tests are in **`apps/stellar_ms/test/stellar_ms_test.exs`**: `normalize/1` mapping,
+tests are in **`apps/josjob_ms/test/josjob_ms_test.exs`**: `normalize/1` mapping,
 `verify_webhook/2` (accepts a valid HMAC, rejects a bad/malformed one),
-`hls_url_for/1`, and the `StellarMs` facade. The Lecture-sync test stays in
-**`apps/stellar/test/stellar/courses/vod_sync_test.exs`**: `:sync_from_cloudflare`
+`hls_url_for/1`, and the `JosjobMs` facade. The Lecture-sync test stays in
+**`apps/josjob/test/josjob/courses/vod_sync_test.exs`**: `:sync_from_cloudflare`
 state mapping (`ready → :ready` + 3 checkpoints for a 300s video at `[0,120,240]`;
 `error → :failed`; `inprogress → :processing`).
 
@@ -251,7 +251,7 @@ state mapping (`ready → :ready` + 3 checkpoints for a 300s video at `[0,120,24
 
 ### 4.1 API client — `VodApi`
 
-`apps/stellar_fe/lib/services/vod_api.dart` — a thin JSON client mirroring
+`apps/josjob_fe/lib/services/vod_api.dart` — a thin JSON client mirroring
 `auth_api.dart`, with models `VodCourse`, `VodLecture` (getters `isReady` /
 `isFailed` / `isProcessing`), `VideoCheckpoint`, `TranscriptSegment`,
 `VodUploadTicket`, and `VodException` (UI-ready English messages).
@@ -277,7 +277,7 @@ yet.", `cloudflare_error` → "The video service is unavailable right now…", e
 
 ### 4.2 Upload flow — `VodUploadPage`
 
-`apps/stellar_fe/lib/vod/vod_upload_page.dart` — a standalone library (its own
+`apps/josjob_fe/lib/vod/vod_upload_page.dart` — a standalone library (its own
 `file_picker` import), route `/vod/upload`, also reachable from an upload icon
 (`Icons.file_upload_outlined`) in the player top bar. It is a `_Phase { form,
 working, done, failed }` state machine gated behind a sign-in prompt.
@@ -356,10 +356,10 @@ mix ecto.create && mix ecto.migrate
 mix phx.server                                   # http://localhost:4000
 
 # 3. Seed the demo course + sample lecture (uploads to Cloudflare, polls to ready)
-bin/stellar eval Stellar.Release.seed            # or the bin/seed script
+bin/josjob eval Josjob.Release.seed            # or the bin/seed script
 
 # 4. Frontend
-cd apps/stellar_fe
+cd apps/josjob_fe
 flutter run -d chrome --web-port=8081 \
   --dart-define=API_BASE_URL=http://localhost:4000
 ```

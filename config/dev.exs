@@ -3,7 +3,7 @@ import Config
 # Kredensial/koneksi DB TIDAK di sini — dirakit di config/runtime.exs dari
 # POSTGRES_* (envs/.env) untuk semua environment. Di sini hanya flag debug
 # khusus dev yang tidak boleh aktif di prod.
-config :stellar, Stellar.Repo,
+config :josjob, Josjob.Repo,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true
 
@@ -13,7 +13,7 @@ config :stellar, Stellar.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :stellar_web, StellarWeb.Endpoint,
+config :josjob_web, JosjobWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
@@ -31,8 +31,8 @@ config :stellar_web, StellarWeb.Endpoint,
       "bGmsUh2H3autg4EprqVnf8kulV2ipcFEkFmU8HuBLcbQYIMFrM+APNaPVXTv/cm0"
     ),
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:stellar_web, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:stellar_web, ~w(--watch)]}
+    esbuild: {Esbuild, :install_and_run, [:josjob_web, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:josjob_web, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -59,7 +59,7 @@ config :stellar_web, StellarWeb.Endpoint,
 # different ports.
 
 # Reload browser tabs when matching files change.
-config :stellar_web, StellarWeb.Endpoint,
+config :josjob_web, JosjobWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
@@ -68,13 +68,13 @@ config :stellar_web, StellarWeb.Endpoint,
       # Gettext translations
       ~r"priv/gettext/.*\.po$",
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/stellar_web/router\.ex$",
-      ~r"lib/stellar_web/(controllers|live|components)/.*\.(ex|heex)$"
+      ~r"lib/josjob_web/router\.ex$",
+      ~r"lib/josjob_web/(controllers|live|components)/.*\.(ex|heex)$"
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :stellar_web, dev_routes: true
+config :josjob_web, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

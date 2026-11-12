@@ -3,5 +3,9 @@
 # "no such file or directory". Windows checkouts otherwise get CRLF via
 # core.autocrlf. Run `git add --renormalize .` once after adding this file.
 *.sh            text eol=lf
+# Keep HEEx sigils stable when formatting the same sources on Windows and Linux.
+*.ex            text eol=lf
+*.exs           text eol=lf
+*.heex          text eol=lf
 docker-entrypoint.sh text eol=lf
 rel/overlays/bin/* text eol=lf
