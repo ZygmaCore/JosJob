@@ -6,26 +6,23 @@
 # Usage (from repo root):
 #   sudo docker compose --env-file envs/.env \
 #     -f docker-compose.fullstack.yml -f docker-compose.local.yml \
-#     build stellar_be
+#     build josjob_be
 #   sudo docker compose --env-file envs/.env \
 #     -f docker-compose.fullstack.yml -f docker-compose.local.yml \
-#     run --rm stellar_be /app/bin/migrate
+#     run --rm josjob_be /app/bin/migrate
 #   sudo docker compose --env-file envs/.env \
 #     -f docker-compose.fullstack.yml -f docker-compose.local.yml \
-#     up -d stellar_be
+#     up -d josjob_be
 
 services:
-  stellar_be:
+  josjob_be:
     build:
       context: .
       dockerfile: deployment/docker_elixir/Dockerfile.dev
-    image: stellar-backend:local
+    image: josjob-backend:local
     # Public URL seen by browsers (overrides `PHX_HOST: localhost` in the base file).
     environment:
       PHX_HOST: ${PHX_HOST:-api-dev.mzkrl.my.id}
       PHX_SCHEME: ${PHX_SCHEME:-https}
       PHX_PORT: ${PHX_PORT:-443}
       CHECK_ORIGIN: ${CHECK_ORIGIN:-https://dev.mzkrl.my.id}
-    # Lets the container reach host-published MinIO on 127.0.0.1:9000 if needed.
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
