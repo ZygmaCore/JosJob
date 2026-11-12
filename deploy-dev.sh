@@ -73,11 +73,6 @@ log "Start database (paradedb)"
 log "Build backend (deployment/docker_elixir/Dockerfile.dev)"
 "${COMPOSE[@]}" build josjob_be
 
-if [ "$DEPLOY_FE" = "1" ]; then
-  log "Build frontend"
-  "${COMPOSE[@]}" build josjob_fe
-fi
-
 log "Migrate database"
 "${COMPOSE[@]}" run --rm josjob_be /app/bin/migrate
 
@@ -91,7 +86,13 @@ fi
 log "Recreate backend"
 "${COMPOSE[@]}" up -d --force-recreate --wait --wait-timeout 180 josjob_be
 
+log "Verify local API (localhost:4000)"
+wait_http http://localhost:4000/ 30
+
 if [ "$DEPLOY_FE" = "1" ]; then
+  log "Build frontend"
+  "${COMPOSE[@]}" build josjob_fe
+
   log "Recreate frontend"
   "${COMPOSE[@]}" up -d --force-recreate --wait --wait-timeout 180 josjob_fe
 fi
@@ -100,9 +101,6 @@ log "Ensure cloudflared-dev is running"
 if ! systemctl --user is-active --quiet cloudflared-dev; then
   systemctl --user start cloudflared-dev || echo "WARN: gagal start cloudflared-dev" >&2
 fi
-
-log "Verify local API (localhost:4000)"
-wait_http http://localhost:4000/ 30
 
 log "Verify public API (api-dev.mzkrl.my.id)"
 wait_http https://api-dev.mzkrl.my.id/ 30
