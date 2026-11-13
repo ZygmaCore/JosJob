@@ -18,7 +18,7 @@ class _HowItWorks extends StatelessWidget {
           (
             '02',
             'Bring your CV',
-            'Add your CV with consent so your profile can be reviewed.',
+            'Add your CV with consent to prepare your job-seeker profile.',
           ),
           (
             '03',
@@ -88,7 +88,7 @@ class _JourneyStep extends StatelessWidget {
             fontFamily: 'Geist Mono',
             fontSize: 14,
             color: AppColors.primary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(width: 15),

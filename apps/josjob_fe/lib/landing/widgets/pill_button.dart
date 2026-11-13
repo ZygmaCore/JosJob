@@ -15,6 +15,7 @@ class _PillButton extends StatefulWidget {
   });
 
   @override
+  @override
   State<_PillButton> createState() => _PillButtonState();
 }
 
@@ -28,8 +29,8 @@ class _PillButtonState extends State<_PillButton> {
     BorderSide side = BorderSide.none;
     switch (widget.kind) {
       case _BtnKind.filled:
-        bg = AppColors.board;
-        fg = AppColors.boardText;
+        bg = AppColors.primary;
+        fg = AppColors.cotton;
         break;
       case _BtnKind.white:
         bg = AppColors.cotton;

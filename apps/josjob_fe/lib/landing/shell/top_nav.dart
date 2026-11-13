@@ -19,9 +19,9 @@ class _TopNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final mobile = _isMobile(context);
     return Material(
-      color: AppColors.paper.withValues(alpha: 0.92),
-      elevation: 2,
-      shadowColor: AppColors.landingInk.withValues(alpha: 0.12),
+      color: AppColors.paper.withValues(alpha: 0.98),
+      elevation: 1,
+      shadowColor: AppColors.landingInk.withValues(alpha: 0.08),
       child: _Bounded(
         child: SizedBox(
           height: Bp.navHeight,

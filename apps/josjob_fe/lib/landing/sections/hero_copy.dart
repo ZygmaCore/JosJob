@@ -32,7 +32,7 @@ class _HeroCopy extends StatelessWidget {
         Semantics(
           header: true,
           child: Text(
-            'Find work that fits.\nBuild what’s missing.',
+            'Learn the skills for\nyour next role.',
             style: _display(
               context,
               color: AppColors.landingInk,
@@ -43,10 +43,15 @@ class _HeroCopy extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 540),
           child: Text(
+<<<<<<< Updated upstream:apps/josjob_fe/lib/landing/sections/hero_copy.dart
             'JosJob is one platform for your whole career — build '
             'job-ready skills through flexible online learning, then get '
             'matched with the employers who are hiring. Study at your own '
             'pace, earn the certifications that matter, and get hired.',
+=======
+            'JosJob connects job opportunities with learning, so you can build '
+            'job-ready skills and take a clearer next step toward employment.',
+>>>>>>> Stashed changes:apps/stellar_fe/lib/landing/sections/hero_copy.dart
             style: _lead(context),
           ),
         ),
@@ -71,7 +76,7 @@ class _HeroCopy extends StatelessWidget {
                   children: [
                     const Expanded(child: _RoleSearchField()),
                     _PillButton(
-                      'Explore jobs',
+                      'Get started',
                       trailing: Icons.arrow_forward,
                       onPressed: onCta,
                     ),
@@ -83,7 +88,7 @@ class _HeroCopy extends StatelessWidget {
                     const _RoleSearchField(),
                     const SizedBox(height: 6),
                     _PillButton(
-                      'Explore jobs',
+                      'Get started',
                       trailing: Icons.arrow_forward,
                       onPressed: onCta,
                     ),
@@ -92,7 +97,7 @@ class _HeroCopy extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Already have a CV? Create an account to add it to your profile.',
+          'Create a profile to explore opportunities and learning in one place.',
           style: TextStyle(
             fontFamily: 'General Sans',
             fontSize: 12,
@@ -107,7 +112,7 @@ class _HeroCopy extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onCta,
               icon: const Icon(Icons.upload_file_outlined, size: 18),
-              label: const Text('Continue to CV upload'),
+              label: const Text('Explore jobs'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.landingInk,
                 side: const BorderSide(color: AppColors.rule),
@@ -123,7 +128,7 @@ class _HeroCopy extends StatelessWidget {
             TextButton.icon(
               onPressed: onHowItWorks,
               icon: const Icon(Icons.arrow_downward, size: 17),
-              label: const Text('How JosJob works'),
+              label: const Text('See how it works'),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.landingInk,
               ),

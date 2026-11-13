@@ -1,0 +1,25 @@
+2026/11/12-18:38:27.000 3585b Reusing MANIFEST /private/var/folders/jg/v5lww4zj2sz2nt1qn2mhkj880000gn/T/flutter_tools.WAyMhp/flutter_tools_chrome_device.5fSOd0/Default/IndexedDB/http_localhost_56236.indexeddb.leveldb/MANIFEST-000001
+2026/11/12-18:38:27.001 3585b Recovering log #37
+2026/11/12-18:38:27.001 3585b Reusing old log /private/var/folders/jg/v5lww4zj2sz2nt1qn2mhkj880000gn/T/flutter_tools.WAyMhp/flutter_tools_chrome_device.5fSOd0/Default/IndexedDB/http_localhost_56236.indexeddb.leveldb/000037.log 
+2026/11/12-18:38:27.002 3585b Delete type=2 #35
+2026/11/12-18:38:27.037 35861 Level-0 table #42: started
+2026/11/12-18:38:27.038 35861 Level-0 table #42: 713 bytes OK
+2026/11/12-18:38:27.040 35861 Delete type=0 #37
+2026/11/12-18:38:27.041 3585b Manual compaction at level-0 from '\x00\x0d\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0e\x00\x00\x00' @ 0 : 0; will stop at '\x00\x0d\x00\x00\x05' @ 237 : 1
+2026/11/12-18:38:27.041 3585b Compacting 1@0 + 1@1 files
+2026/11/12-18:38:27.042 3585b Generated table #43@0: 4 keys, 253 bytes
+2026/11/12-18:38:27.042 3585b Compacted 1@0 + 1@1 files => 253 bytes
+2026/11/12-18:38:27.043 3585b compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/11/12-18:38:27.043 3585b Delete type=2 #42
+2026/11/12-18:38:27.043 3585b Manual compaction at level-0 from '\x00\x0d\x00\x00\x05' @ 237 : 1 .. '\x00\x0e\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/11/12-18:38:27.381 3585b Level-0 table #45: started
+2026/11/12-18:38:27.382 3585b Level-0 table #45: 519 bytes OK
+2026/11/12-18:38:27.383 3585b Delete type=2 #39
+2026/11/12-18:38:27.383 3585b Delete type=0 #41
+2026/11/12-18:38:27.383 3585b Manual compaction at level-0 from '\x00\x0e\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0f\x00\x00\x00' @ 0 : 0; will stop at '\x00\x0e\x00\x00\x05' @ 256 : 1
+2026/11/12-18:38:27.384 3585b Compacting 1@0 + 1@1 files
+2026/11/12-18:38:27.384 3585b Generated table #46@0: 4 keys, 238 bytes
+2026/11/12-18:38:27.384 3585b Compacted 1@0 + 1@1 files => 238 bytes
+2026/11/12-18:38:27.385 3585b compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/11/12-18:38:27.385 3585b Delete type=2 #45
+2026/11/12-18:38:27.386 3585b Manual compaction at level-0 from '\x00\x0e\x00\x00\x05' @ 256 : 1 .. '\x00\x0f\x00\x00\x00' @ 0 : 0; will stop at (end)
