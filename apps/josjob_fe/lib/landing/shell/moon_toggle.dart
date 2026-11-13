@@ -1,5 +1,6 @@
 part of '../landing_page_ascent.dart';
 
+// ignore: unused_element
 class _MoonToggle extends StatelessWidget {
   const _MoonToggle();
   @override

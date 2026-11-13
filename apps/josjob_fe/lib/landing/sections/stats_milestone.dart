@@ -39,7 +39,8 @@ class _StatsMilestone extends StatelessWidget {
                             value,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'General Sans',
                               fontSize: 30,
                               fontWeight: FontWeight.w700,
                               color: AppColors.brandBlue,
@@ -51,7 +52,8 @@ class _StatsMilestone extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text(
                             unit,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'General Sans',
                               fontSize: 13,
                               color: AppColors.body,
                             ),

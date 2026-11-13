@@ -62,7 +62,8 @@ class _TestimonialsSectionState extends State<_TestimonialsSection> {
                         const SizedBox(width: 6),
                         Text(
                           tag,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'General Sans',
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.iconGreen,
@@ -74,11 +75,12 @@ class _TestimonialsSectionState extends State<_TestimonialsSection> {
                   const SizedBox(height: 20),
                   Text(
                     quote,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: _isMobile(context) ? 19 : 25,
                       height: 1.4,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
+                      color: AppColors.landingInk,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -89,7 +91,8 @@ class _TestimonialsSectionState extends State<_TestimonialsSection> {
                         backgroundColor: AppColors.tintBlue,
                         child: Text(
                           name.characters.first,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: 'General Sans',
                             color: AppColors.brandBlue,
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
@@ -102,15 +105,17 @@ class _TestimonialsSectionState extends State<_TestimonialsSection> {
                         children: [
                           Text(
                             name,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'General Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.ink,
+                              color: AppColors.landingInk,
                             ),
                           ),
                           Text(
                             meta,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
+                              fontFamily: 'General Sans',
                               fontSize: 14,
                               color: AppColors.body,
                             ),

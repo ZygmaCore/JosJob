@@ -26,7 +26,8 @@ class _Summit extends StatelessWidget {
                 child: Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: 'General Sans',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.navy,
@@ -59,7 +60,8 @@ class _Summit extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: AppColors.navy,

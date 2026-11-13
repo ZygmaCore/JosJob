@@ -34,7 +34,8 @@ class _FaqItemState extends State<_FaqItem> {
                   children: [
                     Text(
                       widget.index,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: 'General Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.accent,
@@ -44,10 +45,11 @@ class _FaqItemState extends State<_FaqItem> {
                     Expanded(
                       child: Text(
                         q,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: 'General Sans',
                           fontSize: _isMobile(context) ? 17 : 20,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
+                          color: AppColors.landingInk,
                         ),
                       ),
                     ),

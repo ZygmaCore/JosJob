@@ -10,7 +10,7 @@ class _NavLink extends StatelessWidget {
     return InkWell(
       onTap: onTap ?? () {},
       borderRadius: BorderRadius.circular(8),
-      focusColor: AppColors.focus,
+      focusColor: AppColors.primaryDeep,
       child: SizedBox(
         height: 44,
         child: Padding(
@@ -18,10 +18,11 @@ class _NavLink extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'General Sans',
                 fontSize: 15.5,
                 fontWeight: FontWeight.w500,
-                color: AppColors.ink,
+                color: AppColors.landingInk,
               ),
             ),
           ),

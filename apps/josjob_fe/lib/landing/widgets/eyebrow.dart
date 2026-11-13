@@ -6,25 +6,22 @@ class _Eyebrow extends StatelessWidget {
   final Color tint;
   const _Eyebrow(
     this.text, {
-    this.color = AppColors.accent,
-    this.tint = AppColors.tintBlue,
+    this.color = AppColors.primary,
+    this.tint = AppColors.paper2,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: tint,
-        borderRadius: BorderRadius.circular(100),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       child: Text(
         text,
-        style: GoogleFonts.poppins(
+        style: TextStyle(
+          fontFamily: 'General Sans',
           color: color,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
+          letterSpacing: 0.8,
         ),
       ),
     );

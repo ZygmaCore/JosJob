@@ -59,7 +59,8 @@ class _StationNode extends StatelessWidget {
       ),
       child: Text(
         '0${index + 1}',
-        style: GoogleFonts.poppins(
+        style: TextStyle(
+          fontFamily: 'General Sans',
           fontSize: size * 0.3,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,

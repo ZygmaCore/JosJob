@@ -31,8 +31,9 @@ class _EnquiryForm extends StatelessWidget {
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => onSubmit(),
-                    style: GoogleFonts.poppins(
-                      color: AppColors.ink,
+                    style: TextStyle(
+                      fontFamily: 'General Sans',
+                      color: AppColors.landingInk,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
@@ -76,7 +77,11 @@ class _EnquiryForm extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             'We\'ll only use this to help you get started.',
-            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+            style: TextStyle(
+              fontFamily: 'General Sans',
+              color: Colors.white70,
+              fontSize: 13,
+            ),
           ),
         ],
       ),

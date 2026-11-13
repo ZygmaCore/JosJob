@@ -7,7 +7,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = _isMobile(context) ? 52.0 : 84.0;
+    final v = _isMobile(context) ? 52.0 : 76.0;
     return ColoredBox(
       color: color,
       child: _Bounded(

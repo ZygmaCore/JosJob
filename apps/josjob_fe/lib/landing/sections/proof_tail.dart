@@ -3,6 +3,7 @@ part of '../landing_page_ascent.dart';
 // -------------------------------------------------------------------------
 // Proof tail
 // -------------------------------------------------------------------------
+// ignore: unused_element
 class _ProofTail extends StatelessWidget {
   final GlobalKey summitKey;
   const _ProofTail({required this.summitKey});

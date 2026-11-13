@@ -1,33 +1,33 @@
 part of '../landing_page_ascent.dart';
 
-const _navItems = ['Home', 'Learn', 'Jobs', 'Industries', 'About'];
+const _navItems = ['Learn', 'Jobs', 'How it works'];
 
 // The two products the platform brings together — folded into the landing as a
 // dedicated band right below the hero (see sections/products_band.dart).
 const _products = [
   _Item(
-    'Online Learning',
-    'Build job-ready skills with self-paced modules, live coaching and '
-        'mentorship — and earn the certifications your role needs.',
+    'Learn',
+    'Explore self-paced courses and classes available through the platform.',
     icon: Icons.school_outlined,
     bullets: [
-      'Self-paced modules, quizzes & assessments',
-      'Live coaching via live streaming',
-      'Recognised industry certifications',
+      'Browse available courses',
+      'Explore classes and learning materials',
+      'Build skills at your own pace',
     ],
+    tint: AppColors.paper2,
+    iconColor: AppColors.landingInk,
   ),
   _Item(
-    'Job Placement',
-    'Put your new skills to work — build a strong profile and connect with '
-        'live vacancies from the employers who are hiring.',
+    'Find work',
+    'Explore opportunities and learn what employers are looking for.',
     icon: Icons.work_outline,
     bullets: [
-      'Industry-ready candidate profile',
-      'Matched to live vacancies',
-      'Get shortlisted, placed and hired',
+      'Search by role, skill or company',
+      'Review role requirements',
+      'Connect skills with learning',
     ],
-    tint: AppColors.tintOrange,
-    iconColor: AppColors.iconOrange,
+    tint: AppColors.cotton,
+    iconColor: AppColors.primary,
   ),
 ];
 
@@ -240,6 +240,4 @@ const _moments = [
   'Equipment operation training',
 ];
 
-// Skills gauge value shown in the hero (fully certified).
-const double _readyTarget = 1.0;
 const int _milestoneCount = 5;

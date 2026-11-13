@@ -13,28 +13,30 @@ double _gutter(BuildContext c) {
   return 56;
 }
 
-TextStyle _display(BuildContext c, {Color color = AppColors.ink}) =>
-    GoogleFonts.poppins(
-      fontSize: _isMobile(c) ? 34 : 54,
-      height: 1.08,
-      fontWeight: FontWeight.w700,
+TextStyle _display(BuildContext c, {Color color = AppColors.landingInk}) =>
+    TextStyle(
+      fontFamily: 'General Sans',
+      fontSize: _isMobile(c) ? 38 : 62,
+      height: 1.04,
+      fontWeight: FontWeight.w600,
       color: color,
-      letterSpacing: -0.5,
+      letterSpacing: -1.8,
     );
 
-TextStyle _h2s(BuildContext c, {Color color = AppColors.ink}) =>
-    GoogleFonts.poppins(
-      fontSize: _isMobile(c) ? 26 : 38,
-      height: 1.12,
-      fontWeight: FontWeight.w700,
+TextStyle _h2s(BuildContext c, {Color color = AppColors.landingInk}) =>
+    TextStyle(
+      fontFamily: 'General Sans',
+      fontSize: _isMobile(c) ? 28 : 42,
+      height: 1.06,
+      fontWeight: FontWeight.w600,
       color: color,
-      letterSpacing: -0.5,
+      letterSpacing: -1.1,
     );
 
-TextStyle _lead(BuildContext c, {Color color = AppColors.body}) =>
-    GoogleFonts.poppins(
-      fontSize: _isMobile(c) ? 15.5 : 18,
-      height: 1.6,
-      fontWeight: FontWeight.w400,
-      color: color,
-    );
+TextStyle _lead(BuildContext c, {Color color = AppColors.muted}) => TextStyle(
+  fontFamily: 'General Sans',
+  fontSize: _isMobile(c) ? 15.5 : 18,
+  height: 1.6,
+  fontWeight: FontWeight.w400,
+  color: color,
+);

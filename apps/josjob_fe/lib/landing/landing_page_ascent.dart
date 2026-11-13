@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 export '../theme/app_theme.dart';
 
@@ -25,14 +24,17 @@ part 'shell/bounded.dart';
 part 'widgets/pill_button.dart';
 part 'widgets/eyebrow.dart';
 part 'widgets/title.dart';
+part 'shell/lang_toggle.dart';
+part 'shell/moon_toggle.dart';
 part 'shell/top_nav.dart';
 part 'shell/logo.dart';
 part 'shell/nav_link.dart';
-part 'shell/lang_toggle.dart';
-part 'shell/moon_toggle.dart';
 part 'shell/mobile_drawer.dart';
 part 'sections/hero.dart';
 part 'sections/hero_copy.dart';
+part 'sections/ranking_preview.dart';
+part 'sections/how_it_works.dart';
+part 'sections/final_cta.dart';
 part 'sections/basecamp.dart';
 part 'sections/readiness_gauge.dart';
 part 'sections/products_band.dart';

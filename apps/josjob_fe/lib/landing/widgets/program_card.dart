@@ -8,34 +8,41 @@ class _ProgramCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _HoverLift(
       builder: (hovered) => Container(
-        padding: const EdgeInsets.all(26),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: item.tint,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: hovered ? item.iconColor : Colors.transparent,
-            width: 1.5,
-          ),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: hovered ? item.iconColor : AppColors.rule),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.landingInk.withValues(
+                alpha: hovered ? .12 : .06,
+              ),
+              blurRadius: hovered ? 14 : 8,
+              offset: const Offset(5, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 46,
-              height: 46,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(13),
+                color: AppColors.cotton,
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(item.icon, color: item.iconColor, size: 24),
             ),
             const SizedBox(height: 18),
             Text(
               item.title,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'General Sans',
                 fontSize: 19,
-                fontWeight: FontWeight.w700,
-                color: AppColors.navy,
+                fontWeight: FontWeight.w600,
+                color: AppColors.landingInk,
               ),
             ),
             const SizedBox(height: 10),

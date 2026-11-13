@@ -1,8 +1,7 @@
 part of '../landing_page_ascent.dart';
 
 class _Logo extends StatelessWidget {
-  final Color color;
-  const _Logo({this.color = AppColors.brandBlue});
+  const _Logo();
 
   @override
   Widget build(BuildContext context) {
