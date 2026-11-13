@@ -1,7 +1,7 @@
 # Course Ecosystem — Domain Design (backend)
 
 **Status:** approved design, ready for implementation plan
-**Scope of this spec:** the backend domain layer only (new `stellar_lrn` app, Ash
+**Scope of this spec:** the backend domain layer only (new `josjob_lrn` app, Ash
 resources, migrations, domain functions) **plus removing the old VOD course code/tables**.
 Web UI, RBAC surfaces, and REST/Flutter are explicitly **out of scope** and become their
 own later specs.
@@ -15,7 +15,7 @@ Model the course "ecosystem" the way it was described in brainstorming:
 ```
 Section/Jurusan  ("Technology Information")
   └─ Course       ("Go Programming")  — multi-tenant, categorised by section + industries
-       ├─ Material  (= a document in stellar_doc, linked by course_id)
+       ├─ Material  (= a document in josjob_doc, linked by course_id)
        └─ Class     (one instructor + schedule + slot capacity)
             └─ Enrollment (student registers into a CLASS, not the Course)
 ```
@@ -27,7 +27,7 @@ Concrete example that this design must support:
 > - Instructor 2 — every Monday & Thursday 19:00–20:00, unlimited slots, uses course
 >   material only.
 
-The old VOD `Stellar.Courses` concept (Course + Lecture + Cloudflare Stream) is **removed
+The old VOD `Josjob.Courses` concept (Course + Lecture + Cloudflare Stream) is **removed
 entirely** (see §2.2) — this new model is the only course concept going forward.
 
 ---
@@ -35,32 +35,32 @@ entirely** (see §2.2) — this new model is the only course concept going forwa
 ## 2. Placement, wiring & cleanup
 
 ### 2.1 New home
-- **`apps/stellar_lrn`** (the existing empty "learning context" stub), OTP app
-  `:stellar_lrn`, single Ash domain **`StellarLrn.Learning`**.
-- Data layer: `AshPostgres.DataLayer` with **`repo: Stellar.Repo`** — the shared umbrella
-  repo. Generated migrations therefore live in `apps/stellar/priv/repo/migrations`
-  (same pattern already used by `stellar_doc` / `StellarDoc.Documents`).
-- Umbrella dependency direction: **`stellar_lrn → stellar`**. `stellar_lrn` depends on
-  `{:stellar, in_umbrella: true}` (for `Stellar.Repo`, `Stellar.Accounts.User`,
-  `Stellar.Orgs.Organization`, `Stellar.Orgs.Industry`) plus `ash`/`ash_postgres`.
-  `stellar_lrn` must **not** be depended on by `stellar` (would form a cycle).
+- **`apps/josjob_lrn`** (the existing empty "learning context" stub), OTP app
+  `:josjob_lrn`, single Ash domain **`JosjobLrn.Learning`**.
+- Data layer: `AshPostgres.DataLayer` with **`repo: Josjob.Repo`** — the shared umbrella
+  repo. Generated migrations therefore live in `apps/josjob/priv/repo/migrations`
+  (same pattern already used by `josjob_doc` / `JosjobDoc.Documents`).
+- Umbrella dependency direction: **`josjob_lrn → josjob`**. `josjob_lrn` depends on
+  `{:josjob, in_umbrella: true}` (for `Josjob.Repo`, `Josjob.Accounts.User`,
+  `Josjob.Orgs.Organization`, `Josjob.Orgs.Industry`) plus `ash`/`ash_postgres`.
+  `josjob_lrn` must **not** be depended on by `josjob` (would form a cycle).
 - Wiring checklist:
-  - `apps/stellar_lrn/mix.exs`: add `ash`, `ash_postgres`, `{:stellar, in_umbrella: true}`.
-  - `config/config.exs`: `config :stellar_lrn, ash_domains: [StellarLrn.Learning]`, and add
-    `StellarLrn.Learning` to the `:stellar_web` `ash_domains` list (so AshAdmin sees it).
-  - root `mix.exs`: add `stellar_lrn: :permanent` to the release `applications`.
-  - `apps/stellar_web/mix.exs`: add `{:stellar_lrn, in_umbrella: true}`.
+  - `apps/josjob_lrn/mix.exs`: add `ash`, `ash_postgres`, `{:josjob, in_umbrella: true}`.
+  - `config/config.exs`: `config :josjob_lrn, ash_domains: [JosjobLrn.Learning]`, and add
+    `JosjobLrn.Learning` to the `:josjob_web` `ash_domains` list (so AshAdmin sees it).
+  - root `mix.exs`: add `josjob_lrn: :permanent` to the release `applications`.
+  - `apps/josjob_web/mix.exs`: add `{:josjob_lrn, in_umbrella: true}`.
 
 ### 2.2 Remove the old VOD course feature (decided: "buang VOD sepenuhnya")
-- Delete domain `Stellar.Courses` and its resources:
+- Delete domain `Josjob.Courses` and its resources:
   `course.ex`, `lecture.ex`, `video_checkpoint.ex`, `transcript.ex`,
   `changes/sync_from_cloudflare.ex`.
-- Remove `Stellar.Courses` from `ash_domains` in `config/config.exs` (both the `:stellar`
-  and `:stellar_web` lists).
-- Remove VOD web surface in `stellar_web`: routes `GET /api/courses`, `GET /api/courses/:id`,
+- Remove `Josjob.Courses` from `ash_domains` in `config/config.exs` (both the `:josjob`
+  and `:josjob_web` lists).
+- Remove VOD web surface in `josjob_web`: routes `GET /api/courses`, `GET /api/courses/:id`,
   `GET /api/lectures/:id`, the `/vod/*` scope, the `cloudflare-stream` webhook route, and
   controllers `CourseController`, `LectureController`, `CloudflareStreamWebhookController`.
-- **Knock-on:** `apps/stellar_ms` (Cloudflare Stream facade) becomes unused once VOD is
+- **Knock-on:** `apps/josjob_ms` (Cloudflare Stream facade) becomes unused once VOD is
   gone. It is a **candidate for removal in a separate cleanup** — noted, not done here.
 
 ### 2.3 Database cleanup / drift (informational — user runs all DB commands)
@@ -81,7 +81,7 @@ cleaned-up migration history. The user decides and executes this (reset + `mix e
 ## 3. Resources & tables
 
 Clean table names (no prefix — the namespace is free after VOD removal). Elixir modules
-live under `StellarLrn.Learning.*`. All tables use `uuid_primary_key(:id)` and
+live under `JosjobLrn.Learning.*`. All tables use `uuid_primary_key(:id)` and
 `create_timestamp`/`update_timestamp` unless noted. All FKs are UUID.
 
 ### 3.1 `Section` — table `sections`
@@ -91,14 +91,14 @@ live under `StellarLrn.Learning.*`. All tables use `uuid_primary_key(:id)` and
 | description | string | optional |
 | is_active | boolean | default `true` |
 | created_at / updated_at | utc_datetime_usec | `create_timestamp` / `update_timestamp` |
-| created_by / updated_by | uuid (nullable) | audit trail, stamped from actor via `Stellar.Changes.StampActor` |
+| created_by / updated_by | uuid (nullable) | audit trail, stamped from actor via `Josjob.Changes.StampActor` |
 
 Relationships: `many_to_many :organizations` through `SectionOrganization`;
 `has_many :courses`.
 
 ### 3.2 `SectionOrganization` — join `section_organizations`
 `belongs_to :section` (`allow_nil?: false`), `organization_id :uuid` (`allow_nil?: false`,
-references `organizations` in `stellar`, `on_delete: :delete`).
+references `organizations` in `josjob`, `on_delete: :delete`).
 Identity: unique `(section_id, organization_id)`.
 
 ### 3.3 `Course` — table `courses`
@@ -109,7 +109,7 @@ Identity: unique `(section_id, organization_id)`.
 | description | string | optional |
 | is_active | boolean | default `true` |
 | created_at / updated_at | utc_datetime_usec | `create_timestamp` / `update_timestamp` |
-| created_by / updated_by | uuid (nullable) | audit trail, stamped from actor via `Stellar.Changes.StampActor` |
+| created_by / updated_by | uuid (nullable) | audit trail, stamped from actor via `Josjob.Changes.StampActor` |
 
 Relationships: `belongs_to :section` (`allow_nil?: false`);
 `many_to_many :organizations` through `CourseOrganization`;
@@ -123,7 +123,7 @@ Identity: unique `(course_id, organization_id)`.
 
 ### 3.5 `CourseIndustry` — join `course_industries`
 `belongs_to :course` (`allow_nil?: false`), `industry_id :uuid` (`allow_nil?: false`,
-references `industries` in `stellar`, `on_delete: :delete`).
+references `industries` in `josjob`, `on_delete: :delete`).
 Identity: unique `(course_id, industry_id)`.
 
 ### 3.6 `Class` — table `classes`
@@ -160,11 +160,11 @@ Relationships: `belongs_to :course` (`allow_nil?: false`);
 
 Identity: unique `(class_id, student_id)` — a student cannot enroll twice in the same class.
 
-### 3.8 `documents` (existing `stellar_doc`) — reused as **Material**
+### 3.8 `documents` (existing `josjob_doc`) — reused as **Material**
 No schema change. Columns already present: `title`, `url`, `mime_type`, `description`,
 `course_id` (uuid, nullable, currently unused — all rows null), `user_id`, `organization_id`.
 `mime_type` carries the "type" (pdf / video / …). `course_id` now points at `courses.id`
-**as a plain UUID** (no cross-app DB FK — avoids coupling `stellar_doc → stellar_lrn`).
+**as a plain UUID** (no cross-app DB FK — avoids coupling `josjob_doc → josjob_lrn`).
 
 ---
 
@@ -183,9 +183,9 @@ are treated as teaching supplements. This trade-off was explicitly accepted; it 
 tightened later by adding a `kind` enum (`course | instructor | personal`) to `documents`
 without changing this resolution's shape.
 
-Expose as `StellarLrn.Learning.materials_for_class/1` (accepts a class or class_id),
-returning the combined document list. Reading `documents` from `stellar_lrn` goes through
-`StellarDoc.Documents` (add `:stellar_doc` as a dependency of `:stellar_lrn`, or via a small
+Expose as `JosjobLrn.Learning.materials_for_class/1` (accepts a class or class_id),
+returning the combined document list. Reading `documents` from `josjob_lrn` goes through
+`JosjobDoc.Documents` (add `:josjob_doc` as a dependency of `:josjob_lrn`, or via a small
 facade) — the exact seam is an implementation detail for the plan.
 
 ### 4.2 Enrollment with capacity
@@ -213,7 +213,7 @@ do not build a locking mechanism now.
   surfaces above. (Note: `courses:read` / `courses:manage` permission rows already exist in
   the DB and can be reused.)
 - REST API / Flutter student-facing flows (catalog, class browse, enroll).
-- Removal of the now-unused `apps/stellar_ms` app.
+- Removal of the now-unused `apps/josjob_ms` app.
 - A `kind` discriminator on `documents` (only if the §4.1 limitation becomes a problem).
 
 ---
@@ -221,7 +221,7 @@ do not build a locking mechanism now.
 ## 6. Verification
 - `mix compile --warnings-as-errors` and `mix format --check-formatted` clean (CI
   `precommit` runs both). After VOD removal there must be **no dangling references** to
-  `Stellar.Courses`, the VOD controllers, or their routes.
+  `Josjob.Courses`, the VOD controllers, or their routes.
 - Resources + migrations generated via `mix ash.codegen <name>`; the drop of the old
   `courses`/`classes`/`materials`/`course_industries` tables and creation of the new model is
   reflected in migrations.

@@ -19,7 +19,7 @@
   tercatat keliru sebagai 2 backdev). Masing-masing punya AI sendiri.
 - **Produk:** **JosJob** — platform job seeker untuk fresh graduate, dengan
   CV analyzer + ranking, dibangun ON TOP dari project lama teman tim
-  (**Stellar**), plus pengasah skill (learning) sebagai nilai jual.
+  (**JosJob**), plus pengasah skill (learning) sebagai nilai jual.
 - **Peran asisten di chat ini:** menulis PRD (bukan menulis code).
   PRD arsitektur v1 (13 halaman, 10 Nov 2026) sudah pernah dibuat dan
   dibagikan; dokumen oneshot ini (11 Nov 2026) menggantikannya sebagai
@@ -36,12 +36,12 @@
    Bahasa Indonesia) dibuat dan dibagikan. Pembagian jujur: learning sudah
    jalan, jobs/quiz/realtime masih stub/UI-only.
 4. **10 Nov, 10:56** — User menambahkan prompt + planning saat menulis
-   abstrak (plan awal tim sebelum Stellar) + 3 file: plan awal, PRD awal,
-   dan ringkasan Stellar. Lalu user mengoreksi: "digest aja, belum
+   abstrak (plan awal tim sebelum JosJob) + 3 file: plan awal, PRD awal,
+   dan ringkasan Josjob. Lalu user mengoreksi: "digest aja, belum
    ngapa-ngapain" — build abstrak English yang sempat jalan langsung
    **di-stop** dan dibatalkan.
 5. **10 Nov, 11:04** — User menambahkan Handbook STACK 2026 + 3 koreksi:
-   stack conflict selesai (ON TOP Stellar = renovasi), scraping batal
+   stack conflict selesai (ON TOP JosJob = renovasi), scraping batal
    (plan lama), abstrak final dan paling benar bila ada info rancu.
 6. **11 Nov, 07:36** — User mulai memikirkan PRD: ide dikirim satu per
    satu, dicatat di konteks + diberi saran, **BELUM MENULIS** — oneshot
@@ -89,7 +89,7 @@
 
 | Keputusan | Asal |
 | --- | --- |
-| Renovasi Stellar (ON TOP), bukan bangun ulang | User, 10 Nov |
+| Renovasi JosJob (ON TOP), bukan bangun ulang | User, 10 Nov |
 | Stack microservices PRD awal gugur; pakai Elixir/Phoenix + Ash + Flutter | User + verifikasi repo, 10 Nov |
 | Scraping batal; data synthetic + employer-posted | User, 10 Nov |
 | Gemini free tier primary, 9Router fallback | User, 11 Nov |
@@ -99,7 +99,7 @@
 | Privasi patuh GDPR; consent checkbox; Privacy Policy + ToS | User, 11 Nov |
 | Deploy VPS (sudah dites, jalan); domain ada; Cloudflare nanti | User, 11 Nov |
 | Monetisasi di course/pembelajaran | User, 11 Nov |
-| Mobile sudah ada di Stellar — renovasi saja | User, 11 Nov |
+| Mobile sudah ada di JosJob — renovasi saja | User, 11 Nov |
 | CV rusak: pesan tegas, perbaiki dan scan ulang | User, 11 Nov |
 | Testing manual full flag; tanpa Gemini di CI/CD; round-robin free model 9Router | User, 11 Nov |
 | Ranking v1 dimatangkan; v2 tetap di plan (unused code atau desain — tanya backdev) | User, 11 Nov |
@@ -118,8 +118,8 @@
   penilaian, format submission.
 - Plan awal tim (`plan__sebelum_penambahan_stelar.md`, 73 baris, excerpt —
   Minggu 1–2 tidak ada di file) dan PRD awal
-  (`PRD_awal__sebelum_penambahan_stellar.md`, 55 baris, excerpt bagian
-  akhir saja) — keduanya **sebelum** penambahan Stellar.
+  (`PRD_awal__sebelum_penambahan_josjob.md`, 55 baris, excerpt bagian
+  akhir saja) — keduanya **sebelum** penambahan Josjob.
 - Rincian tugas Notion user (screenshot, 11 Nov 2026).
 
 ## 6. Yang sengaja TIDAK ada di PRD ini

@@ -2,7 +2,7 @@
 
 **Tanggal:** 2026-07-21
 **Status:** Disepakati untuk diimplementasi (menunggu review spec)
-**Konteks:** Stellar (Elixir umbrella, Ash Framework + AshPostgres, Phoenix LiveView/daisyUI). Multi-tenant.
+**Konteks:** JosJob (Elixir umbrella, Ash Framework + AshPostgres, Phoenix LiveView/daisyUI). Multi-tenant.
 
 ---
 
@@ -18,7 +18,7 @@ Dua jenis kepemilikan dalam satu tabel:
 
 | Topik | Keputusan |
 |---|---|
-| Penempatan | Domain **`StellarDoc.Documents`** di **`apps/stellar_doc`** (app `:stellar_doc`, namespace `StellarDoc`). |
+| Penempatan | Domain **`JosjobDoc.Documents`** di **`apps/josjob_doc`** (app `:josjob_doc`, namespace `JosjobDoc`). |
 | Struktur | **Satu tabel `documents`** polymorphic (bukan dua tabel). `owner_kind` diturunkan dari `course_id` (terisi/null). |
 | Penyimpanan | **URL saja** — DB simpan `url` + metadata. Upload file asli DI LUAR cakupan (belum ada object storage). |
 | `mime_type` | Kolom **`mime_type`** (string, nullable) menyimpan mimetype dokumen (mis. `application/pdf`, `video/mp4`). Bukan kategori/enum. |
@@ -27,15 +27,15 @@ Dua jenis kepemilikan dalam satu tabel:
 | Admin-org | Ditentukan dari **daftar role yang dapat dikonfigurasi** (`@org_admin_roles`, default `["coordinator"]`) via membership. Superuser di atas semua. |
 | UI | **Admin superuser** (lihat/kelola semua) **+ portal user** (user login lihat `visible_to` dirinya + upload/hapus miliknya). |
 
-## 3. Penempatan & Wiring (`apps/stellar_doc`)
+## 3. Penempatan & Wiring (`apps/josjob_doc`)
 
-Domain **`StellarDoc.Documents`**, resource **`StellarDoc.Documents.Document`** — `otp_app: :stellar_doc`, `data_layer: AshPostgres.DataLayer`, **`repo: Stellar.Repo`** (satu DB).
+Domain **`JosjobDoc.Documents`**, resource **`JosjobDoc.Documents.Document`** — `otp_app: :josjob_doc`, `data_layer: AshPostgres.DataLayer`, **`repo: Josjob.Repo`** (satu DB).
 
-Arah dependency satu arah: **`stellar_web → stellar_doc → stellar`**.
-- `apps/stellar_doc/mix.exs`: tambah `{:stellar, in_umbrella: true}` (untuk `Stellar.Accounts.User`, `Stellar.Orgs.Organization`, `Stellar.Repo`, dan `Stellar.Rbac.{Role, MembershipRole}` + `Stellar.Orgs.Membership` untuk helper visibilitas) + `{:ash, "~> 3.0"}`, `{:ash_postgres, "~> 2.0"}`.
-- `apps/stellar_web/mix.exs`: tambah `{:stellar_doc, in_umbrella: true}` (admin + portal merender dokumen).
-- `config/config.exs`: tambah `config :stellar_doc, ash_domains: [StellarDoc.Documents]`; tambahkan juga `StellarDoc.Documents` ke `config :stellar_web, ash_domains` (agar tooling via endpoint melihatnya).
-- Migrasi tetap ke `Stellar.Repo` → file di `apps/stellar/priv/repo/migrations`.
+Arah dependency satu arah: **`josjob_web → josjob_doc → josjob`**.
+- `apps/josjob_doc/mix.exs`: tambah `{:josjob, in_umbrella: true}` (untuk `Josjob.Accounts.User`, `Josjob.Orgs.Organization`, `Josjob.Repo`, dan `Josjob.Rbac.{Role, MembershipRole}` + `Josjob.Orgs.Membership` untuk helper visibilitas) + `{:ash, "~> 3.0"}`, `{:ash_postgres, "~> 2.0"}`.
+- `apps/josjob_web/mix.exs`: tambah `{:josjob_doc, in_umbrella: true}` (admin + portal merender dokumen).
+- `config/config.exs`: tambah `config :josjob_doc, ash_domains: [JosjobDoc.Documents]`; tambahkan juga `JosjobDoc.Documents` ke `config :josjob_web, ash_domains` (agar tooling via endpoint melihatnya).
+- Migrasi tetap ke `Josjob.Repo` → file di `apps/josjob/priv/repo/migrations`.
 - `course_id` uuid lepas → tak ada kopling app; tak memicu circular dependency.
 
 ## 4. Skema `documents`
@@ -56,9 +56,9 @@ documents
 - `mime_type` = tipe/mimetype dokumen (bukan enum kategori). **Tanpa** FK untuk `course_id`.
 - Pengunggah/pemilik = `user_id`; waktu unggah = `created_at`.
 - Index: `organization_id`, `user_id`, `course_id` (untuk filter visibilitas).
-- Relasi Ash: `belongs_to :user` (Stellar.Accounts.User), `belongs_to :organization` (Stellar.Orgs.Organization). `course_id` = attribute uuid biasa.
+- Relasi Ash: `belongs_to :user` (Josjob.Accounts.User), `belongs_to :organization` (Josjob.Orgs.Organization). `course_id` = attribute uuid biasa.
 
-## 5. Visibilitas — `StellarDoc.Documents.visible_to/1`
+## 5. Visibilitas — `JosjobDoc.Documents.visible_to/1`
 
 `visible_to(current_user)` mengembalikan query/daftar dokumen yang boleh dilihat, sebagai **union**:
 

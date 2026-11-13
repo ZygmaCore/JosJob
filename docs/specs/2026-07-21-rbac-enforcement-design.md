@@ -2,13 +2,13 @@
 
 **Tanggal:** 2026-07-21
 **Status:** Disepakati untuk diimplementasi (menunggu review spec)
-**Konteks:** Stellar (Elixir umbrella, Ash + AshPostgres, Phoenix). Multi-tenant. Data RBAC (permissions, roles, role_permissions, memberships, membership_roles) sudah ada tapi **belum ditegakkan** — gating saat ini hanya `is_superuser` + keanggotaan.
+**Konteks:** JosJob (Elixir umbrella, Ash + AshPostgres, Phoenix). Multi-tenant. Data RBAC (permissions, roles, role_permissions, memberships, membership_roles) sudah ada tapi **belum ditegakkan** — gating saat ini hanya `is_superuser` + keanggotaan.
 
 ---
 
 ## 1. Ringkasan
 
-Membangun **engine RBAC** di lapisan web (helper + plug) yang menghitung **izin efektif** user pada **organisasi aktif**, lalu menerapkannya ke **menu**, **akses route**, **aksi (read vs manage)**, dan **scoping data per-tenant**. Enforcement lewat `Stellar.Authz` + plug — **bukan** Ash policy (resource tetap `authorize?: false`). Ash policy menyusul selektif di iterasi lain.
+Membangun **engine RBAC** di lapisan web (helper + plug) yang menghitung **izin efektif** user pada **organisasi aktif**, lalu menerapkannya ke **menu**, **akses route**, **aksi (read vs manage)**, dan **scoping data per-tenant**. Enforcement lewat `Josjob.Authz` + plug — **bukan** Ash policy (resource tetap `authorize?: false`). Ash policy menyusul selektif di iterasi lain.
 
 Diterapkan sebagai bukti ke **2 surface per-org** yang sudah ada: **Memberships** & **Organizations**. Master data global (users/industries/skills/roles/permissions/documents) tetap superuser-only.
 
@@ -18,12 +18,12 @@ Diterapkan sebagai bukti ke **2 surface per-org** yang sudah ada: **Memberships*
 |---|---|
 | Lingkup | **Engine dulu** + terapkan minimal (bukti) ke Memberships & Organizations. |
 | Org aktif | Disimpan di **session**; default = membership aktif pertama; **switcher UI ditunda**. |
-| Mekanisme | **Web-layer** (`Stellar.Authz` + plug + menu helper). Resource Ash tetap `authorize?: false`. |
+| Mekanisme | **Web-layer** (`Josjob.Authz` + plug + menu helper). Resource Ash tetap `authorize?: false`. |
 | Izin efektif | Union `role_permissions` dari `membership_roles` pada org aktif. **Tidak** digabung lintas-org. |
 | Superuser | **Bypass** semua (lihat semua, semua aksi). |
 | Scoping data | **Ikut** — non-superuser hanya melihat data org aktifnya di surface bukti. |
 
-## 3. Engine — `Stellar.Authz` (app `:stellar`)
+## 3. Engine — `Josjob.Authz` (app `:josjob`)
 
 Tambahan fungsi:
 
@@ -36,13 +36,13 @@ Tambahan fungsi:
 
 Catatan: superuser tidak melewati `permissions_for` (di-bypass di `can?`). Fungsi murni-baca (`authorize?: false`).
 
-## 4. Plumbing Web (`stellar_web`)
+## 4. Plumbing Web (`josjob_web`)
 
-- **Plug `StellarWeb.Plugs.AssignActiveOrg`** — dipasang di pipeline `:browser` setelah `load_stellar_user`. Bila ada `current_user`, set:
-  - `conn.assigns.active_organization_id` = `Stellar.Authz.active_org_id(get_session(conn, "active_organization_id"), current_user)`
+- **Plug `JosjobWeb.Plugs.AssignActiveOrg`** — dipasang di pipeline `:browser` setelah `load_josjob_user`. Bila ada `current_user`, set:
+  - `conn.assigns.active_organization_id` = `Josjob.Authz.active_org_id(get_session(conn, "active_organization_id"), current_user)`
   - `conn.assigns.permissions` = `MapSet` izin efektif (`permissions_for`), atau `:all` bila superuser.
   Dihitung sekali per request. Bila tak ada user → assign default (nil / MapSet kosong).
-- **Plug `StellarWeb.Plugs.RequirePermission`** — `init` menerima permission string. Lolos bila `can?(current_user, active_organization_id, perm)`; jika tidak → flash + redirect ke `/` (atau 403). Superuser selalu lolos.
+- **Plug `JosjobWeb.Plugs.RequirePermission`** — `init` menerima permission string. Lolos bila `can?(current_user, active_organization_id, perm)`; jika tidak → flash + redirect ke `/` (atau 403). Superuser selalu lolos.
 - **Menu** (`Layouts.admin_nav/0` + `nav_for/2`): tiap item boleh punya `permission:`. Aturan tampil:
   - `visible: :any` → selalu (untuk user login; mis. Dashboard, Dokumen Saya).
   - `visible: :superuser` → hanya superuser (users, industries, skills, roles, permissions, documents).

@@ -50,3 +50,5 @@ personal.md
 **/test-results
 .superpowers/
 /graphify-out/
+# Manual deploy log (deploy-dev.sh)
+deploy-dev.log

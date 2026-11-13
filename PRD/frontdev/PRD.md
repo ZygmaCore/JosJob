@@ -1,6 +1,6 @@
 # PRD Frontend — JosJob (frontdev)
 
-> **Scope dokumen ini:** frontend saja (Flutter, `apps/stellar_fe` — satu
+> **Scope dokumen ini:** frontend saja (Flutter, `apps/josjob_fe` — satu
 > aplikasi unified untuk web; mobile = codebase Flutter yang sama,
 > direnovasi). Backend ada di `../backdev/PRD.md`. Keputusan level tim ada
 > di `../PRD.md`. Dokumen ini ditulis dalam Bahasa Indonesia dengan istilah
@@ -23,7 +23,7 @@
 
 ## 1. Tujuan scope frontend
 
-Merenovasi Flutter Web Stellar yang sudah ada menjadi JosJob, sehingga
+Merenovasi Flutter Web JosJob yang sudah ada menjadi JosJob, sehingga
 graduate dapat: melihat lowongan, mengupload CV, melihat ranking +
 penjelasan, mengambil kursus untuk skill yang hilang, dan melamar — semuanya
 dalam satu pengalaman (landing → auth → onboarding → dashboard Learn | Jobs).
@@ -79,7 +79,7 @@ memberi struktur + pilihan, bukan keputusan sepihak.
 
 - Jangan copy copywriting/branding Upwork atau Glints — inspirasi visual
   dan struktur saja.
-- Jangan isi angka trust/statistik karangan (stats di landing Stellar saat
+- Jangan isi angka trust/statistik karangan (stats di landing JosJob saat
   ini dapat memuat angka marketing — jangan dipakai sebagai klaim faktual
   sebelum diverifikasi tim).
 - Landing harus responsif (web dulu; mobile = codebase yang sama).
@@ -138,7 +138,7 @@ partial | unreadable | failed`) → hasil.
 - Tiap item ranking menampilkan: match %, skill yang cocok, **skill yang
   hilang**, dan penjelasan singkat kenapa item ini di atas.
 - **Hook ke kursus (selling point):** tiap skill yang hilang yang punya
-  kursus di Stellar menampilkan tautan langsung ke course/class tersebut
+  kursus di JosJob menampilkan tautan langsung ke course/class tersebut
   ("Pelajari SQL → Course X, Class Y"). Skill yang tidak punya kursus
   menampilkan "belum ada kursus untuk skill ini" — jangan mengarang kursus.
 - Bila skor berasal dari fallback keyword (backend memberi tahu), tampilkan
@@ -182,7 +182,7 @@ partial | unreadable | failed`) → hasil.
 
 ## 8. Nonfungsional (frontend)
 
-- **Offline/cache:** Stellar FE sudah offline-first via Drift + SQLite
+- **Offline/cache:** JosJob FE sudah offline-first via Drift + SQLite
   outbox (`services/sync/`). Untuk ranking: server yang menghitung ranking;
   client hanya meng-cache hasilnya + mencatat interaksi lalu sync saat
   online. **IndexedDB mentah vs Drift** — keputusan v1/v2 ada di §9.

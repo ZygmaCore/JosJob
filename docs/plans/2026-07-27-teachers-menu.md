@@ -6,9 +6,9 @@
 
 **Goal:** Menu admin "Teachers": list pengajar per org (+class yang diajar), halaman detail read-only (peserta + jadwal), dan delete = cabut role teacher + lepaskan dari class.
 
-**Architecture:** Tidak ada entitas baru — "teacher" = user ber-membership aktif yang mengemban role `key == "teacher"`. Logika "siapa itu teacher" (sekarang privat di `ClassController`) diekstrak ke modul bersama `StellarWeb.Teachers`, lalu `TeacherController` (index/show/delete) memakai modul itu. Gate lewat permission baru `teachers:read`/`teachers:manage` yang di-seed.
+**Architecture:** Tidak ada entitas baru — "teacher" = user ber-membership aktif yang mengemban role `key == "teacher"`. Logika "siapa itu teacher" (sekarang privat di `ClassController`) diekstrak ke modul bersama `JosjobWeb.Teachers`, lalu `TeacherController` (index/show/delete) memakai modul itu. Gate lewat permission baru `teachers:read`/`teachers:manage` yang di-seed.
 
-**Tech Stack:** Phoenix controller klasik (bukan LiveView), Ash resources (`Stellar.Rbac.*`, `StellarLrn.Learning.*`), pola persis menu Classes.
+**Tech Stack:** Phoenix controller klasik (bukan LiveView), Ash resources (`Josjob.Rbac.*`, `JosjobLrn.Learning.*`), pola persis menu Classes.
 
 **Spec:** `docs/specs/2026-07-27-teachers-menu-design.md`
 
@@ -24,7 +24,7 @@
 ### Task 1: Seed permission `teachers:read` / `teachers:manage`
 
 **Files:**
-- Modify: `apps/stellar/lib/stellar/release.ex` (blok `@permissions`, setelah blok Enrollment ± baris 63-68)
+- Modify: `apps/josjob/lib/josjob/release.ex` (blok `@permissions`, setelah blok Enrollment ± baris 63-68)
 
 **Interfaces:**
 - Produces: key permission `"teachers:read"` dan `"teachers:manage"` (kategori `"learning"`) tersedia di katalog seed — dipakai Task 3 (router/nav) dan test.
@@ -48,25 +48,25 @@ Expected: bersih (data module attribute, tidak ada logika baru).
 
 ---
 
-### Task 2: Ekstrak `StellarWeb.Teachers` dari `ClassController` (refactor, perilaku tetap)
+### Task 2: Ekstrak `JosjobWeb.Teachers` dari `ClassController` (refactor, perilaku tetap)
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/teachers.ex`
-- Modify: `apps/stellar_web/lib/stellar_web/controllers/admin/class_controller.ex` (hapus helper privat: `teacher_users/1`, `teacher_pairs/1`, `teacher_role_query/2`, `teacher_membership_ids/1`, `active_user_ids/2`; ganti pemanggilnya)
-- Test: sudah ada — `apps/stellar_web/test/stellar_web/controllers/admin/class_controller_test.exs` (harus tetap hijau, tanpa diubah)
+- Create: `apps/josjob_web/lib/josjob_web/teachers.ex`
+- Modify: `apps/josjob_web/lib/josjob_web/controllers/admin/class_controller.ex` (hapus helper privat: `teacher_users/1`, `teacher_pairs/1`, `teacher_role_query/2`, `teacher_membership_ids/1`, `active_user_ids/2`; ganti pemanggilnya)
+- Test: sudah ada — `apps/josjob_web/test/josjob_web/controllers/admin/class_controller_test.exs` (harus tetap hijau, tanpa diubah)
 
 **Interfaces:**
 - Produces (dipakai Task 3-5):
-  - `StellarWeb.Teachers.teacher_users(org_id :: String.t() | nil) :: [User.t()]` — user ber-role teacher aktif; `nil` = semua org.
-  - `StellarWeb.Teachers.teacher_rows(org_id :: String.t() | nil) :: [%{organization_id: String.t(), user: User.t()}]` — satu baris per pasangan org+user, urut nama.
-  - `StellarWeb.Teachers.teacher_pairs(classes :: [Class.t()]) :: MapSet.t({org_id, user_id})`.
+  - `JosjobWeb.Teachers.teacher_users(org_id :: String.t() | nil) :: [User.t()]` — user ber-role teacher aktif; `nil` = semua org.
+  - `JosjobWeb.Teachers.teacher_rows(org_id :: String.t() | nil) :: [%{organization_id: String.t(), user: User.t()}]` — satu baris per pasangan org+user, urut nama.
+  - `JosjobWeb.Teachers.teacher_pairs(classes :: [Class.t()]) :: MapSet.t({org_id, user_id})`.
 
 - [ ] **Step 1: Buat modul baru**
 
-`apps/stellar_web/lib/stellar_web/teachers.ex` — badan `teacher_users/1`, `teacher_pairs/1`, dan privat-privatnya DISALIN APA ADANYA dari `ClassController` (jangan tulis ulang dari ingatan; buka filenya). Kerangka:
+`apps/josjob_web/lib/josjob_web/teachers.ex` — badan `teacher_users/1`, `teacher_pairs/1`, dan privat-privatnya DISALIN APA ADANYA dari `ClassController` (jangan tulis ulang dari ingatan; buka filenya). Kerangka:
 
 ```elixir
-defmodule StellarWeb.Teachers do
+defmodule JosjobWeb.Teachers do
   @moduledoc """
   Query bersama "siapa itu teacher": user ber-role `key == "teacher"` (role milik
   org) dengan membership aktif di org tsb. Satu sumber kebenaran untuk
@@ -75,9 +75,9 @@ defmodule StellarWeb.Teachers do
   """
   require Ash.Query
 
-  alias Stellar.Accounts.User
-  alias Stellar.Orgs.Membership
-  alias Stellar.Rbac.{MembershipRole, Role}
+  alias Josjob.Accounts.User
+  alias Josjob.Orgs.Membership
+  alias Josjob.Rbac.{MembershipRole, Role}
 
   @doc "User ber-role teacher. `org_id` nil = semua org (superuser)."
   def teacher_users(org_id) do
@@ -137,13 +137,13 @@ end
 - [ ] **Step 2: Ganti pemakaian di `ClassController`**
 
 1. Hapus kelima helper privat tsb.
-2. `teacher_users(org_id)` (di `instructor_options/1`) → `StellarWeb.Teachers.teacher_users(org_id)`.
-3. `teacher_pairs(classes)` (di `index/2`) → `StellarWeb.Teachers.teacher_pairs(classes)`.
+2. `teacher_users(org_id)` (di `instructor_options/1`) → `JosjobWeb.Teachers.teacher_users(org_id)`.
+3. `teacher_pairs(classes)` (di `index/2`) → `JosjobWeb.Teachers.teacher_pairs(classes)`.
 4. Kompilasi akan menunjukkan alias yang jadi yatim (kemungkinan `Role`, `MembershipRole` — CEK, `Membership` masih dipakai `org_members/1`); hapus hanya yang benar-benar tak terpakai.
 
 - [ ] **Step 3: Verifikasi perilaku tak berubah**
 
-Run: `mix compile --warnings-as-errors && MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/class_controller_test.exs`
+Run: `mix compile --warnings-as-errors && MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/class_controller_test.exs`
 Expected: compile bersih, test class (kolom Pengajar) tetap hijau tanpa diubah.
 
 ---
@@ -151,36 +151,36 @@ Expected: compile bersih, test class (kolom Pengajar) tetap hijau tanpa diubah.
 ### Task 3: Route + nav + list `/teachers`
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_controller.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html/index.html.heex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (pipeline baru + scope baru, tiru pola `:require_classes_read` ± baris 63 dan scope `/classes` ± baris 254)
-- Modify: `apps/stellar_web/lib/stellar_web/components/layouts.ex` (item `admin_nav` setelah `:classes` ± baris 268)
-- Test: `apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs` (baru)
-- Test: `apps/stellar_web/test/stellar_web/admin_nav_test.exs` (tambah 2 test)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_controller.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html/index.html.heex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (pipeline baru + scope baru, tiru pola `:require_classes_read` ± baris 63 dan scope `/classes` ± baris 254)
+- Modify: `apps/josjob_web/lib/josjob_web/components/layouts.ex` (item `admin_nav` setelah `:classes` ± baris 268)
+- Test: `apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs` (baru)
+- Test: `apps/josjob_web/test/josjob_web/admin_nav_test.exs` (tambah 2 test)
 
 **Interfaces:**
-- Consumes: `StellarWeb.Teachers.teacher_rows/1` (Task 2), permission key (Task 1).
+- Consumes: `JosjobWeb.Teachers.teacher_rows/1` (Task 2), permission key (Task 1).
 - Produces: route `GET /teachers` (index), helper HTML `class_label/1`, `class_summary/1`, `classes_of/2`, `delete_confirm/2` (dipakai Task 4-5); assigns index: `rows`, `classes_by`, `org_names`.
 
 - [ ] **Step 1: Tulis failing test**
 
-`apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs`:
+`apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs`:
 
 ```elixir
-defmodule StellarWeb.Admin.TeacherControllerTest do
+defmodule JosjobWeb.Admin.TeacherControllerTest do
   @moduledoc """
   Menu Teachers: list ter-scope org, kolom Class, detail read-only, dan delete
   (cabut role + lepaskan dari class). Spec: docs/specs/2026-07-27-teachers-menu-design.md.
   """
-  use StellarWeb.ConnCase, async: false
+  use JosjobWeb.ConnCase, async: false
 
   require Ash.Query
 
-  alias Stellar.Accounts.User
-  alias Stellar.Orgs.{Membership, Organization}
-  alias Stellar.Rbac.{MembershipRole, Permission, Role, RolePermission}
-  alias StellarLrn.Learning.{Class, Course, Enrollment, Section}
+  alias Josjob.Accounts.User
+  alias Josjob.Orgs.{Membership, Organization}
+  alias Josjob.Rbac.{MembershipRole, Permission, Role, RolePermission}
+  alias JosjobLrn.Learning.{Class, Course, Enrollment, Section}
 
   # --- fixtures (pola class_controller_test) ---
 
@@ -382,7 +382,7 @@ end
 
 - [ ] **Step 2: Jalankan test — harus GAGAL**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs`
 Expected: FAIL — `no route found for GET /teachers`.
 
 - [ ] **Step 3: Router — pipeline + scope**
@@ -391,7 +391,7 @@ Di `router.ex`, setelah pipeline `:require_classes_read`:
 
 ```elixir
   pipeline :require_teachers_read do
-    plug StellarWeb.Plugs.RequirePermission, ["teachers:read", "teachers:manage"]
+    plug JosjobWeb.Plugs.RequirePermission, ["teachers:read", "teachers:manage"]
   end
 ```
 
@@ -399,7 +399,7 @@ Setelah scope Class admin:
 
 ```elixir
   # Menu Teachers (read-only + cabut role). Gate teachers:* (manage dicek di controller).
-  scope "/", StellarWeb.Admin do
+  scope "/", JosjobWeb.Admin do
     pipe_through [:browser, :require_member, :require_teachers_read]
 
     resources "/teachers", TeacherController, only: [:index, :show, :delete]
@@ -410,10 +410,10 @@ Setelah scope Class admin:
 
 - [ ] **Step 4: Controller (index dulu; show/delete menyusul di Task 4-5)**
 
-`apps/stellar_web/lib/stellar_web/controllers/admin/teacher_controller.ex`:
+`apps/josjob_web/lib/josjob_web/controllers/admin/teacher_controller.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.TeacherController do
+defmodule JosjobWeb.Admin.TeacherController do
   @moduledoc """
   Menu Teachers (spec: docs/specs/2026-07-27-teachers-menu-design.md). "Teacher"
   = user ber-role `teacher` dengan membership aktif — bukan entitas sendiri.
@@ -422,13 +422,13 @@ defmodule StellarWeb.Admin.TeacherController do
   Non-superuser ter-scope org aktif; superuser lintas org (param `org` memilih
   konteks di show/delete).
   """
-  use StellarWeb, :controller
+  use JosjobWeb, :controller
 
   require Ash.Query
 
-  alias StellarLrn.Learning.Class
-  alias Stellar.Orgs.Organization
-  alias StellarWeb.Teachers
+  alias JosjobLrn.Learning.Class
+  alias Josjob.Orgs.Organization
+  alias JosjobWeb.Teachers
 
   defp su?(conn), do: conn.assigns[:permissions] == :all
   defp active_org(conn), do: conn.assigns[:active_organization_id]
@@ -467,11 +467,11 @@ end
 
 - [ ] **Step 5: HTML module + template index**
 
-`apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html.ex`:
+`apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.TeacherHTML do
-  use StellarWeb, :html
+defmodule JosjobWeb.Admin.TeacherHTML do
+  use JosjobWeb, :html
 
   embed_templates "teacher_html/*"
 
@@ -502,7 +502,7 @@ defmodule StellarWeb.Admin.TeacherHTML do
 end
 ```
 
-`apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html/index.html.heex`:
+`apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html/index.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -535,7 +535,7 @@ end
     </:action>
     <:action :let={r}>
       <.link
-        :if={StellarWeb.Perms.can?(@permissions, ["teachers:manage"])}
+        :if={JosjobWeb.Perms.can?(@permissions, ["teachers:manage"])}
         href={~p"/teachers/#{r.user.id}?org=#{r.organization_id}"}
         method="delete"
         data-confirm={delete_confirm(r, classes_of(@classes_by, r))}
@@ -566,7 +566,7 @@ Di `layouts.ex` `admin_nav/0`, sisipkan setelah entri `:classes`:
 
 - [ ] **Step 7: Test nav (2 test baru)**
 
-Tambah di `apps/stellar_web/test/stellar_web/admin_nav_test.exs` (pakai `member_with_perms` yang sudah ada):
+Tambah di `apps/josjob_web/test/josjob_web/admin_nav_test.exs` (pakai `member_with_perms` yang sudah ada):
 
 ```elixir
   test "dengan teachers:read — menu Teachers tampil", %{conn: conn} do
@@ -586,7 +586,7 @@ Tambah di `apps/stellar_web/test/stellar_web/admin_nav_test.exs` (pakai `member_
 
 - [ ] **Step 8: Jalankan test — harus HIJAU**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs apps/stellar_web/test/stellar_web/admin_nav_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs apps/josjob_web/test/josjob_web/admin_nav_test.exs`
 Expected: PASS semua (4 test controller + 5 test nav).
 
 ---
@@ -594,9 +594,9 @@ Expected: PASS semua (4 test controller + 5 test nav).
 ### Task 4: Halaman detail `/teachers/:id`
 
 **Files:**
-- Modify: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_controller.ex` (action `show`)
-- Modify: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html.ex` (helper `session_label/1`, `participants_label/2`)
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html/show.html.heex`
+- Modify: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_controller.ex` (action `show`)
+- Modify: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html.ex` (helper `session_label/1`, `participants_label/2`)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html/show.html.heex`
 - Test: `teacher_controller_test.exs` (tambah 2 test)
 
 **Interfaces:**
@@ -661,12 +661,12 @@ Expected: PASS semua (4 test controller + 5 test nav).
 
 - [ ] **Step 2: Jalankan — harus GAGAL**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs`
 Expected: FAIL — `UndefinedFunctionError ... show/2` (atau ActionClauseError).
 
 - [ ] **Step 3: Implementasi `show` + helper + template**
 
-Tambah di `TeacherController` (alias tambahan: `StellarLrn.Learning.Enrollment`, `Stellar.Accounts.User` TIDAK perlu — user dicari via `Teachers.teacher_users/1`):
+Tambah di `TeacherController` (alias tambahan: `JosjobLrn.Learning.Enrollment`, `Josjob.Accounts.User` TIDAK perlu — user dicari via `Teachers.teacher_users/1`):
 
 ```elixir
   def show(conn, %{"id" => user_id} = params) do
@@ -717,7 +717,7 @@ Tambah di `TeacherController` (alias tambahan: `StellarLrn.Learning.Enrollment`,
   # Boleh membuka /classes/:id/edit? — daftar izin yang sama dengan tombol
   # "Kelola" di list Classes.
   defp can_open_class?(conn) do
-    StellarWeb.Perms.can?(conn.assigns[:permissions], [
+    JosjobWeb.Perms.can?(conn.assigns[:permissions], [
       "classes:update",
       "classes:manage",
       "enrollments:read",
@@ -768,7 +768,7 @@ Tambah di `TeacherHTML`:
   end
 ```
 
-`apps/stellar_web/lib/stellar_web/controllers/admin/teacher_html/show.html.heex`:
+`apps/josjob_web/lib/josjob_web/controllers/admin/teacher_html/show.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -813,7 +813,7 @@ Tambah di `TeacherHTML`:
 
 - [ ] **Step 4: Jalankan — harus HIJAU**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs`
 Expected: PASS semua.
 
 ---
@@ -821,7 +821,7 @@ Expected: PASS semua.
 ### Task 5: Delete — cabut role + lepaskan dari class
 
 **Files:**
-- Modify: `apps/stellar_web/lib/stellar_web/controllers/admin/teacher_controller.ex` (action `delete` + privat `revoke_teacher/2`)
+- Modify: `apps/josjob_web/lib/josjob_web/controllers/admin/teacher_controller.ex` (action `delete` + privat `revoke_teacher/2`)
 - Test: `teacher_controller_test.exs` (tambah 3 test)
 
 **Interfaces:**
@@ -906,17 +906,17 @@ Expected: PASS semua.
 
 - [ ] **Step 2: Jalankan — harus GAGAL**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs`
 Expected: FAIL — action `delete/2` belum ada.
 
 - [ ] **Step 3: Implementasi `delete`**
 
-Tambah di `TeacherController` (alias tambahan: `Stellar.Orgs.Membership`, `Stellar.Rbac.{MembershipRole, Role}`):
+Tambah di `TeacherController` (alias tambahan: `Josjob.Orgs.Membership`, `Josjob.Rbac.{MembershipRole, Role}`):
 
 ```elixir
   def delete(conn, %{"id" => user_id} = params) do
     org_id = resolve_org(conn, params)
-    manage? = StellarWeb.Perms.can?(conn.assigns[:permissions], ["teachers:manage"])
+    manage? = JosjobWeb.Perms.can?(conn.assigns[:permissions], ["teachers:manage"])
 
     if manage? and is_binary(org_id) do
       revoke_teacher(user_id, org_id)
@@ -935,7 +935,7 @@ Tambah di `TeacherController` (alias tambahan: `Stellar.Orgs.Membership`, `Stell
   # instructor semua class org itu yang dia ajar. User/membership/role lain utuh.
   defp revoke_teacher(user_id, org_id) do
     {:ok, _} =
-      Stellar.Repo.transaction(fn ->
+      Josjob.Repo.transaction(fn ->
         role_ids =
           Role
           |> Ash.Query.filter(key == "teacher" and organization_id == ^org_id)
@@ -971,7 +971,7 @@ Tambah di `TeacherController` (alias tambahan: `Stellar.Orgs.Membership`, `Stell
 
 - [ ] **Step 4: Jalankan — harus HIJAU**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/controllers/admin/teacher_controller_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/controllers/admin/teacher_controller_test.exs`
 Expected: PASS semua (9 test).
 
 ---

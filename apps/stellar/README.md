@@ -1,3 +1,0 @@
-# Stellar
-
-**TODO: Add description**

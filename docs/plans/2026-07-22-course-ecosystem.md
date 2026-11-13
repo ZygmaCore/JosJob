@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the course-ecosystem domain (Section → Course → Class → Enrollment, with materials = documents) in a new `stellar_lrn` app, and remove the old VOD course feature.
+**Goal:** Build the course-ecosystem domain (Section → Course → Class → Enrollment, with materials = documents) in a new `josjob_lrn` app, and remove the old VOD course feature.
 
-**Architecture:** New Ash domain `StellarLrn.Learning` in `apps/stellar_lrn`, using the shared `Stellar.Repo`. Old `Stellar.Courses` (VOD) is deleted; a drop-migration removes its tables. New tables are created fresh. `documents` (in `stellar_doc`) is reused unchanged as "Material", linked by a plain `course_id` uuid.
+**Architecture:** New Ash domain `JosjobLrn.Learning` in `apps/josjob_lrn`, using the shared `Josjob.Repo`. Old `Josjob.Courses` (VOD) is deleted; a drop-migration removes its tables. New tables are created fresh. `documents` (in `josjob_doc`) is reused unchanged as "Material", linked by a plain `course_id` uuid.
 
 **Tech Stack:** Elixir umbrella, Ash 3.x + AshPostgres 2.x, PostgreSQL (dev on port 5438), ExUnit.
 
@@ -12,38 +12,38 @@
 
 - **NEVER run any git command.** The user handles all commits. Commit steps below are FYI checkpoints for the user; do not execute them.
 - **NEVER run migrations/seed/DB-reset against the dev DB.** Only the **TEST** database may be migrated for verification (`MIX_ENV=test`). Deploy runs `bin/migrate`+`bin/seed` automatically; the user resets the dev DB.
-- New backend code goes in the app that owns the concern: course ecosystem → `apps/stellar_lrn`. Migrations + snapshots for `Stellar.Repo` live under `apps/stellar/priv/`.
-- Dependency direction: `stellar_lrn → stellar` and `stellar_lrn → stellar_doc`. `stellar_lrn` must NOT be a dependency of `stellar`/`stellar_doc` (cycle).
+- New backend code goes in the app that owns the concern: course ecosystem → `apps/josjob_lrn`. Migrations + snapshots for `Josjob.Repo` live under `apps/josjob/priv/`.
+- Dependency direction: `josjob_lrn → josjob` and `josjob_lrn → josjob_doc`. `josjob_lrn` must NOT be a dependency of `josjob`/`josjob_doc` (cycle).
 - Table names are clean (no prefix): `sections`, `courses`, `classes`, `enrollments`, `section_organizations`, `course_organizations`, `course_industries`.
 - Verify with: `mix compile --warnings-as-errors` and `mix format --check-formatted` clean (from repo root). Behavior tests run on the TEST DB and are **removed after they pass** (project norm).
-- Resources use `otp_app: :stellar_lrn`, `data_layer: AshPostgres.DataLayer`, `domain: StellarLrn.Learning`, `repo(Stellar.Repo)`.
+- Resources use `otp_app: :josjob_lrn`, `data_layer: AshPostgres.DataLayer`, `domain: JosjobLrn.Learning`, `repo(Josjob.Repo)`.
 
 ---
 
-### Task 1: Scaffold `stellar_lrn` app + empty domain + wiring
+### Task 1: Scaffold `josjob_lrn` app + empty domain + wiring
 
 **Files:**
-- Modify: `apps/stellar_lrn/mix.exs`
-- Create: `apps/stellar_lrn/.formatter.exs`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning.ex`
+- Modify: `apps/josjob_lrn/mix.exs`
+- Create: `apps/josjob_lrn/.formatter.exs`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning.ex`
 - Modify: `config/config.exs`
-- Modify: `apps/stellar_web/mix.exs:60-66` (deps list)
-- Modify: `apps/stellar_lrn/test/test_helper.exs`
-- Create: `apps/stellar_lrn/test/support/data_case.ex`
+- Modify: `apps/josjob_web/mix.exs:60-66` (deps list)
+- Modify: `apps/josjob_lrn/test/test_helper.exs`
+- Create: `apps/josjob_lrn/test/support/data_case.ex`
 
 **Interfaces:**
-- Produces: Ash domain `StellarLrn.Learning` (empty `resources do end` for now); OTP app `:stellar_lrn` depending on `:stellar` + `:stellar_doc` + `ash` + `ash_postgres`.
+- Produces: Ash domain `JosjobLrn.Learning` (empty `resources do end` for now); OTP app `:josjob_lrn` depending on `:josjob` + `:josjob_doc` + `ash` + `ash_postgres`.
 
-- [ ] **Step 1: Set `stellar_lrn` deps**
+- [ ] **Step 1: Set `josjob_lrn` deps**
 
-Replace the `deps/0` in `apps/stellar_lrn/mix.exs` with:
+Replace the `deps/0` in `apps/josjob_lrn/mix.exs` with:
 
 ```elixir
   defp deps do
     [
-      # User/Org/Industry/Repo live in :stellar; documents (Material) in :stellar_doc.
-      {:stellar, in_umbrella: true},
-      {:stellar_doc, in_umbrella: true},
+      # User/Org/Industry/Repo live in :josjob; documents (Material) in :josjob_doc.
+      {:josjob, in_umbrella: true},
+      {:josjob_doc, in_umbrella: true},
       {:ash, "~> 3.0"},
       {:ash_postgres, "~> 2.0"}
     ]
@@ -66,7 +66,7 @@ and add these private functions after `project/0`:
 
 - [ ] **Step 2: Add formatter**
 
-Create `apps/stellar_lrn/.formatter.exs`:
+Create `apps/josjob_lrn/.formatter.exs`:
 
 ```elixir
 [
@@ -77,14 +77,14 @@ Create `apps/stellar_lrn/.formatter.exs`:
 
 - [ ] **Step 3: Create the empty domain**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning do
+defmodule JosjobLrn.Learning do
   @moduledoc """
   Domain ekosistem course: Section → Course → Class → Enrollment.
-  Material = dokumen di `StellarDoc.Documents` (dihubungkan lewat `course_id`).
-  Pakai `Stellar.Repo`; enforcement lewat query-scope (bukan Ash policy global).
+  Material = dokumen di `JosjobDoc.Documents` (dihubungkan lewat `course_id`).
+  Pakai `Josjob.Repo`; enforcement lewat query-scope (bukan Ash policy global).
   """
   use Ash.Domain
 
@@ -95,31 +95,31 @@ end
 
 - [ ] **Step 4: Wire config**
 
-In `config/config.exs`, register the new domain. After the `config :stellar_doc, ash_domains: ...` line add:
+In `config/config.exs`, register the new domain. After the `config :josjob_doc, ash_domains: ...` line add:
 
 ```elixir
-config :stellar_lrn, ash_domains: [StellarLrn.Learning]
+config :josjob_lrn, ash_domains: [JosjobLrn.Learning]
 ```
 
-- [ ] **Step 5: Register domain with AshAdmin (stellar_web)**
+- [ ] **Step 5: Register domain with AshAdmin (josjob_web)**
 
-In `config/config.exs`, in the `config :stellar_web, ... ash_domains: [...]` list, add `StellarLrn.Learning` (keep the others; `Stellar.Courses` is removed in Task 2).
+In `config/config.exs`, in the `config :josjob_web, ... ash_domains: [...]` list, add `JosjobLrn.Learning` (keep the others; `Josjob.Courses` is removed in Task 2).
 
-- [ ] **Step 6: Add stellar_lrn to stellar_web deps**
+- [ ] **Step 6: Add josjob_lrn to josjob_web deps**
 
-In `apps/stellar_web/mix.exs` deps, after `{:stellar_doc, in_umbrella: true},` add:
+In `apps/josjob_web/mix.exs` deps, after `{:josjob_doc, in_umbrella: true},` add:
 
 ```elixir
-      {:stellar_lrn, in_umbrella: true},
+      {:josjob_lrn, in_umbrella: true},
 ```
 
 - [ ] **Step 7: Add a DataCase for TEST-DB tests**
 
-Create `apps/stellar_lrn/test/support/data_case.ex`:
+Create `apps/josjob_lrn/test/support/data_case.ex`:
 
 ```elixir
-defmodule StellarLrn.DataCase do
-  @moduledoc "Test case that checks out an Ecto sandbox connection on Stellar.Repo."
+defmodule JosjobLrn.DataCase do
+  @moduledoc "Test case that checks out an Ecto sandbox connection on Josjob.Repo."
   use ExUnit.CaseTemplate
 
   using do
@@ -129,18 +129,18 @@ defmodule StellarLrn.DataCase do
   end
 
   setup tags do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Stellar.Repo, shared: not tags[:async])
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Josjob.Repo, shared: not tags[:async])
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
     :ok
   end
 end
 ```
 
-Replace `apps/stellar_lrn/test/test_helper.exs` with:
+Replace `apps/josjob_lrn/test/test_helper.exs` with:
 
 ```elixir
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(Stellar.Repo, :manual)
+Ecto.Adapters.SQL.Sandbox.mode(Josjob.Repo, :manual)
 ```
 
 - [ ] **Step 8: Verify compile**
@@ -151,8 +151,8 @@ Expected: compiles (the empty domain triggers no Ash "empty domain" error; if it
 - [ ] **Step 9: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_lrn config/config.exs apps/stellar_web/mix.exs
-git commit -m "feat(lrn): scaffold stellar_lrn app + empty Learning domain"
+git add apps/josjob_lrn config/config.exs apps/josjob_web/mix.exs
+git commit -m "feat(lrn): scaffold josjob_lrn app + empty Learning domain"
 ```
 
 ---
@@ -160,45 +160,45 @@ git commit -m "feat(lrn): scaffold stellar_lrn app + empty Learning domain"
 ### Task 2: Remove the VOD course feature + drop its tables
 
 **Files:**
-- Delete: `apps/stellar/lib/stellar/courses/` (whole dir: `course.ex`, `lecture.ex`, `video_checkpoint.ex`, `transcript.ex`, `changes/sync_from_cloudflare.ex`)
-- Delete: `apps/stellar/lib/stellar/courses.ex` (the `Stellar.Courses` domain module)
-- Delete orphan snapshots: `apps/stellar/priv/resource_snapshots/repo/{classes,materials,course_industries}/`
-- Modify: `config/config.exs` (remove `Stellar.Courses` from both `ash_domains` lists)
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (remove VOD routes)
-- Delete: `apps/stellar_web/lib/stellar_web/controllers/api/course_controller.ex`, `.../lecture_controller.ex`, `.../cloudflare_stream_webhook_controller.ex` (and their JSON views if any: `.../api/course_json.ex`, `.../api/lecture_json.ex` — delete only if present)
-- Generated: a new drop migration under `apps/stellar/priv/repo/migrations/`
+- Delete: `apps/josjob/lib/josjob/courses/` (whole dir: `course.ex`, `lecture.ex`, `video_checkpoint.ex`, `transcript.ex`, `changes/sync_from_cloudflare.ex`)
+- Delete: `apps/josjob/lib/josjob/courses.ex` (the `Josjob.Courses` domain module)
+- Delete orphan snapshots: `apps/josjob/priv/resource_snapshots/repo/{classes,materials,course_industries}/`
+- Modify: `config/config.exs` (remove `Josjob.Courses` from both `ash_domains` lists)
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (remove VOD routes)
+- Delete: `apps/josjob_web/lib/josjob_web/controllers/api/course_controller.ex`, `.../lecture_controller.ex`, `.../cloudflare_stream_webhook_controller.ex` (and their JSON views if any: `.../api/course_json.ex`, `.../api/lecture_json.ex` — delete only if present)
+- Generated: a new drop migration under `apps/josjob/priv/repo/migrations/`
 
 **Interfaces:**
-- Produces: a repo with no `Stellar.Courses` domain, no VOD routes, and a migration dropping `courses`, `lectures`, `video_checkpoints`, `transcripts`.
+- Produces: a repo with no `Josjob.Courses` domain, no VOD routes, and a migration dropping `courses`, `lectures`, `video_checkpoints`, `transcripts`.
 
 - [ ] **Step 1: Confirm the VOD domain module path**
 
-Run: `ls apps/stellar/lib/stellar/courses.ex apps/stellar/lib/stellar/courses/`
-Expected: lists `courses.ex` and the resource files. (If `courses.ex` is named differently, note the actual `Stellar.Courses` domain file before deleting.)
+Run: `ls apps/josjob/lib/josjob/courses.ex apps/josjob/lib/josjob/courses/`
+Expected: lists `courses.ex` and the resource files. (If `courses.ex` is named differently, note the actual `Josjob.Courses` domain file before deleting.)
 
 - [ ] **Step 2: Delete VOD code**
 
 Run:
 ```bash
-rm -rf apps/stellar/lib/stellar/courses apps/stellar/lib/stellar/courses.ex
+rm -rf apps/josjob/lib/josjob/courses apps/josjob/lib/josjob/courses.ex
 ```
 
 - [ ] **Step 3: Delete orphan snapshots (no resource, no committed migration)**
 
 Run:
 ```bash
-rm -rf apps/stellar/priv/resource_snapshots/repo/classes \
-       apps/stellar/priv/resource_snapshots/repo/materials \
-       apps/stellar/priv/resource_snapshots/repo/course_industries
+rm -rf apps/josjob/priv/resource_snapshots/repo/classes \
+       apps/josjob/priv/resource_snapshots/repo/materials \
+       apps/josjob/priv/resource_snapshots/repo/course_industries
 ```
 
-- [ ] **Step 4: Remove `Stellar.Courses` from config**
+- [ ] **Step 4: Remove `Josjob.Courses` from config**
 
-In `config/config.exs`, edit the `:stellar` `ash_domains` (remove `, Stellar.Courses`) and the `:stellar_web` `ash_domains` list (remove the `Stellar.Courses,` line). Leave `StellarDoc.Documents` and the new `StellarLrn.Learning` in place.
+In `config/config.exs`, edit the `:josjob` `ash_domains` (remove `, Josjob.Courses`) and the `:josjob_web` `ash_domains` list (remove the `Josjob.Courses,` line). Leave `JosjobDoc.Documents` and the new `JosjobLrn.Learning` in place.
 
 - [ ] **Step 5: Remove VOD routes**
 
-In `apps/stellar_web/lib/stellar_web/router.ex`, delete these lines from the `/api` scope:
+In `apps/josjob_web/lib/josjob_web/router.ex`, delete these lines from the `/api` scope:
 
 ```elixir
     get "/courses", CourseController, :index
@@ -228,17 +228,17 @@ and the entire `/vod` scope block:
 
 Run (delete only files that exist):
 ```bash
-rm -f apps/stellar_web/lib/stellar_web/controllers/api/course_controller.ex \
-      apps/stellar_web/lib/stellar_web/controllers/api/lecture_controller.ex \
-      apps/stellar_web/lib/stellar_web/controllers/api/cloudflare_stream_webhook_controller.ex \
-      apps/stellar_web/lib/stellar_web/controllers/api/course_json.ex \
-      apps/stellar_web/lib/stellar_web/controllers/api/lecture_json.ex
+rm -f apps/josjob_web/lib/josjob_web/controllers/api/course_controller.ex \
+      apps/josjob_web/lib/josjob_web/controllers/api/lecture_controller.ex \
+      apps/josjob_web/lib/josjob_web/controllers/api/cloudflare_stream_webhook_controller.ex \
+      apps/josjob_web/lib/josjob_web/controllers/api/course_json.ex \
+      apps/josjob_web/lib/josjob_web/controllers/api/lecture_json.ex
 ```
 
 - [ ] **Step 7: Verify no dangling references**
 
-Run: `grep -rn "Stellar.Courses\|CloudflareStreamWebhookController\|CourseController\|LectureController" apps/*/lib config`
-Expected: no matches. If any remain (e.g. an alias, `StellarMs` call, or seed reference), remove them. Then:
+Run: `grep -rn "Josjob.Courses\|CloudflareStreamWebhookController\|CourseController\|LectureController" apps/*/lib config`
+Expected: no matches. If any remain (e.g. an alias, `JosjobMs` call, or seed reference), remove them. Then:
 
 Run: `mix compile --warnings-as-errors`
 Expected: compiles with no warnings/errors.
@@ -246,13 +246,13 @@ Expected: compiles with no warnings/errors.
 - [ ] **Step 8: Generate the drop migration**
 
 Run: `mix ash.codegen drop_vod_courses`
-Expected: creates a migration in `apps/stellar/priv/repo/migrations/` that drops `transcripts`, `video_checkpoints`, `lectures`, `courses` (dependents first). Open the file and confirm it only drops those four tables (no unexpected `create`/`alter`). If it also references `classes`/`materials`/`course_industries`, the orphan snapshots were not fully removed — redo Step 3 and regenerate.
+Expected: creates a migration in `apps/josjob/priv/repo/migrations/` that drops `transcripts`, `video_checkpoints`, `lectures`, `courses` (dependents first). Open the file and confirm it only drops those four tables (no unexpected `create`/`alter`). If it also references `classes`/`materials`/`course_industries`, the orphan snapshots were not fully removed — redo Step 3 and regenerate.
 
 - [ ] **Step 9: Verify the migration applies on the TEST DB**
 
 Run:
 ```bash
-cd apps/stellar && MIX_ENV=test mix ecto.drop && MIX_ENV=test mix ecto.create && MIX_ENV=test mix ecto.migrate && cd ../..
+cd apps/josjob && MIX_ENV=test mix ecto.drop && MIX_ENV=test mix ecto.create && MIX_ENV=test mix ecto.migrate && cd ../..
 ```
 Expected: all migrations run cleanly; the four VOD tables get created by the old migrations then dropped by the new one. No errors.
 
@@ -273,38 +273,38 @@ git commit -m "refactor: remove VOD course feature + drop its tables"
 ### Task 3: Taxonomy resources — Section, Course + join tables
 
 **Files:**
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/section.ex`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/section_organization.ex`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/course.ex`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/course_organization.ex`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/course_industry.ex`
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning.ex` (register resources)
-- Test (temp): `apps/stellar_lrn/test/learning/taxonomy_test.exs`
-- Generated: migration under `apps/stellar/priv/repo/migrations/`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/section.ex`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/section_organization.ex`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/course.ex`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/course_organization.ex`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/course_industry.ex`
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning.ex` (register resources)
+- Test (temp): `apps/josjob_lrn/test/learning/taxonomy_test.exs`
+- Generated: migration under `apps/josjob/priv/repo/migrations/`
 
 **Interfaces:**
 - Produces:
-  - `StellarLrn.Learning.Section` (table `sections`): `name:string!`, `description:string`, `is_active:boolean=true`; `many_to_many :organizations`; `has_many :courses`.
-  - `StellarLrn.Learning.SectionOrganization` (table `section_organizations`): `belongs_to :section`, `belongs_to :organization`; identity `(section_id, organization_id)`.
-  - `StellarLrn.Learning.Course` (table `courses`): `belongs_to :section!`, `title:string!`, `description:string`, `is_active:boolean=true`; `many_to_many :organizations`, `many_to_many :industries`; `has_many :classes`.
-  - `StellarLrn.Learning.CourseOrganization` (table `course_organizations`): `belongs_to :course`, `belongs_to :organization`; identity `(course_id, organization_id)`.
-  - `StellarLrn.Learning.CourseIndustry` (table `course_industries`): `belongs_to :course`, `belongs_to :industry`; identity `(course_id, industry_id)`.
+  - `JosjobLrn.Learning.Section` (table `sections`): `name:string!`, `description:string`, `is_active:boolean=true`; `many_to_many :organizations`; `has_many :courses`.
+  - `JosjobLrn.Learning.SectionOrganization` (table `section_organizations`): `belongs_to :section`, `belongs_to :organization`; identity `(section_id, organization_id)`.
+  - `JosjobLrn.Learning.Course` (table `courses`): `belongs_to :section!`, `title:string!`, `description:string`, `is_active:boolean=true`; `many_to_many :organizations`, `many_to_many :industries`; `has_many :classes`.
+  - `JosjobLrn.Learning.CourseOrganization` (table `course_organizations`): `belongs_to :course`, `belongs_to :organization`; identity `(course_id, organization_id)`.
+  - `JosjobLrn.Learning.CourseIndustry` (table `course_industries`): `belongs_to :course`, `belongs_to :industry`; identity `(course_id, industry_id)`.
 
 - [ ] **Step 1: Create `SectionOrganization`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/section_organization.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/section_organization.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.SectionOrganization do
+defmodule JosjobLrn.Learning.SectionOrganization do
   @moduledoc "Join section ↔ organization (tenant yang punya section)."
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("section_organizations")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
 
     references do
       reference(:section, on_delete: :delete)
@@ -317,12 +317,12 @@ defmodule StellarLrn.Learning.SectionOrganization do
   end
 
   relationships do
-    belongs_to :section, StellarLrn.Learning.Section do
+    belongs_to :section, JosjobLrn.Learning.Section do
       allow_nil?(false)
       public?(true)
     end
 
-    belongs_to :organization, Stellar.Orgs.Organization do
+    belongs_to :organization, Josjob.Orgs.Organization do
       allow_nil?(false)
       public?(true)
     end
@@ -341,19 +341,19 @@ end
 
 - [ ] **Step 2: Create `Section`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/section.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/section.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.Section do
+defmodule JosjobLrn.Learning.Section do
   @moduledoc "Section / jurusan (mis. \"Technology Information\"). Multi-tenant (M:N org)."
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("sections")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
   end
 
   attributes do
@@ -367,12 +367,12 @@ defmodule StellarLrn.Learning.Section do
   end
 
   relationships do
-    has_many :courses, StellarLrn.Learning.Course do
+    has_many :courses, JosjobLrn.Learning.Course do
       public?(true)
     end
 
-    many_to_many :organizations, Stellar.Orgs.Organization do
-      through(StellarLrn.Learning.SectionOrganization)
+    many_to_many :organizations, Josjob.Orgs.Organization do
+      through(JosjobLrn.Learning.SectionOrganization)
       source_attribute_on_join_resource(:section_id)
       destination_attribute_on_join_resource(:organization_id)
       public?(true)
@@ -388,19 +388,19 @@ end
 
 - [ ] **Step 3: Create `CourseOrganization`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/course_organization.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/course_organization.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.CourseOrganization do
+defmodule JosjobLrn.Learning.CourseOrganization do
   @moduledoc "Join course ↔ organization (tenant yang memakai course)."
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("course_organizations")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
 
     references do
       reference(:course, on_delete: :delete)
@@ -413,12 +413,12 @@ defmodule StellarLrn.Learning.CourseOrganization do
   end
 
   relationships do
-    belongs_to :course, StellarLrn.Learning.Course do
+    belongs_to :course, JosjobLrn.Learning.Course do
       allow_nil?(false)
       public?(true)
     end
 
-    belongs_to :organization, Stellar.Orgs.Organization do
+    belongs_to :organization, Josjob.Orgs.Organization do
       allow_nil?(false)
       public?(true)
     end
@@ -437,19 +437,19 @@ end
 
 - [ ] **Step 4: Create `CourseIndustry`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/course_industry.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/course_industry.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.CourseIndustry do
+defmodule JosjobLrn.Learning.CourseIndustry do
   @moduledoc "Join course ↔ industry (satu course bisa banyak industri)."
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("course_industries")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
 
     references do
       reference(:course, on_delete: :delete)
@@ -462,12 +462,12 @@ defmodule StellarLrn.Learning.CourseIndustry do
   end
 
   relationships do
-    belongs_to :course, StellarLrn.Learning.Course do
+    belongs_to :course, JosjobLrn.Learning.Course do
       allow_nil?(false)
       public?(true)
     end
 
-    belongs_to :industry, Stellar.Orgs.Industry do
+    belongs_to :industry, Josjob.Orgs.Industry do
       allow_nil?(false)
       public?(true)
     end
@@ -486,23 +486,23 @@ end
 
 - [ ] **Step 5: Create `Course`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/course.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/course.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.Course do
+defmodule JosjobLrn.Learning.Course do
   @moduledoc """
   Course (mis. \"Go Programming\"). Multi-tenant (M:N org), berkategori section +
   banyak industry. Pengajar TIDAK di sini — ada di Class. Material = dokumen
-  (StellarDoc) dengan `course_id` == id course ini.
+  (JosjobDoc) dengan `course_id` == id course ini.
   """
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("courses")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
 
     references do
       reference(:section, on_delete: :delete)
@@ -520,24 +520,24 @@ defmodule StellarLrn.Learning.Course do
   end
 
   relationships do
-    belongs_to :section, StellarLrn.Learning.Section do
+    belongs_to :section, JosjobLrn.Learning.Section do
       allow_nil?(false)
       public?(true)
     end
 
-    has_many :classes, StellarLrn.Learning.Class do
+    has_many :classes, JosjobLrn.Learning.Class do
       public?(true)
     end
 
-    many_to_many :organizations, Stellar.Orgs.Organization do
-      through(StellarLrn.Learning.CourseOrganization)
+    many_to_many :organizations, Josjob.Orgs.Organization do
+      through(JosjobLrn.Learning.CourseOrganization)
       source_attribute_on_join_resource(:course_id)
       destination_attribute_on_join_resource(:organization_id)
       public?(true)
     end
 
-    many_to_many :industries, Stellar.Orgs.Industry do
-      through(StellarLrn.Learning.CourseIndustry)
+    many_to_many :industries, Josjob.Orgs.Industry do
+      through(JosjobLrn.Learning.CourseIndustry)
       source_attribute_on_join_resource(:course_id)
       destination_attribute_on_join_resource(:industry_id)
       public?(true)
@@ -551,19 +551,19 @@ defmodule StellarLrn.Learning.Course do
 end
 ```
 
-Note: `Course` references `StellarLrn.Learning.Class` (created in Task 4). Until then compilation of the `has_many :classes` will fail — so create the `Class` resource (Task 4 Step 1) before compiling, OR temporarily comment the `has_many :classes` line and restore it in Task 4. Recommended: do Task 4 Step 1 now, then continue. (This note exists because tasks may be read out of order.)
+Note: `Course` references `JosjobLrn.Learning.Class` (created in Task 4). Until then compilation of the `has_many :classes` will fail — so create the `Class` resource (Task 4 Step 1) before compiling, OR temporarily comment the `has_many :classes` line and restore it in Task 4. Recommended: do Task 4 Step 1 now, then continue. (This note exists because tasks may be read out of order.)
 
 - [ ] **Step 6: Register taxonomy resources in the domain**
 
-Edit `apps/stellar_lrn/lib/stellar_lrn/learning.ex` `resources do` block to:
+Edit `apps/josjob_lrn/lib/josjob_lrn/learning.ex` `resources do` block to:
 
 ```elixir
   resources do
-    resource(StellarLrn.Learning.Section)
-    resource(StellarLrn.Learning.SectionOrganization)
-    resource(StellarLrn.Learning.Course)
-    resource(StellarLrn.Learning.CourseOrganization)
-    resource(StellarLrn.Learning.CourseIndustry)
+    resource(JosjobLrn.Learning.Section)
+    resource(JosjobLrn.Learning.SectionOrganization)
+    resource(JosjobLrn.Learning.Course)
+    resource(JosjobLrn.Learning.CourseOrganization)
+    resource(JosjobLrn.Learning.CourseIndustry)
   end
 ```
 
@@ -576,24 +576,24 @@ Expected: a migration that CREATEs `sections`, `section_organizations`, `courses
 
 - [ ] **Step 8: Migrate the TEST DB**
 
-Run: `cd apps/stellar && MIX_ENV=test mix ecto.migrate && cd ../..`
+Run: `cd apps/josjob && MIX_ENV=test mix ecto.migrate && cd ../..`
 Expected: applies cleanly.
 
 - [ ] **Step 9: Write a temp test proving the schema + relationships work**
 
-Create `apps/stellar_lrn/test/learning/taxonomy_test.exs`:
+Create `apps/josjob_lrn/test/learning/taxonomy_test.exs`:
 
 ```elixir
-defmodule StellarLrn.Learning.TaxonomyTest do
-  use StellarLrn.DataCase, async: false
+defmodule JosjobLrn.Learning.TaxonomyTest do
+  use JosjobLrn.DataCase, async: false
 
-  alias StellarLrn.Learning
-  alias StellarLrn.Learning.{Section, Course, CourseOrganization}
+  alias JosjobLrn.Learning
+  alias JosjobLrn.Learning.{Section, Course, CourseOrganization}
 
   defp org! do
     # An organization requires a user (owner). Create both directly via Ash.
     {:ok, user} =
-      Stellar.Accounts.User
+      Josjob.Accounts.User
       |> Ash.Changeset.for_create(:register_with_password, %{
         email: "t#{System.unique_integer([:positive])}@ex.com",
         password: "password1234",
@@ -602,7 +602,7 @@ defmodule StellarLrn.Learning.TaxonomyTest do
       |> Ash.create(authorize?: false)
 
     {:ok, org} =
-      Stellar.Orgs.Organization
+      Josjob.Orgs.Organization
       |> Ash.Changeset.for_create(:create, %{name: "Org #{System.unique_integer([:positive])}", user_id: user.id})
       |> Ash.create(authorize?: false)
 
@@ -632,17 +632,17 @@ defmodule StellarLrn.Learning.TaxonomyTest do
 end
 ```
 
-Note: if `Stellar.Accounts.User`'s registration action name/args differ, adjust `org!/0` to however users are created elsewhere in tests (check `apps/stellar_web/test/support` or existing factories). The point of the helper is a valid `organization`.
+Note: if `Josjob.Accounts.User`'s registration action name/args differ, adjust `org!/0` to however users are created elsewhere in tests (check `apps/josjob_web/test/support` or existing factories). The point of the helper is a valid `organization`.
 
 - [ ] **Step 10: Run the test**
 
-Run: `cd apps/stellar_lrn && MIX_ENV=test mix test test/learning/taxonomy_test.exs && cd ../..`
+Run: `cd apps/josjob_lrn && MIX_ENV=test mix test test/learning/taxonomy_test.exs && cd ../..`
 Expected: PASS.
 
 - [ ] **Step 11: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_lrn apps/stellar/priv
+git add apps/josjob_lrn apps/josjob/priv
 git commit -m "feat(lrn): add Section/Course + join tables"
 ```
 
@@ -651,37 +651,37 @@ git commit -m "feat(lrn): add Section/Course + join tables"
 ### Task 4: Delivery resources — Class + Enrollment (with capacity)
 
 **Files:**
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/class.ex`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/enrollment.ex`
-- Create: `apps/stellar_lrn/lib/stellar_lrn/learning/changes/check_capacity.ex`
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning.ex` (register Class + Enrollment)
-- Test (temp): `apps/stellar_lrn/test/learning/enrollment_test.exs`
-- Generated: migration under `apps/stellar/priv/repo/migrations/`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/class.ex`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/enrollment.ex`
+- Create: `apps/josjob_lrn/lib/josjob_lrn/learning/changes/check_capacity.ex`
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning.ex` (register Class + Enrollment)
+- Test (temp): `apps/josjob_lrn/test/learning/enrollment_test.exs`
+- Generated: migration under `apps/josjob/priv/repo/migrations/`
 
 **Interfaces:**
-- Consumes: `StellarLrn.Learning.Course` (Task 3), `Stellar.Accounts.User`, `Stellar.Orgs.Organization`.
+- Consumes: `JosjobLrn.Learning.Course` (Task 3), `Josjob.Accounts.User`, `Josjob.Orgs.Organization`.
 - Produces:
-  - `StellarLrn.Learning.Class` (table `classes`): `belongs_to :course!`, `organization_id`+`instructor_id` (belongs_to), `title:string`, `schedule:{:array,:map}=[]`, `capacity:integer` (nil=unlimited); `has_many :enrollments`.
-  - `StellarLrn.Learning.Enrollment` (table `enrollments`): `belongs_to :class!`, `belongs_to :student` (User), `status:atom in [:active,:completed]=:active`, `enrolled_at:utc_datetime_usec`; identity `(class_id, student_id)`; `:create` runs `CheckCapacity`.
+  - `JosjobLrn.Learning.Class` (table `classes`): `belongs_to :course!`, `organization_id`+`instructor_id` (belongs_to), `title:string`, `schedule:{:array,:map}=[]`, `capacity:integer` (nil=unlimited); `has_many :enrollments`.
+  - `JosjobLrn.Learning.Enrollment` (table `enrollments`): `belongs_to :class!`, `belongs_to :student` (User), `status:atom in [:active,:completed]=:active`, `enrolled_at:utc_datetime_usec`; identity `(class_id, student_id)`; `:create` runs `CheckCapacity`.
 
 - [ ] **Step 1: Create `Class`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/class.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/class.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.Class do
+defmodule JosjobLrn.Learning.Class do
   @moduledoc """
   Kelas: satu penyelenggaraan course oleh SATU pengajar (instructor), dengan
   jadwal (daftar sesi) + kapasitas slot (nil = tak terbatas). Milik satu tenant.
   """
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("classes")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
 
     references do
       reference(:course, on_delete: :delete)
@@ -703,22 +703,22 @@ defmodule StellarLrn.Learning.Class do
   end
 
   relationships do
-    belongs_to :course, StellarLrn.Learning.Course do
+    belongs_to :course, JosjobLrn.Learning.Course do
       allow_nil?(false)
       public?(true)
     end
 
-    belongs_to :organization, Stellar.Orgs.Organization do
+    belongs_to :organization, Josjob.Orgs.Organization do
       allow_nil?(false)
       public?(true)
     end
 
-    belongs_to :instructor, Stellar.Accounts.User do
+    belongs_to :instructor, Josjob.Accounts.User do
       allow_nil?(false)
       public?(true)
     end
 
-    has_many :enrollments, StellarLrn.Learning.Enrollment do
+    has_many :enrollments, JosjobLrn.Learning.Enrollment do
       public?(true)
     end
   end
@@ -732,10 +732,10 @@ end
 
 - [ ] **Step 2: Create the capacity change**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/changes/check_capacity.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/changes/check_capacity.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.Changes.CheckCapacity do
+defmodule JosjobLrn.Learning.Changes.CheckCapacity do
   @moduledoc """
   Tolak enrollment bila kelas penuh. `capacity` nil = tak terbatas. Hitung
   enrollment berstatus :active di kelas tsb; error bila count >= capacity.
@@ -744,7 +744,7 @@ defmodule StellarLrn.Learning.Changes.CheckCapacity do
   use Ash.Resource.Change
   require Ash.Query
 
-  alias StellarLrn.Learning.{Class, Enrollment}
+  alias JosjobLrn.Learning.{Class, Enrollment}
 
   @impl true
   def change(changeset, _opts, _context) do
@@ -774,19 +774,19 @@ end
 
 - [ ] **Step 3: Create `Enrollment`**
 
-Create `apps/stellar_lrn/lib/stellar_lrn/learning/enrollment.ex`:
+Create `apps/josjob_lrn/lib/josjob_lrn/learning/enrollment.ex`:
 
 ```elixir
-defmodule StellarLrn.Learning.Enrollment do
+defmodule JosjobLrn.Learning.Enrollment do
   @moduledoc "Pendaftaran siswa ke sebuah Class. Unik per (class, student)."
   use Ash.Resource,
-    otp_app: :stellar_lrn,
+    otp_app: :josjob_lrn,
     data_layer: AshPostgres.DataLayer,
-    domain: StellarLrn.Learning
+    domain: JosjobLrn.Learning
 
   postgres do
     table("enrollments")
-    repo(Stellar.Repo)
+    repo(Josjob.Repo)
 
     references do
       reference(:class, on_delete: :delete)
@@ -815,12 +815,12 @@ defmodule StellarLrn.Learning.Enrollment do
   end
 
   relationships do
-    belongs_to :class, StellarLrn.Learning.Class do
+    belongs_to :class, JosjobLrn.Learning.Class do
       allow_nil?(false)
       public?(true)
     end
 
-    belongs_to :student, Stellar.Accounts.User do
+    belongs_to :student, Josjob.Accounts.User do
       allow_nil?(false)
       public?(true)
     end
@@ -835,7 +835,7 @@ defmodule StellarLrn.Learning.Enrollment do
 
     create :create do
       accept([:class_id, :student_id, :status])
-      change(StellarLrn.Learning.Changes.CheckCapacity)
+      change(JosjobLrn.Learning.Changes.CheckCapacity)
     end
   end
 end
@@ -843,11 +843,11 @@ end
 
 - [ ] **Step 4: Register Class + Enrollment**
 
-Edit `apps/stellar_lrn/lib/stellar_lrn/learning.ex` `resources do` block, adding:
+Edit `apps/josjob_lrn/lib/josjob_lrn/learning.ex` `resources do` block, adding:
 
 ```elixir
-    resource(StellarLrn.Learning.Class)
-    resource(StellarLrn.Learning.Enrollment)
+    resource(JosjobLrn.Learning.Class)
+    resource(JosjobLrn.Learning.Enrollment)
 ```
 
 - [ ] **Step 5: Compile**
@@ -862,22 +862,22 @@ Expected: a migration creating `classes` and `enrollments` with FKs, the `(class
 
 - [ ] **Step 7: Migrate the TEST DB**
 
-Run: `cd apps/stellar && MIX_ENV=test mix ecto.migrate && cd ../..`
+Run: `cd apps/josjob && MIX_ENV=test mix ecto.migrate && cd ../..`
 Expected: applies cleanly.
 
 - [ ] **Step 8: Write temp tests for capacity + double-enroll**
 
-Create `apps/stellar_lrn/test/learning/enrollment_test.exs`:
+Create `apps/josjob_lrn/test/learning/enrollment_test.exs`:
 
 ```elixir
-defmodule StellarLrn.Learning.EnrollmentTest do
-  use StellarLrn.DataCase, async: false
+defmodule JosjobLrn.Learning.EnrollmentTest do
+  use JosjobLrn.DataCase, async: false
 
-  alias StellarLrn.Learning.{Section, Course, Class, Enrollment}
+  alias JosjobLrn.Learning.{Section, Course, Class, Enrollment}
 
   defp user! do
     {:ok, u} =
-      Stellar.Accounts.User
+      Josjob.Accounts.User
       |> Ash.Changeset.for_create(:register_with_password, %{
         email: "u#{System.unique_integer([:positive])}@ex.com",
         password: "password1234",
@@ -890,7 +890,7 @@ defmodule StellarLrn.Learning.EnrollmentTest do
 
   defp org!(owner) do
     {:ok, o} =
-      Stellar.Orgs.Organization
+      Josjob.Orgs.Organization
       |> Ash.Changeset.for_create(:create, %{name: "Org #{System.unique_integer([:positive])}", user_id: owner.id})
       |> Ash.create(authorize?: false)
 
@@ -947,13 +947,13 @@ end
 
 - [ ] **Step 9: Run the tests**
 
-Run: `cd apps/stellar_lrn && MIX_ENV=test mix test test/learning/enrollment_test.exs && cd ../..`
+Run: `cd apps/josjob_lrn && MIX_ENV=test mix test test/learning/enrollment_test.exs && cd ../..`
 Expected: 3 tests PASS.
 
 - [ ] **Step 10: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_lrn apps/stellar/priv
+git add apps/josjob_lrn apps/josjob/priv
 git commit -m "feat(lrn): add Class + Enrollment with capacity + unique guard"
 ```
 
@@ -962,24 +962,24 @@ git commit -m "feat(lrn): add Class + Enrollment with capacity + unique guard"
 ### Task 5: Domain helpers — materials + tenant scoping
 
 **Files:**
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning.ex` (add helper functions)
-- Test (temp): `apps/stellar_lrn/test/learning/materials_test.exs`
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning.ex` (add helper functions)
+- Test (temp): `apps/josjob_lrn/test/learning/materials_test.exs`
 
 **Interfaces:**
-- Consumes: `StellarDoc.Documents.Document`, `StellarLrn.Learning.{Class,Section,Course}`.
+- Consumes: `JosjobDoc.Documents.Document`, `JosjobLrn.Learning.{Class,Section,Course}`.
 - Produces:
-  - `StellarLrn.Learning.materials_for_class(class_or_id)` → `[Document]` (course materials ∪ instructor materials).
-  - `StellarLrn.Learning.sections_for_org(org_id)` → `[Section]`.
-  - `StellarLrn.Learning.courses_for_org(org_id)` → `[Course]`.
+  - `JosjobLrn.Learning.materials_for_class(class_or_id)` → `[Document]` (course materials ∪ instructor materials).
+  - `JosjobLrn.Learning.sections_for_org(org_id)` → `[Section]`.
+  - `JosjobLrn.Learning.courses_for_org(org_id)` → `[Course]`.
 
 - [ ] **Step 1: Add helpers to the domain**
 
-Edit `apps/stellar_lrn/lib/stellar_lrn/learning.ex`: add `require Ash.Query` and aliases below `use Ash.Domain`, and add the functions after the `resources do ... end` block:
+Edit `apps/josjob_lrn/lib/josjob_lrn/learning.ex`: add `require Ash.Query` and aliases below `use Ash.Domain`, and add the functions after the `resources do ... end` block:
 
 ```elixir
   require Ash.Query
-  alias StellarLrn.Learning.{Section, Course, Class}
-  alias StellarDoc.Documents.Document
+  alias JosjobLrn.Learning.{Section, Course, Class}
+  alias JosjobDoc.Documents.Document
 
   @doc """
   Materi sebuah kelas = union:
@@ -1028,19 +1028,19 @@ Expected: clean.
 
 - [ ] **Step 3: Write a temp test for material resolution**
 
-Create `apps/stellar_lrn/test/learning/materials_test.exs`:
+Create `apps/josjob_lrn/test/learning/materials_test.exs`:
 
 ```elixir
-defmodule StellarLrn.Learning.MaterialsTest do
-  use StellarLrn.DataCase, async: false
+defmodule JosjobLrn.Learning.MaterialsTest do
+  use JosjobLrn.DataCase, async: false
 
-  alias StellarLrn.Learning
-  alias StellarLrn.Learning.{Section, Course, Class}
-  alias StellarDoc.Documents.Document
+  alias JosjobLrn.Learning
+  alias JosjobLrn.Learning.{Section, Course, Class}
+  alias JosjobDoc.Documents.Document
 
   defp user! do
     {:ok, u} =
-      Stellar.Accounts.User
+      Josjob.Accounts.User
       |> Ash.Changeset.for_create(:register_with_password, %{
         email: "m#{System.unique_integer([:positive])}@ex.com",
         password: "password1234",
@@ -1053,7 +1053,7 @@ defmodule StellarLrn.Learning.MaterialsTest do
 
   defp org!(owner) do
     {:ok, o} =
-      Stellar.Orgs.Organization
+      Josjob.Orgs.Organization
       |> Ash.Changeset.for_create(:create, %{name: "Org #{System.unique_integer([:positive])}", user_id: owner.id})
       |> Ash.create(authorize?: false)
 
@@ -1091,13 +1091,13 @@ end
 
 - [ ] **Step 4: Run the test**
 
-Run: `cd apps/stellar_lrn && MIX_ENV=test mix test test/learning/materials_test.exs && cd ../..`
+Run: `cd apps/josjob_lrn && MIX_ENV=test mix test test/learning/materials_test.exs && cd ../..`
 Expected: PASS.
 
 - [ ] **Step 5: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_lrn
+git add apps/josjob_lrn
 git commit -m "feat(lrn): materials_for_class + tenant-scoped section/course helpers"
 ```
 
@@ -1106,7 +1106,7 @@ git commit -m "feat(lrn): materials_for_class + tenant-scoped section/course hel
 ### Task 6: Final verification + remove temp tests
 
 **Files:**
-- Delete: `apps/stellar_lrn/test/learning/taxonomy_test.exs`, `.../enrollment_test.exs`, `.../materials_test.exs`
+- Delete: `apps/josjob_lrn/test/learning/taxonomy_test.exs`, `.../enrollment_test.exs`, `.../materials_test.exs`
 
 - [ ] **Step 1: Full compile (warnings as errors)**
 
@@ -1127,9 +1127,9 @@ Expected: all pass (existing suite + the 3 new temp test files). If anything ref
 
 Run:
 ```bash
-rm -f apps/stellar_lrn/test/learning/taxonomy_test.exs \
-      apps/stellar_lrn/test/learning/enrollment_test.exs \
-      apps/stellar_lrn/test/learning/materials_test.exs
+rm -f apps/josjob_lrn/test/learning/taxonomy_test.exs \
+      apps/josjob_lrn/test/learning/enrollment_test.exs \
+      apps/josjob_lrn/test/learning/materials_test.exs
 ```
 
 - [ ] **Step 5: Re-verify compile + format after deletion**
@@ -1148,6 +1148,6 @@ git commit -m "chore(lrn): remove temp verification tests; course ecosystem back
 
 ## Post-plan handoff to the user (not steps)
 
-- **Dev DB:** reset + migrate + seed is the user's job (dev DB drifted; see spec §2.3). Suggested: `cd apps/stellar && MIX_ENV=dev mix ecto.reset` (or drop/create/migrate), then re-seed. Claude will not run these.
+- **Dev DB:** reset + migrate + seed is the user's job (dev DB drifted; see spec §2.3). Suggested: `cd apps/josjob && MIX_ENV=dev mix ecto.reset` (or drop/create/migrate), then re-seed. Claude will not run these.
 - **Git:** all commits above are the user's.
-- **Deferred (future specs):** admin UI, RBAC gating (reuse existing `courses:read`/`courses:manage` permissions), REST/Flutter, removal of the now-unused `apps/stellar_ms`.
+- **Deferred (future specs):** admin UI, RBAC gating (reuse existing `courses:read`/`courses:manage` permissions), REST/Flutter, removal of the now-unused `apps/josjob_ms`.

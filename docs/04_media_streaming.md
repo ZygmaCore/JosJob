@@ -4,16 +4,16 @@ This document specifies the real-time media ingestion, transcoding, post-live VO
 
 > [!IMPORTANT]
 > **Implementation status & module location.** Media streaming lives in its own
-> umbrella app, **`apps/stellar_ms`** (public API = the `StellarMs` facade over
-> `StellarMs.CloudflareStream`). The **VOD** path described below (self-hosted
+> umbrella app, **`apps/josjob_ms`** (public API = the `JosjobMs` facade over
+> `JosjobMs.CloudflareStream`). The **VOD** path described below (self-hosted
 > Membrane HLS transcode + `ash_oban` job chain + S3/CloudFront + Whisper STT) is
 > the original design and is **superseded** by a managed **Cloudflare Stream**
 > integration — see [`enhancement/media_streaming_vod_integration.md`](./enhancement/media_streaming_vod_integration.md)
 > and the HTTP contract in [`api/vod.md`](./api/vod.md). The **live** streaming
 > design here (WebRTC SFU classroom, 1-on-1 consultation relay) and speech-to-text
 > remain the forward-looking plan and are **not yet implemented**. New
-> media/transcode/streaming-provider code belongs in `apps/stellar_ms`, behind the
-> `StellarMs` facade (see the backend module-map in `CLAUDE.md`).
+> media/transcode/streaming-provider code belongs in `apps/josjob_ms`, behind the
+> `JosjobMs` facade (see the backend module-map in `CLAUDE.md`).
 
 ---
 
@@ -129,7 +129,7 @@ graph TD
 #### 3. `Backend.Workers.CheckpointGeneratorJob`
 *   **Queue**: `ai_transcription`
 *   **Action**: Runs an LLM script analyzing the transcript text blocks alongside the timestamps. It detects shifts in subject matter (e.g., transition from "If statements" to "While loops") and generates logical topic checkpoints.
-*   **Result**: Saves records into the `Stellar.Courses.VideoCheckpoint` Ash Resource.
+*   **Result**: Saves records into the `Josjob.Courses.VideoCheckpoint` Ash Resource.
 
 ---
 
