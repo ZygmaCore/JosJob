@@ -15,7 +15,6 @@ class _PillButton extends StatefulWidget {
   });
 
   @override
-  @override
   State<_PillButton> createState() => _PillButtonState();
 }
 
@@ -30,11 +29,11 @@ class _PillButtonState extends State<_PillButton> {
     switch (widget.kind) {
       case _BtnKind.filled:
         bg = AppColors.primary;
-        fg = AppColors.cotton;
+        fg = Colors.white;
         break;
       case _BtnKind.white:
         bg = AppColors.cotton;
-        fg = AppColors.landingInk;
+        fg = AppColors.primary;
         break;
       case _BtnKind.ghost:
         bg = Colors.transparent;
@@ -70,7 +69,7 @@ class _PillButtonState extends State<_PillButton> {
             onHover: (value) => setState(() => _hovered = value),
             onHighlightChanged: (value) => setState(() => _pressed = value),
             borderRadius: BorderRadius.circular(8),
-            focusColor: AppColors.primaryDeep.withValues(alpha: .14),
+            focusColor: AppColors.primaryDeep.withValues(alpha: .18),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(

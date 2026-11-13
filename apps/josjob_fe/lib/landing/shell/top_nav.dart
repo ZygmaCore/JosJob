@@ -28,30 +28,38 @@ class _TopNav extends StatelessWidget {
           child: Row(
             children: [
               const _Logo(),
-              const Spacer(),
               if (!mobile) ...[
-                for (final item in _navItems)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _NavLink(
-                      item,
-                      onTap: switch (item) {
-                        'Learn' => () => Navigator.of(
-                          context,
-                        ).pushNamed('/explore'),
-                        'Jobs' => () => Navigator.of(
-                          context,
-                        ).pushNamed('/register'),
-                        _ => onHowItWorks,
-                      },
+                Expanded(
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final item in _navItems)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _NavLink(
+                              item,
+                              onTap: switch (item) {
+                                'Learn' => () => Navigator.of(
+                                  context,
+                                ).pushNamed('/explore'),
+                                'Jobs' => () => Navigator.of(
+                                  context,
+                                ).pushNamed('/register'),
+                                _ => onHowItWorks,
+                              },
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                const SizedBox(width: 12),
-                const SizedBox(width: 14),
-                _PillButton('Log in', onPressed: onLogin),
+                ),
+                _PillButton('Log in', kind: _BtnKind.ghost, onPressed: onLogin),
                 const SizedBox(width: 8),
-                _PillButton('Sign up', onPressed: onRegister),
+                _PillButton('Get started', onPressed: onRegister),
               ] else
+                const Spacer(),
+              if (mobile)
                 IconButton(
                   onPressed: onMenu,
                   icon: const Icon(Icons.menu, color: AppColors.landingInk),

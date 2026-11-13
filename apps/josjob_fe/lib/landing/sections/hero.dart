@@ -14,18 +14,17 @@ class _Hero extends StatelessWidget {
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: AppColors.desk,
-        gradient: RadialGradient(
-          center: Alignment(-0.8, -0.7),
-          radius: 1.35,
-          colors: [AppColors.cotton, AppColors.desk, AppColors.paper3],
-          stops: [0, .54, 1],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.paper, AppColors.desk],
         ),
       ),
       child: _Bounded(
         child: Padding(
           padding: EdgeInsets.only(
-            top: desktop ? 76 : 48,
-            bottom: desktop ? 64 : 44,
+            top: desktop ? 82 : 48,
+            bottom: desktop ? 82 : 48,
           ),
           child: desktop
               ? Row(

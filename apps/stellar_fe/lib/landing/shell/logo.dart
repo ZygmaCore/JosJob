@@ -17,15 +17,15 @@ class _Logo extends StatelessWidget {
           fit: BoxFit.contain,
           semanticLabel: 'JosJob logo',
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 9),
         Text(
           'JosJob',
           style: TextStyle(
             fontFamily: 'General Sans',
-            fontSize: 22,
+            fontSize: 21,
             fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
             color: AppColors.primary,
-            letterSpacing: -0.4,
           ),
         ),
       ],

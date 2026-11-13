@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // =========================================================================
-// Shared design tokens for the JosJob unified frontend
+// Shared design tokens for the Atveti Stellar unified frontend
 // (Online Learning + AI Job Placement).
 //
 // Single source of truth for the blue palette and responsive breakpoints,
@@ -12,10 +12,10 @@ import 'package:flutter/material.dart';
 // =========================================================================
 
 class AppColors {
-  // JosJob landing page: cool mist, bright blue and deep navy.
-  static const paper = Color(0xFFF4F7FB);
-  static const paper2 = Color(0xFFEDF3FA);
-  static const paper3 = Color(0xFFE4EDF8);
+  // Landing reference palette: cool gray surfaces, deep navy type, bright blue.
+  static const paper = Color(0xFFF4F7FA);
+  static const paper2 = Color(0xFFEDF2F8);
+  static const paper3 = Color(0xFFE5EDF7);
   static const cotton = Color(0xFFFFFFFF);
   static const desk = Color(0xFFEAF3FC);
   static const landingInk = Color(0xFF112B4E);
@@ -28,7 +28,7 @@ class AppColors {
   static const sky = Color(0xFFE5F2FF);
   static const amberGap = Color(0xFFF2B544);
   static const board = Color(0xFF0F2547);
-  static const boardText = Color(0xFFF8FBFF);
+  static const boardText = Color(0xFFFFF8E9);
   static const success = Color(0xFF1F7A5A);
   static const danger = Color(0xFFB83A2A);
   static const heroBlue = Color(0xFF1385E0);
