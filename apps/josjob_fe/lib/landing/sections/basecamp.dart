@@ -1,21 +1,22 @@
 part of '../landing_page_ascent.dart';
 
-/// The supplied JosJob mascot is the hero's single product visual.
+/// Transparent JosJob mark used as the hero's primary visual.
 class _Basecamp extends StatelessWidget {
   const _Basecamp();
 
   @override
   Widget build(BuildContext context) {
-    final size = _zig(context) ? 430.0 : 300.0;
+    final desktop = _zig(context);
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: size, maxHeight: size),
-        child: AspectRatio(
-          aspectRatio: 1,
+        constraints: BoxConstraints(maxWidth: desktop ? 480 : 360),
+        child: SizedBox(
+          width: double.infinity,
+          height: desktop ? 440 : 320,
           child: Image.asset(
             'assets/images/josjob_logo.png',
             fit: BoxFit.contain,
-            semanticLabel: 'JosJob mascot logo',
+            semanticLabel: 'JosJob logo',
           ),
         ),
       ),

@@ -18,7 +18,7 @@ class _HowItWorks extends StatelessWidget {
           (
             '02',
             'Bring your CV',
-            'Add your CV with consent so your profile can be reviewed.',
+            'Add your CV with consent to keep your profile ready for opportunities.',
           ),
           (
             '03',

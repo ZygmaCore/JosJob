@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 export '../theme/app_theme.dart';
 
@@ -13,7 +14,7 @@ export '../theme/app_theme.dart';
 //
 // Responsive: desktop (>=1024) center spine + milestones + mini-map;
 // below that collapses to a left-rail vertical stepper. Reduced-motion safe.
-// Photos/logos are placeholders — swap in real assets when available.
+// JosJob landing page uses the supplied brand asset and documented product claims.
 // =========================================================================
 
 part 'data/helpers.dart';

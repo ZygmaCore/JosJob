@@ -23,7 +23,7 @@ const _products = [
     icon: Icons.work_outline,
     bullets: [
       'Search by role, skill or company',
-      'Review role requirements',
+      'Compare role requirements',
       'Connect skills with learning',
     ],
     tint: AppColors.cotton,
