@@ -30,15 +30,12 @@ class _Basecamp extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/images/josjob_logo.png',
-                      width: 42,
-                      height: 42,
-                      fit: BoxFit.contain,
-                      semanticLabel: 'JosJob logo',
-                    ),
+                  Image.asset(
+                    'assets/images/josjob_logo.png',
+                    width: 42,
+                    height: 42,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'JosJob logo',
                   ),
                   const SizedBox(width: 12),
                   Expanded(

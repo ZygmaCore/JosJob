@@ -11,14 +11,20 @@ class _Logo extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome, color: color, size: 26),
+          Image.asset(
+            'assets/images/josjob_logo.png',
+            width: 28,
+            height: 28,
+            fit: BoxFit.contain,
+            semanticLabel: 'JosJob logo',
+          ),
           const SizedBox(width: 8),
           Text(
             'JosJob',
             style: GoogleFonts.poppins(
               fontSize: 23,
               fontWeight: FontWeight.w700,
-              color: color,
+              color: AppColors.landingInk,
             ),
           ),
         ],

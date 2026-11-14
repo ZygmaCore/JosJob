@@ -43,15 +43,10 @@ class _HeroCopy extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 540),
           child: Text(
-<<<<<<< Updated upstream:apps/josjob_fe/lib/landing/sections/hero_copy.dart
             'JosJob is one platform for your whole career — build '
             'job-ready skills through flexible online learning, then get '
             'matched with the employers who are hiring. Study at your own '
             'pace, earn the certifications that matter, and get hired.',
-=======
-            'JosJob connects job opportunities with learning, so you can build '
-            'job-ready skills and take a clearer next step toward employment.',
->>>>>>> Stashed changes:apps/stellar_fe/lib/landing/sections/hero_copy.dart
             style: _lead(context),
           ),
         ),
