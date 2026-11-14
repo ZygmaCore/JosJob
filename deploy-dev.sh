@@ -11,6 +11,10 @@
 #   SKIP_SEED=1   ./deploy-dev.sh   # skip seed
 #   DEPLOY_FE=0   ./deploy-dev.sh   # backend saja
 #   BRANCH=main   ./deploy-dev.sh   # branch lain
+#
+# Setiap hasil deploy (sukses maupun gagal) dikirim ke Discord webhook yang
+# URL-nya dibaca dari envs/deploy.env (DISCORD_WEBHOOK_URL, tidak masuk repo).
+# Dipakai juga oleh deploy-cron.sh untuk build otomatis 00:00 & 12:00 WIB.
 # =============================================================================
 set -Eeuo pipefail
 
@@ -22,6 +26,12 @@ SKIP_PULL="${SKIP_PULL:-0}"
 SKIP_SEED="${SKIP_SEED:-0}"
 DEPLOY_FE="${DEPLOY_FE:-1}"
 LOG_FILE="${LOG_FILE:-$REPO_DIR/deploy-dev.log}"
+TRIGGER="${TRIGGER:-manual}"
+RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
+START_EPOCH="$(date +%s)"
+COMMIT_INFO=""
+FAIL_DETAIL=""
+STEP="preflight"
 
 if [ "$(id -u)" -eq 0 ]; then
   echo "Jangan jalankan script ini sebagai root. Jalankan sebagai mzkrl; sudo dipakai internal." >&2
@@ -29,6 +39,19 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 cd "$REPO_DIR"
+
+# Kredensial khusus deploy (mis. DISCORD_WEBHOOK_URL) — tidak masuk repo.
+if [ -f envs/deploy.env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . envs/deploy.env
+  set +a
+fi
+
+# Rotasi log sederhana (simpan 1 file lama) supaya disk dev VPS tidak penuh.
+if [ -f "$LOG_FILE" ] && [ "$(stat -c %s "$LOG_FILE")" -gt 10485760 ]; then
+  mv -f "$LOG_FILE" "$LOG_FILE.1"
+fi
 
 # Simpan semua output ke file agar kegagalan bisa diperiksa setelahnya.
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -45,6 +68,44 @@ COMPOSE=("${DOCKER[@]}" compose --progress plain --env-file "$ENV_FILE" "${COMPO
 
 log() { printf '\n==> %s\n' "$*"; }
 
+format_duration() {
+  local s="$1"
+  if [ "$s" -lt 60 ]; then
+    printf '%ds' "$s"
+  elif [ "$s" -lt 3600 ]; then
+    printf '%dm %ds' $((s / 60)) $((s % 60))
+  else
+    printf '%dh %dm' $((s / 3600)) $(((s % 3600) / 60))
+  fi
+}
+
+# Kirim hasil deploy ke Discord. Marker file dipakai deploy-cron.sh untuk tahu
+# apakah run ini sudah melapor (biar tidak ada notifikasi ganda).
+notify() {
+  local status="$1" code="${2:-0}" detail="${3:-}"
+  STATUS="$status" \
+    STEP="$STEP" \
+    EXIT_CODE="$code" \
+    DURATION="$(format_duration $(($(date +%s) - START_EPOCH)))" \
+    BRANCH="$BRANCH" \
+    COMMIT="$COMMIT_INFO" \
+    TRIGGER="$TRIGGER" \
+    DETAIL="$detail" \
+    REPO_DIR="$REPO_DIR" \
+    "$REPO_DIR/scripts/notify-discord.sh" || true
+  : >"/tmp/josjob-notify-${RUN_ID}.done"
+}
+
+on_exit() {
+  local code="$1"
+  trap - ERR
+  if [ "$code" -eq 0 ]; then
+    notify SUCCESS 0 ""
+  else
+    notify FAILED "$code" "$FAIL_DETAIL"
+  fi
+}
+
 # Retry HTTP sampai 2xx; dipakai karena container `running` != app siap.
 wait_http() {
   local url="$1" tries="${2:-30}" i
@@ -58,8 +119,23 @@ wait_http() {
   return 1
 }
 
-STEP="preflight"
-trap 'status=$?; echo; echo "!!! DEPLOY GAGAL di step: ${STEP} (line $LINENO, exit $status)"; echo "!!! Log lengkap: $LOG_FILE"; echo "--- josjob_be logs ---"; "${COMPOSE[@]}" logs --tail=120 josjob_be || true; echo "--- josjob_fe logs ---"; "${COMPOSE[@]}" logs --tail=60 josjob_fe || true; echo; echo "!!! Kalau build mati dengan exit 137: cek OOM:"; echo "    sudo dmesg -T | grep -iE \"oom|killed process\" | tail -n 5"' ERR
+trap 'status=$?; FAIL_DETAIL="$(tail -n 40 "$LOG_FILE" 2>/dev/null)"; echo; echo "!!! DEPLOY GAGAL di step: ${STEP} (line $LINENO, exit $status)"; echo "!!! Log lengkap: $LOG_FILE"; echo "--- josjob_be logs ---"; "${COMPOSE[@]}" logs --tail=120 josjob_be || true; echo "--- josjob_fe logs (tanpa noise healthcheck) ---"; "${COMPOSE[@]}" logs --tail=80 josjob_fe 2>/dev/null | grep -v "GET / HTTP/1.1\" 200" | tail -n 20 || true; echo; echo "!!! Kalau build mati dengan exit 137: cek OOM:"; echo "    sudo dmesg -T | grep -iE \"oom|killed process\" | tail -n 5"' ERR
+trap 'exit_code=$?; on_exit "$exit_code"; exit "$exit_code"' EXIT
+
+# --- Guard disk -------------------------------------------------------------
+# Build Flutter butuh beberapa GB sementara di VPS 40 GB ini. Kalau ruang
+# menipis, bersihkan image dangling dulu; build cache hanya dipangkas kalau
+# benar-benar mepet, supaya rebuild tetap cepat.
+free_kb() { df --output=avail -k / | tail -n 1 | tr -d ' '; }
+if [ "$(free_kb)" -lt 3145728 ]; then
+  log "Disk menipis (sisa $(df -h / | tail -n 1 | awk '{print $4}')) — prune image dangling"
+  "${DOCKER[@]}" image prune -f || true
+fi
+if [ "$(free_kb)" -lt 2097152 ]; then
+  log "Sisa < 2 GB — prune build cache yang tidak dipakai >24 jam"
+  "${DOCKER[@]}" builder prune -f --filter until=24h || true
+  log "Sisa disk sekarang: $(df -h / | tail -n 1 | awk '{print $4}')"
+fi
 
 [ -f "$ENV_FILE" ] || { echo "Missing $ENV_FILE" >&2; exit 1; }
 [ -f docker-compose.fullstack.yml ] && [ -f docker-compose.local.yml ] || {
@@ -79,6 +155,9 @@ if [ "$SKIP_PULL" != "1" ]; then
   git checkout "$BRANCH"
   git pull --ff-only origin "$BRANCH"
 fi
+
+# Commit yang benar-benar di-deploy (dipakai di notifikasi Discord).
+COMMIT_INFO="$(git log -1 --format='%h %s' 2>/dev/null || echo '-')"
 
 STEP="start database"
 log "Start database (paradedb)"
