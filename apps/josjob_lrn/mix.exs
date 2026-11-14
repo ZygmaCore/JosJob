@@ -29,9 +29,11 @@ defmodule JosjobLrn.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # User/Org/Industry/Repo live in :josjob; documents (Material) in :josjob_doc.
+      # User/Org/Industry/Repo live in :josjob; documents (Material) in :josjob_doc;
+      # job listings in :josjob_job (dipakai DemoSeed).
       {:josjob, in_umbrella: true},
       {:josjob_doc, in_umbrella: true},
+      {:josjob_job, in_umbrella: true},
       {:ash, "~> 3.0"},
       {:ash_postgres, "~> 2.0"}
     ]
