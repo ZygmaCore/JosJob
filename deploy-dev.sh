@@ -48,8 +48,9 @@ if [ -f envs/deploy.env ]; then
   set +a
 fi
 
-# Rotasi log sederhana (simpan 1 file lama) supaya disk dev VPS tidak penuh.
-if [ -f "$LOG_FILE" ] && [ "$(stat -c %s "$LOG_FILE")" -gt 10485760 ]; then
+# Rotasi log per run: file aktif selalu berisi run ini (dikirim utuh ke
+# Discord sebagai attachment), run sebelumnya disimpan sebagai .1.
+if [ -s "$LOG_FILE" ]; then
   mv -f "$LOG_FILE" "$LOG_FILE.1"
 fi
 
@@ -91,6 +92,9 @@ notify() {
     COMMIT="$COMMIT_INFO" \
     TRIGGER="$TRIGGER" \
     DETAIL="$detail" \
+    RUN_ID="$RUN_ID" \
+    ATTACH_LOG="$LOG_FILE" \
+    ATTACH_NAME="deploy-${RUN_ID}.log" \
     REPO_DIR="$REPO_DIR" \
     "$REPO_DIR/scripts/notify-discord.sh" || true
   : >"/tmp/josjob-notify-${RUN_ID}.done"

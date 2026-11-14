@@ -8,16 +8,24 @@
 # Konfigurasi webhook (tidak masuk repo):
 #   envs/deploy.env  ->  DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 #
-# Semua input lewat environment variable, semuanya opsional:
-#   STATUS     SUCCESS | FAILED | SKIPPED        (default: INFO)
-#   STEP       step yang sedang berjalan / gagal
-#   EXIT_CODE  exit code deploy
-#   DURATION   durasi human-readable, mis. "12m 34s"
-#   BRANCH     branch git
-#   COMMIT     "7654eb0 fix(fe): ..." (short hash + subjek)
-#   TRIGGER    manual | cron
-#   DETAIL     teks tambahan (mis. tail log saat gagal)
-#   REPO_DIR   lokasi repo (default: /home/mzkrl/JosJob)
+# Input lewat environment variable (semua opsional):
+#   STATUS       SUCCESS | FAILED | SKIPPED          (default: INFO)
+#   STEP         step yang sedang berjalan / gagal
+#   EXIT_CODE    exit code deploy
+#   DURATION     durasi human-readable, mis. "12m 34s"
+#   BRANCH       branch git
+#   COMMIT       "7654eb0 fix(fe): ..." (short hash + subjek)
+#   TRIGGER      manual | cron
+#   DETAIL       teks tambahan (mis. tail log saat gagal)
+#   RUN_ID       id run; dipakai untuk nama file log
+#   ATTACH_LOG   path file log yang dikirim sebagai attachment (full log)
+#   ATTACH_NAME  nama file attachment (default: deploy-<RUN_ID>.log)
+#   REPO_DIR     lokasi repo (default: /home/mzkrl/JosJob)
+#
+# Log dikirim utuh sebagai attachment. Kalau lebih dari ~7,5 MB (batas upload
+# webhook Discord 8 MiB), dikirim versi .gz; kalau masih kebesaran, tail-nya.
+# Jadi log tetap tersimpan di Discord walaupun file di server sudah dirotasi
+# atau terhapus pada run berikutnya.
 #
 # Script ini tidak pernah mengembalikan exit != 0: notifikasi yang gagal
 # tidak boleh menggagalkan (atau mengubah status) deploy.
@@ -51,6 +59,48 @@ BRANCH="${BRANCH:--}"
 COMMIT="${COMMIT:--}"
 TRIGGER="${TRIGGER:--}"
 DETAIL="${DETAIL:-}"
+RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)}"
+ATTACH_LOG="${ATTACH_LOG:-}"
+ATTACH_NAME="${ATTACH_NAME:-deploy-${RUN_ID}.log}"
+MAX_UPLOAD=7500000 # ~7,5 MB, di bawah batas 8 MiB webhook Discord
+
+tmp_gz=""
+tmp_tail=""
+cleanup() {
+  [ -n "$tmp_gz" ] && rm -f "$tmp_gz"
+  [ -n "$tmp_tail" ] && rm -f "$tmp_tail"
+  return 0
+}
+trap cleanup EXIT
+
+human_size() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || printf '%s bytes' "$1"; }
+
+# --- Siapkan attachment -----------------------------------------------------
+attach_path=""
+attach_name=""
+attach_note="tidak dilampirkan"
+if [ -n "$ATTACH_LOG" ] && [ -f "$ATTACH_LOG" ]; then
+  raw_size="$(stat -c %s "$ATTACH_LOG")"
+  if [ "$raw_size" -le "$MAX_UPLOAD" ]; then
+    attach_path="$ATTACH_LOG"
+    attach_name="$ATTACH_NAME"
+  else
+    tmp_gz="$(mktemp /tmp/josjob-log.XXXXXX.gz)"
+    if gzip -9 -c "$ATTACH_LOG" >"$tmp_gz" 2>/dev/null && [ -s "$tmp_gz" ] &&
+      [ "$(stat -c %s "$tmp_gz")" -le "$MAX_UPLOAD" ]; then
+      attach_path="$tmp_gz"
+      attach_name="$ATTACH_NAME.gz"
+    else
+      tmp_tail="$(mktemp /tmp/josjob-log.XXXXXX.tail)"
+      tail -c 700000 "$ATTACH_LOG" >"$tmp_tail" 2>/dev/null || true
+      attach_path="$tmp_tail"
+      attach_name="$ATTACH_NAME.tail"
+    fi
+  fi
+  if [ -n "$attach_path" ]; then
+    attach_note="\`$attach_name\` ($(human_size "$(stat -c %s "$attach_path")"))"
+  fi
+fi
 
 # --- Judul, warna, dan ringkasan sesuai status -------------------------------
 case "$STATUS" in
@@ -103,13 +153,15 @@ fields="$(jq -n \
   --arg step "$STEP" \
   --arg duration "$DURATION" \
   --arg code "$EXIT_CODE" \
+  --arg log "$attach_note" \
   '[
     {name: "Branch",   value: $branch,   inline: true},
     {name: "Commit",   value: $commit,   inline: false},
     {name: "Trigger",  value: $trigger,  inline: true},
     {name: "Step",     value: $step,     inline: true},
     {name: "Duration", value: $duration, inline: true},
-    {name: "Exit code", value: $code,    inline: true}
+    {name: "Exit code", value: $code,    inline: true},
+    {name: "Log",      value: $log,      inline: false}
   ]')"
 
 payload="$(jq -n \
@@ -120,6 +172,8 @@ payload="$(jq -n \
   --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --arg footer "JosJob dev VPS · $(hostname) · https://dev.mzkrl.my.id" \
   --arg detail "$detail_block" \
+  --arg attach_name "$attach_name" \
+  --argjson has_attach "$([ -n "$attach_name" ] && echo true || echo false)" \
   '{
      username: "JosJob Deploy",
      embeds: (
@@ -133,22 +187,39 @@ payload="$(jq -n \
        }]
        + (if $detail == "" then [] else [{description: $detail, color: $color}] end)
      )
-   }')"
+   }
+   + (if $has_attach then {attachments: [{id: 0, filename: $attach_name}]} else {} end)')"
 
-echo "notify: mengirim status $STATUS ke Discord..."
+if [ -n "$attach_name" ]; then
+  echo "notify: mengirim status $STATUS + attachment $attach_name ke Discord..."
+else
+  echo "notify: mengirim status $STATUS ke Discord..."
+fi
 
 # --- Kirim dengan retry (network / rate limit sementara) --------------------
 attempt=1
 while [ "$attempt" -le 3 ]; do
-  if response="$(curl --silent --show-error --fail-with-body \
-        --max-time 20 \
-        -H 'Content-Type: application/json' \
-        -H "User-Agent: JosJob-Deploy/1.0 (+$REPO_DIR)" \
-        -X POST -d "$payload" "$DISCORD_WEBHOOK_URL" 2>&1)"; then
+  if [ -n "$attach_name" ]; then
+    response="$(curl --silent --show-error --fail-with-body \
+      --max-time 120 \
+      -H "User-Agent: JosJob-Deploy/1.0 (+$REPO_DIR)" \
+      -F "files[0]=@$attach_path;filename=$attach_name" \
+      --form-string "payload_json=$payload" \
+      -X POST "$DISCORD_WEBHOOK_URL" 2>&1)"
+  else
+    response="$(curl --silent --show-error --fail-with-body \
+      --max-time 20 \
+      -H 'Content-Type: application/json' \
+      -H "User-Agent: JosJob-Deploy/1.0 (+$REPO_DIR)" \
+      -d "$payload" \
+      -X POST "$DISCORD_WEBHOOK_URL" 2>&1)"
+  fi
+  status=$?
+  if [ "$status" -eq 0 ]; then
     echo "notify: terkirim"
     exit 0
   fi
-  echo "notify: percobaan $attempt gagal: ${response:0:300}" >&2
+  echo "notify: percobaan $attempt gagal (curl exit $status): ${response:0:300}" >&2
   attempt=$((attempt + 1))
   [ "$attempt" -le 3 ] && sleep 5
 done

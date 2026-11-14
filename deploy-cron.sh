@@ -55,6 +55,13 @@ rm -f "$MARKER"
 
 report_fallback() {
   local status="$1" code="$2" step="$3" detail="$4"
+  # Lampirkan log hanya kalau memang baru ditulis run ini (< 10 menit),
+  # supaya SKIPPED / run yang mati super awal tidak mengirim log basi.
+  local attach=""
+  if [ "$status" != "SKIPPED" ] && [ -f "$REPO_DIR/deploy-dev.log" ] &&
+    [ -n "$(find "$REPO_DIR/deploy-dev.log" -mmin -10 2>/dev/null)" ]; then
+    attach="$REPO_DIR/deploy-dev.log"
+  fi
   STATUS="$status" \
     STEP="$step" \
     EXIT_CODE="$code" \
@@ -63,6 +70,9 @@ report_fallback() {
     COMMIT="$(git log -1 --format='%h %s' 2>/dev/null || echo '-')" \
     TRIGGER="$TRIGGER" \
     DETAIL="$detail" \
+    RUN_ID="$RUN_ID" \
+    ATTACH_LOG="$attach" \
+    ATTACH_NAME="deploy-${RUN_ID}.log" \
     REPO_DIR="$REPO_DIR" \
     "$REPO_DIR/scripts/notify-discord.sh" || true
 }
