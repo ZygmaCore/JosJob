@@ -4,7 +4,7 @@
 
 **Goal:** Migrasi menu admin Skills dari controller klasik ke satu LiveView (list + search/filter live, form New/Edit di modal), plus hook auth `on_mount` reusable.
 
-**Architecture:** `StellarWeb.Admin.SkillLive` menangani tiga live_action (`:index/:new/:edit`) di dalam `ash_authentication_live_session :admin_live` dengan hook `StellarWeb.LiveAuth :require_admin` (padanan plug RequireAdmin, juga menjaga reconnect websocket). Migrasi dua fase agar selalu shippable: fase 1 index live (new/edit masih controller), fase 2 modal + hapus controller lama.
+**Architecture:** `JosjobWeb.Admin.SkillLive` menangani tiga live_action (`:index/:new/:edit`) di dalam `ash_authentication_live_session :admin_live` dengan hook `JosjobWeb.LiveAuth :require_admin` (padanan plug RequireAdmin, juga menjaga reconnect websocket). Migrasi dua fase agar selalu shippable: fase 1 index live (new/edit masih controller), fase 2 modal + hapus controller lama.
 
 **Tech Stack:** Phoenix LiveView (sudah ada, preseden RagLive), AshPhoenix.Form, daisyUI modal, Phoenix.LiveViewTest.
 
@@ -24,32 +24,32 @@
 ### Task 1: `LiveAuth` + `SkillLive` index (search/filter live), router hybrid
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/live/live_auth.ex`
-- Create: `apps/stellar_web/lib/stellar_web/live/admin/skill_live.ex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (scope superuser-only, baris `resources "/skills", SkillController, except: [:show]`)
-- Test: `apps/stellar_web/test/stellar_web/live/admin/skill_live_test.exs` (baru)
+- Create: `apps/josjob_web/lib/josjob_web/live/live_auth.ex`
+- Create: `apps/josjob_web/lib/josjob_web/live/admin/skill_live.ex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (scope superuser-only, baris `resources "/skills", SkillController, except: [:show]`)
+- Test: `apps/josjob_web/test/josjob_web/live/admin/skill_live_test.exs` (baru)
 
 **Interfaces:**
-- Produces: `StellarWeb.LiveAuth.on_mount(:require_admin, params, session, socket)`; route live `GET /skills` (live_action :index); `SkillLive` privates yang dipakai Task 2: `index_path(q, industry_id)`, `load_skills(socket)`, assigns `:skills, :q, :industry_id, :industry_options, :industry_names, :audit_labels`.
-- Consumes: `Stellar.Authz.superuser?/1`; pola login test dari `class_controller_test.exs`.
+- Produces: `JosjobWeb.LiveAuth.on_mount(:require_admin, params, session, socket)`; route live `GET /skills` (live_action :index); `SkillLive` privates yang dipakai Task 2: `index_path(q, industry_id)`, `load_skills(socket)`, assigns `:skills, :q, :industry_id, :industry_options, :industry_names, :audit_labels`.
+- Consumes: `Josjob.Authz.superuser?/1`; pola login test dari `class_controller_test.exs`.
 
 - [ ] **Step 1: Tulis failing test**
 
-`apps/stellar_web/test/stellar_web/live/admin/skill_live_test.exs`:
+`apps/josjob_web/test/josjob_web/live/admin/skill_live_test.exs`:
 
 ```elixir
-defmodule StellarWeb.Admin.SkillLiveTest do
+defmodule JosjobWeb.Admin.SkillLiveTest do
   @moduledoc """
   Pilot LiveView Skills: gate superuser (LiveAuth), list + search/filter live
   dengan state di URL, form modal (Task 2), delete (Task 2).
   """
-  use StellarWeb.ConnCase, async: false
+  use JosjobWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   require Ash.Query
 
-  alias Stellar.Accounts.User
-  alias Stellar.Orgs.{Industry, Skill}
+  alias Josjob.Accounts.User
+  alias Josjob.Orgs.{Industry, Skill}
 
   defp create_user(email, full_name, attrs \\ %{}) do
     User
@@ -128,25 +128,25 @@ end
 
 - [ ] **Step 2: Jalankan — harus GAGAL**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/live/admin/skill_live_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/live/admin/skill_live_test.exs`
 Expected: FAIL — `no route found for GET /skills` versi live (`live/3` belum ada; error berbentuk redirect/route mismatch).
 
-- [ ] **Step 3: Buat `StellarWeb.LiveAuth`**
+- [ ] **Step 3: Buat `JosjobWeb.LiveAuth`**
 
-`apps/stellar_web/lib/stellar_web/live/live_auth.ex`:
+`apps/josjob_web/lib/josjob_web/live/live_auth.ex`:
 
 ```elixir
-defmodule StellarWeb.LiveAuth do
+defmodule JosjobWeb.LiveAuth do
   @moduledoc """
   Hook `on_mount` untuk LiveView admin. `:require_admin` = superuser only —
-  padanan plug `StellarWeb.Plugs.RequireAdmin` (wording flash sama persis).
+  padanan plug `JosjobWeb.Plugs.RequireAdmin` (wording flash sama persis).
   Hook wajib walau route sudah ber-pipeline require_admin: plug hanya menjaga
   mount HTTP pertama; hook juga menjaga reconnect websocket.
   """
   import Phoenix.LiveView
 
   def on_mount(:require_admin, _params, _session, socket) do
-    if Stellar.Authz.superuser?(socket.assigns[:current_user]) do
+    if Josjob.Authz.superuser?(socket.assigns[:current_user]) do
       {:cont, socket}
     else
       {:halt,
@@ -160,20 +160,20 @@ end
 
 - [ ] **Step 4: Buat `SkillLive` (index saja)**
 
-`apps/stellar_web/lib/stellar_web/live/admin/skill_live.ex`:
+`apps/josjob_web/lib/josjob_web/live/admin/skill_live.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.SkillLive do
+defmodule JosjobWeb.Admin.SkillLive do
   @moduledoc """
   Pilot LiveView: menu admin Skills — list + search/filter live (state di URL).
   Spec: docs/specs/2026-07-28-skills-liveview-pilot-design.md. Task 2 menambah
   form modal New/Edit + delete.
   """
-  use StellarWeb, :live_view
+  use JosjobWeb, :live_view
 
   require Ash.Query
 
-  alias Stellar.Orgs.{Industry, Skill}
+  alias Josjob.Orgs.{Industry, Skill}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -183,7 +183,7 @@ defmodule StellarWeb.Admin.SkillLive do
      socket
      |> assign(:industry_options, Enum.map(industries, &{&1.name, &1.id}))
      |> assign(:industry_names, Map.new(industries, &{&1.id, &1.name}))
-     |> assign(:audit_labels, StellarWeb.Audit.user_labels())}
+     |> assign(:audit_labels, JosjobWeb.Audit.user_labels())}
   end
 
   @impl true
@@ -274,8 +274,8 @@ defmodule StellarWeb.Admin.SkillLive do
       <.table id="skills" rows={@skills}>
         <:col :let={s} label="Name">{s.name}</:col>
         <:col :let={s} label="Industry">{@industry_names[s.industry_id] || "-"}</:col>
-        <:col :let={s} label="Created">{StellarWeb.Format.datetime(s.created_at)}</:col>
-        <:col :let={s} label="Updated">{StellarWeb.Format.datetime(s.updated_at)}</:col>
+        <:col :let={s} label="Created">{JosjobWeb.Format.datetime(s.created_at)}</:col>
+        <:col :let={s} label="Updated">{JosjobWeb.Format.datetime(s.updated_at)}</:col>
         <:col :let={s} label="Created by">{@audit_labels[s.created_by] || "-"}</:col>
         <:col :let={s} label="Updated by">{@audit_labels[s.updated_by] || "-"}</:col>
         <:action :let={s}>
@@ -310,19 +310,19 @@ Di scope superuser-only (`pipe_through [:browser, :require_admin]`), ganti
     resources "/skills", SkillController, only: [:new, :create, :edit, :update, :delete]
 
     ash_authentication_live_session :admin_live,
-      on_mount: [{StellarWeb.LiveAuth, :require_admin}] do
+      on_mount: [{JosjobWeb.LiveAuth, :require_admin}] do
       live "/skills", Admin.SkillLive, :index
     end
 ```
 
-(Scope-nya `scope "/", StellarWeb.Admin` — maka modul live dirujuk sebagai
-`Admin.SkillLive`? TIDAK: scope admin memakai alias `StellarWeb.Admin`, dan
-modul kita `StellarWeb.Admin.SkillLive`, jadi cukup `SkillLive`. Cek alias
+(Scope-nya `scope "/", JosjobWeb.Admin` — maka modul live dirujuk sebagai
+`Admin.SkillLive`? TIDAK: scope admin memakai alias `JosjobWeb.Admin`, dan
+modul kita `JosjobWeb.Admin.SkillLive`, jadi cukup `SkillLive`. Cek alias
 scope aktual saat mengedit.)
 
 - [ ] **Step 6: Jalankan — harus HIJAU**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/live/admin/skill_live_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/live/admin/skill_live_test.exs`
 Expected: PASS 3 test.
 
 - [ ] **Step 7: Verifikasi gerbang**
@@ -335,9 +335,9 @@ Expected: semua bersih (controller lama masih dipakai route non-index — tidak 
 ### Task 2: Modal New/Edit + delete event; hapus controller lama
 
 **Files:**
-- Modify: `apps/stellar_web/lib/stellar_web/live/admin/skill_live.ex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (swap sisa route)
-- Delete: `apps/stellar_web/lib/stellar_web/controllers/admin/skill_controller.ex`, `skill_html.ex`, `skill_html/` (3 template)
+- Modify: `apps/josjob_web/lib/josjob_web/live/admin/skill_live.ex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (swap sisa route)
+- Delete: `apps/josjob_web/lib/josjob_web/controllers/admin/skill_controller.ex`, `skill_html.ex`, `skill_html/` (3 template)
 - Test: `skill_live_test.exs` (tambah 4 test)
 
 **Interfaces:**
@@ -418,7 +418,7 @@ Expected: semua bersih (controller lama masih dipakai route non-index — tidak 
 
 - [ ] **Step 2: Jalankan — harus GAGAL**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/live/admin/skill_live_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/live/admin/skill_live_test.exs`
 Expected: FAIL — route live `/skills/new` belum ada.
 
 - [ ] **Step 3: Router — swap penuh**
@@ -427,7 +427,7 @@ Hapus baris `resources "/skills", SkillController, only: [...]`; lengkapi live s
 
 ```elixir
     ash_authentication_live_session :admin_live,
-      on_mount: [{StellarWeb.LiveAuth, :require_admin}] do
+      on_mount: [{JosjobWeb.LiveAuth, :require_admin}] do
       live "/skills", SkillLive, :index
       live "/skills/new", SkillLive, :new
       live "/skills/:id/edit", SkillLive, :edit
@@ -594,13 +594,13 @@ Render — ganti tombol New/Edit/Delete + tambah modal sebelum `</Layouts.admin>
 
 - [ ] **Step 5: Hapus file controller lama**
 
-Hapus: `apps/stellar_web/lib/stellar_web/controllers/admin/skill_controller.ex`,
+Hapus: `apps/josjob_web/lib/josjob_web/controllers/admin/skill_controller.ex`,
 `.../admin/skill_html.ex`, direktori `.../admin/skill_html/`.
 Lalu: `grep -rn "SkillController\|SkillHTML" apps/` harus nol (router sudah bersih).
 
 - [ ] **Step 6: Jalankan — harus HIJAU**
 
-Run: `MIX_ENV=test mix test apps/stellar_web/test/stellar_web/live/admin/skill_live_test.exs`
+Run: `MIX_ENV=test mix test apps/josjob_web/test/josjob_web/live/admin/skill_live_test.exs`
 Expected: PASS 7 test.
 
 ---
@@ -608,4 +608,4 @@ Expected: PASS 7 test.
 ### Task 3: Gerbang akhir
 
 - [ ] **Step 1:** `mix compile --warnings-as-errors && mix format --check-formatted && MIX_ENV=test mix test` — semua bersih.
-- [ ] **Step 2:** `grep -rn "SkillController\|skill_html" apps/stellar_web/lib` — nol referensi tersisa.
+- [ ] **Step 2:** `grep -rn "SkillController\|skill_html" apps/josjob_web/lib` — nol referensi tersisa.

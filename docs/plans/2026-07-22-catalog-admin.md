@@ -4,7 +4,7 @@
 
 **Goal:** Admin web UI for the catalog layer — superuser CRUD for `Section`, and per-tenant RBAC-gated CRUD for `Course` (with industries M:N, tenant sharing, and a course-materials panel).
 
-**Architecture:** Two controllers in `apps/stellar_web` following the existing pattern (`OrganizationController` for per-org scoping, `RoleController` for M:N checkbox sync). No schema changes — the `StellarLrn.Learning` domain + `StellarDoc.Documents` already exist. Web-layer enforcement (`authorize?: false`, RBAC via `conn.assigns[:permissions]`).
+**Architecture:** Two controllers in `apps/josjob_web` following the existing pattern (`OrganizationController` for per-org scoping, `RoleController` for M:N checkbox sync). No schema changes — the `JosjobLrn.Learning` domain + `JosjobDoc.Documents` already exist. Web-layer enforcement (`authorize?: false`, RBAC via `conn.assigns[:permissions]`).
 
 **Tech Stack:** Phoenix 1.8 controllers + HEEx, AshPhoenix.Form, Ash 3, daisyUI.
 
@@ -14,39 +14,39 @@
 - **No schema changes / no migrations** in this spec. Do not touch the dev DB.
 - Verification = `mix compile --warnings-as-errors` + `mix format --check-formatted` clean, then the user smoke-tests manually. **No controller tests** (the repo has none and `ConnCase` has no auth helper).
 - Reuse existing permissions: `courses:read` (view Course), `courses:manage` (create/edit/delete Course). Section = superuser-only via `:require_admin`. No new permission keys.
-- Follow existing style: `StellarWeb.Perms.can?/2`, `StellarWeb.Format.datetime/1`, `StellarWeb.Audit.user_labels/0`, `Layouts.admin` assigns (`current_user`, `permissions`, `active_organization_id`, `member_orgs`).
+- Follow existing style: `JosjobWeb.Perms.can?/2`, `JosjobWeb.Format.datetime/1`, `JosjobWeb.Audit.user_labels/0`, `Layouts.admin` assigns (`current_user`, `permissions`, `active_organization_id`, `member_orgs`).
 
 ---
 
 ### Task 1: Section admin (superuser-only)
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/section_controller.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/section_html.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/{index,new,edit}.html.heex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (add section resources to the superuser admin scope)
-- Modify: `apps/stellar_web/lib/stellar_web/components/layouts.ex` (sidebar entry)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/section_controller.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/section_html.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/section_html/{index,new,edit}.html.heex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (add section resources to the superuser admin scope)
+- Modify: `apps/josjob_web/lib/josjob_web/components/layouts.ex` (sidebar entry)
 
 **Interfaces:**
-- Produces: routes `/sections` (index/new/create/edit/update/delete) under `:require_admin`; `StellarWeb.Admin.SectionController`, `StellarWeb.Admin.SectionHTML`.
+- Produces: routes `/sections` (index/new/create/edit/update/delete) under `:require_admin`; `JosjobWeb.Admin.SectionController`, `JosjobWeb.Admin.SectionHTML`.
 
 - [ ] **Step 1: Controller**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_controller.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/section_controller.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.SectionController do
+defmodule JosjobWeb.Admin.SectionController do
   @moduledoc "CRUD Section (jurusan) — master-data global, superuser only."
-  use StellarWeb, :controller
+  use JosjobWeb, :controller
 
   import Phoenix.Component, only: [to_form: 1]
   require Ash.Query
-  alias StellarLrn.Learning.Section
+  alias JosjobLrn.Learning.Section
 
   def index(conn, _params) do
     sections = Section |> Ash.Query.sort(name: :asc) |> Ash.read!(authorize?: false)
 
-    render(conn, :index, sections: sections, audit_labels: StellarWeb.Audit.user_labels())
+    render(conn, :index, sections: sections, audit_labels: JosjobWeb.Audit.user_labels())
   end
 
   def new(conn, _params), do: render(conn, :new, form: to_form(create_form()))
@@ -108,11 +108,11 @@ end
 
 - [ ] **Step 2: HTML module + form component**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/section_html.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.SectionHTML do
-  use StellarWeb, :html
+defmodule JosjobWeb.Admin.SectionHTML do
+  use JosjobWeb, :html
 
   embed_templates "section_html/*"
 
@@ -140,7 +140,7 @@ end
 
 - [ ] **Step 3: Templates**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/index.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/section_html/index.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -165,7 +165,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/index.ht
     <:col :let={s} label="Nama">{s.name}</:col>
     <:col :let={s} label="Deskripsi">{s.description}</:col>
     <:col :let={s} label="Aktif">{if s.is_active, do: "Ya", else: "Tidak"}</:col>
-    <:col :let={s} label="Dibuat">{StellarWeb.Format.datetime(s.created_at)}</:col>
+    <:col :let={s} label="Dibuat">{JosjobWeb.Format.datetime(s.created_at)}</:col>
     <:col :let={s} label="Dibuat oleh">{@audit_labels[s.created_by] || "-"}</:col>
     <:action :let={s}>
       <.link navigate={~p"/sections/#{s.id}/edit"} class="btn btn-ghost btn-xs">Edit</.link>
@@ -184,7 +184,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/index.ht
 </Layouts.admin>
 ```
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/new.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/section_html/new.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -201,7 +201,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/new.html
 </Layouts.admin>
 ```
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/edit.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/section_html/edit.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -228,7 +228,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/section_html/edit.htm
 
 - [ ] **Step 4: Route**
 
-In `apps/stellar_web/lib/stellar_web/router.ex`, inside the superuser scope `scope "/", StellarWeb.Admin do pipe_through [:browser, :require_admin]`, add (next to `resources "/industries", ...`):
+In `apps/josjob_web/lib/josjob_web/router.ex`, inside the superuser scope `scope "/", JosjobWeb.Admin do pipe_through [:browser, :require_admin]`, add (next to `resources "/industries", ...`):
 
 ```elixir
     resources "/sections", SectionController, except: [:show]
@@ -236,7 +236,7 @@ In `apps/stellar_web/lib/stellar_web/router.ex`, inside the superuser scope `sco
 
 - [ ] **Step 5: Sidebar entry**
 
-In `apps/stellar_web/lib/stellar_web/components/layouts.ex`, inside `admin_nav/0`, add after the `:industries` entry:
+In `apps/josjob_web/lib/josjob_web/components/layouts.ex`, inside `admin_nav/0`, add after the `:industries` entry:
 
 ```elixir
       %{
@@ -256,7 +256,7 @@ Expected: clean. (Manual smoke later: `/sections` lists, create/edit/delete work
 - [ ] **Step 7: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_web
+git add apps/josjob_web
 git commit -m "feat(web): section admin (superuser)"
 ```
 
@@ -265,15 +265,15 @@ git commit -m "feat(web): section admin (superuser)"
 ### Task 2: Course admin (per-tenant CRUD + industries M:N + tenant sharing)
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/course_controller.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/course_html.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/{index,new,edit}.html.heex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (new `:require_courses_read` pipeline + course scope)
-- Modify: `apps/stellar_web/lib/stellar_web/components/layouts.ex` (sidebar entry)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/course_controller.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/course_html.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/admin/course_html/{index,new,edit}.html.heex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (new `:require_courses_read` pipeline + course scope)
+- Modify: `apps/josjob_web/lib/josjob_web/components/layouts.ex` (sidebar entry)
 
 **Interfaces:**
-- Consumes: `StellarLrn.Learning.{Course, Section, CourseOrganization, CourseIndustry}`, `Stellar.Orgs.{Organization, Industry}`.
-- Produces: routes `/courses` (index/new/create/edit/update/delete) under `[:browser, :require_member, :require_courses_read]`; `StellarWeb.Admin.CourseController`, `StellarWeb.Admin.CourseHTML`. The `edit` action assigns needed by Task 3's materials panel are added in Task 3.
+- Consumes: `JosjobLrn.Learning.{Course, Section, CourseOrganization, CourseIndustry}`, `Josjob.Orgs.{Organization, Industry}`.
+- Produces: routes `/courses` (index/new/create/edit/update/delete) under `[:browser, :require_member, :require_courses_read]`; `JosjobWeb.Admin.CourseController`, `JosjobWeb.Admin.CourseHTML`. The `edit` action assigns needed by Task 3's materials panel are added in Task 3.
 
 - [ ] **Step 1: `:require_courses_read` pipeline**
 
@@ -281,32 +281,32 @@ In `router.ex`, next to `pipeline :require_orgs_read do ... end`, add:
 
 ```elixir
   pipeline :require_courses_read do
-    plug StellarWeb.Plugs.RequirePermission, "courses:read"
+    plug JosjobWeb.Plugs.RequirePermission, "courses:read"
   end
 ```
 
 - [ ] **Step 2: Controller**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_controller.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/course_controller.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.CourseController do
+defmodule JosjobWeb.Admin.CourseController do
   @moduledoc """
   CRUD Course (per-tenant). Route gate `courses:read`; create/edit/delete butuh
   `courses:manage`. Superuser lihat semua + bagikan ke banyak tenant; non-superuser
   hanya course yang tertaut ke org aktifnya, dan course baru otomatis tertaut ke
   org aktif. Industri = M:N (checkbox). Section = dropdown semua section aktif.
   """
-  use StellarWeb, :controller
+  use JosjobWeb, :controller
 
   import Phoenix.Component, only: [to_form: 1]
   require Ash.Query
 
-  alias StellarLrn.Learning.{Course, Section, CourseOrganization, CourseIndustry}
-  alias Stellar.Orgs.{Organization, Industry}
+  alias JosjobLrn.Learning.{Course, Section, CourseOrganization, CourseIndustry}
+  alias Josjob.Orgs.{Organization, Industry}
 
   defp su?(conn), do: conn.assigns[:permissions] == :all
-  defp can_manage?(conn), do: StellarWeb.Perms.can?(conn.assigns[:permissions], "courses:manage")
+  defp can_manage?(conn), do: JosjobWeb.Perms.can?(conn.assigns[:permissions], "courses:manage")
   defp active_org(conn), do: conn.assigns[:active_organization_id]
 
   defp forbid(conn),
@@ -342,7 +342,7 @@ defmodule StellarWeb.Admin.CourseController do
 
     render(conn, :index,
       courses: courses,
-      audit_labels: StellarWeb.Audit.user_labels()
+      audit_labels: JosjobWeb.Audit.user_labels()
     )
   end
 
@@ -519,7 +519,7 @@ defmodule StellarWeb.Admin.CourseController do
   end
 
   defp detach_materials(course_id) do
-    StellarDoc.Documents.Document
+    JosjobDoc.Documents.Document
     |> Ash.Query.filter(course_id == ^course_id)
     |> Ash.read!(authorize?: false)
     |> Enum.each(fn doc ->
@@ -533,11 +533,11 @@ end
 
 - [ ] **Step 3: HTML module + form component**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/course_html.ex`:
 
 ```elixir
-defmodule StellarWeb.Admin.CourseHTML do
-  use StellarWeb, :html
+defmodule JosjobWeb.Admin.CourseHTML do
+  use JosjobWeb, :html
 
   embed_templates "course_html/*"
 
@@ -611,7 +611,7 @@ end
 
 - [ ] **Step 4: index template**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/index.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/course_html/index.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -626,7 +626,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/index.htm
     Courses
     <:subtitle>Katalog course.</:subtitle>
     <:actions>
-      <.link :if={StellarWeb.Perms.can?(@permissions, "courses:manage")} navigate={~p"/courses/new"}>
+      <.link :if={JosjobWeb.Perms.can?(@permissions, "courses:manage")} navigate={~p"/courses/new"}>
         <.button variant="primary">New course</.button>
       </.link>
     </:actions>
@@ -637,11 +637,11 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/index.htm
     <:col :let={c} label="Section">{c.section && c.section.name}</:col>
     <:col :let={c} label="Aktif">{if c.is_active, do: "Ya", else: "Tidak"}</:col>
     <:col :let={c} label="Industri">{Enum.map_join(c.industries, ", ", & &1.name)}</:col>
-    <:col :let={c} label="Dibuat">{StellarWeb.Format.datetime(c.created_at)}</:col>
+    <:col :let={c} label="Dibuat">{JosjobWeb.Format.datetime(c.created_at)}</:col>
     <:col :let={c} label="Dibuat oleh">{@audit_labels[c.created_by] || "-"}</:col>
     <:action :let={c}>
       <.link
-        :if={StellarWeb.Perms.can?(@permissions, "courses:manage")}
+        :if={JosjobWeb.Perms.can?(@permissions, "courses:manage")}
         navigate={~p"/courses/#{c.id}/edit"}
         class="btn btn-ghost btn-xs"
       >
@@ -650,7 +650,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/index.htm
     </:action>
     <:action :let={c}>
       <.link
-        :if={StellarWeb.Perms.can?(@permissions, "courses:manage")}
+        :if={JosjobWeb.Perms.can?(@permissions, "courses:manage")}
         href={~p"/courses/#{c.id}"}
         method="delete"
         data-confirm={"Hapus course #{c.title}?"}
@@ -665,7 +665,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/index.htm
 
 - [ ] **Step 5: new template**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/new.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/course_html/new.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -695,7 +695,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/new.html.
 
 - [ ] **Step 6: edit template (materials panel added in Task 3)**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/edit.html.heex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/admin/course_html/edit.html.heex`:
 
 ```heex
 <Layouts.admin
@@ -731,7 +731,7 @@ Create `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/edit.html
 In `router.ex`, add a new scope near the memberships/organizations scopes:
 
 ```elixir
-  scope "/", StellarWeb.Admin do
+  scope "/", JosjobWeb.Admin do
     pipe_through [:browser, :require_member, :require_courses_read]
 
     resources "/courses", CourseController, except: [:show]
@@ -760,7 +760,7 @@ Expected: clean.
 - [ ] **Step 10: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_web
+git add apps/josjob_web
 git commit -m "feat(web): course admin (per-tenant CRUD + industries + sharing)"
 ```
 
@@ -769,12 +769,12 @@ git commit -m "feat(web): course admin (per-tenant CRUD + industries + sharing)"
 ### Task 3: Course materials panel
 
 **Files:**
-- Modify: `apps/stellar_web/lib/stellar_web/controllers/admin/course_controller.ex` (edit assigns + `add_material`/`link_material`/`detach_material` actions)
-- Modify: `apps/stellar_web/lib/stellar_web/controllers/admin/course_html/edit.html.heex` (materials panel)
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (3 material routes)
+- Modify: `apps/josjob_web/lib/josjob_web/controllers/admin/course_controller.ex` (edit assigns + `add_material`/`link_material`/`detach_material` actions)
+- Modify: `apps/josjob_web/lib/josjob_web/controllers/admin/course_html/edit.html.heex` (materials panel)
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (3 material routes)
 
 **Interfaces:**
-- Consumes: `StellarDoc.Documents.Document`, active org, `courses:manage`.
+- Consumes: `JosjobDoc.Documents.Document`, active org, `courses:manage`.
 - Produces: `POST /courses/:id/materials` (add new), `POST /courses/:id/materials/link` (link existing), `DELETE /courses/:id/materials/:doc_id` (detach).
 
 - [ ] **Step 1: Extend `edit` to load materials + linkable docs + material form**
@@ -806,7 +806,7 @@ In `course_controller.ex`, replace the `edit/2` function with:
 Add these helpers (near `detach_materials/1`):
 
 ```elixir
-  alias StellarDoc.Documents.Document
+  alias JosjobDoc.Documents.Document
 
   defp materials(course_id) do
     Document
@@ -827,7 +827,7 @@ Add these helpers (near `detach_materials/1`):
     do: AshPhoenix.Form.for_create(Document, :create, as: "document", authorize?: false)
 ```
 
-> Note: `alias StellarDoc.Documents.Document` may already be implied — if the module top already aliases it (from Task 2 Step 2 `detach_materials`), do NOT add a duplicate `alias`. In Task 2 `detach_materials/1` used the fully-qualified name; keep it fully-qualified OR add the single alias here and update `detach_materials/1` to use `Document`. Use exactly one alias.
+> Note: `alias JosjobDoc.Documents.Document` may already be implied — if the module top already aliases it (from Task 2 Step 2 `detach_materials`), do NOT add a duplicate `alias`. In Task 2 `detach_materials/1` used the fully-qualified name; keep it fully-qualified OR add the single alias here and update `detach_materials/1` to use `Document`. Use exactly one alias.
 
 - [ ] **Step 2: Material actions**
 
@@ -963,7 +963,7 @@ Expected: clean.
 - [ ] **Step 6: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_web
+git add apps/josjob_web
 git commit -m "feat(web): course materials panel (add/link/detach documents)"
 ```
 
@@ -972,15 +972,15 @@ git commit -m "feat(web): course materials panel (add/link/detach documents)"
 ### Task 4: Cleanup + final verification
 
 **Files:**
-- Remove: empty dirs `apps/stellar_web/lib/stellar_web/controllers/admin/{course_html,class_html,material_html}` (only if they exist and are empty; the new `course_html/` from Task 2 is NOT empty — do this check BEFORE Task 2, or skip `course_html`). See Step 1.
+- Remove: empty dirs `apps/josjob_web/lib/josjob_web/controllers/admin/{course_html,class_html,material_html}` (only if they exist and are empty; the new `course_html/` from Task 2 is NOT empty — do this check BEFORE Task 2, or skip `course_html`). See Step 1.
 
 - [ ] **Step 1: Remove leftover empty dirs**
 
 The discarded work left empty `class_html/` and `material_html/` (and previously `course_html/`, now repopulated by Task 2). Remove only the still-empty ones:
 
 ```bash
-rmdir apps/stellar_web/lib/stellar_web/controllers/admin/class_html \
-      apps/stellar_web/lib/stellar_web/controllers/admin/material_html 2>/dev/null || true
+rmdir apps/josjob_web/lib/josjob_web/controllers/admin/class_html \
+      apps/josjob_web/lib/josjob_web/controllers/admin/material_html 2>/dev/null || true
 ```
 
 (`rmdir` fails harmlessly if non-empty/absent. Do NOT remove `course_html` — Task 2 fills it.)

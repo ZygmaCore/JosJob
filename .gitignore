@@ -49,3 +49,11 @@ personal.md
 
 **/test-results
 .superpowers/
+/graphify-out/
+# Manual deploy log (deploy-dev.sh)
+deploy-dev.log
+
+# Log wrapper cron (deploy otomatis 00:00 & 12:00 WIB)
+cron-deploy.log
+cron-deploy.log.1
+deploy-dev.log.1

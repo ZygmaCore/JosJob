@@ -39,7 +39,7 @@ graph TD
 # lib/backend/chat/chat_room_server.ex
 defmodule Backend.Chat.ChatRoomServer do
   use GenServer, restart: :transient
-  alias Stellar.Chat.Message
+  alias Josjob.Chat.Message
 
   # Client API
   def start_link(room_id) do
@@ -100,7 +100,7 @@ end
 ### Connection Validation
 Upon channel subscription:
 *   The system reads the socket's actor/user representation.
-*   It queries the `Stellar.Courses.Enrollment` resource to confirm if the user has an active enrollment in the parent course. If unauthorized, returns `{:error, %{reason: "unauthorized"}}`.
+*   It queries the `Josjob.Courses.Enrollment` resource to confirm if the user has an active enrollment in the parent course. If unauthorized, returns `{:error, %{reason: "unauthorized"}}`.
 
 ### Communication Event Schemas
 

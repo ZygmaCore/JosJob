@@ -15,7 +15,7 @@ One **SFU session + one `RTCPeerConnection` per participant**. Each participant
 publishes their tracks once (client = offerer) and pulls every other participant's
 tracks (SFU = offerer) on the *same* PeerConnection. The SFU handles fan-out, so a
 classroom scales without a mesh. The **App Secret never leaves the server** —
-`StellarWeb.LiveRoomChannel` proxies every SFU call; the client only ever receives
+`JosjobWeb.LiveRoomChannel` proxies every SFU call; the client only ever receives
 short-lived ICE servers and SDP.
 
 ```
@@ -33,14 +33,14 @@ one `tracks/new` call → one renegotiation). Late joiners and leaves fall out f
 
 | Concern | Location |
 |---|---|
-| Provider (SFU + TURN HTTP client) | `apps/stellar_ms` — `StellarMs.Realtime` facade → `StellarMs.CloudflareRealtime` |
-| Signaling channel + presence | `apps/stellar_web` — `StellarWeb.LiveRoomChannel` (`live_room:*`), `StellarWeb.Presence` |
-| Flutter client | `apps/stellar_fe/lib/live/` — models, `signaling_client.dart`, `live_session_controller.dart`, part-based call UI |
+| Provider (SFU + TURN HTTP client) | `apps/josjob_ms` — `JosjobMs.Realtime` facade → `JosjobMs.CloudflareRealtime` |
+| Signaling channel + presence | `apps/josjob_web` — `JosjobWeb.LiveRoomChannel` (`live_room:*`), `JosjobWeb.Presence` |
+| Flutter client | `apps/josjob_fe/lib/live/` — models, `signaling_client.dart`, `live_session_controller.dart`, part-based call UI |
 | Entry point | Dashboard → **Live Coaching** → "Start a live session" → `LiveCallPage` |
 
-Realtime lives beside Cloudflare Stream/VOD in the media-streaming app `stellar_ms`
-(a leaf app), which `stellar_web` already depends on — no umbrella cycle. The realtime
-facade `StellarMs.Realtime` is kept separate from the Stream facade `StellarMs` so their
+Realtime lives beside Cloudflare Stream/VOD in the media-streaming app `josjob_ms`
+(a leaf app), which `josjob_web` already depends on — no umbrella cycle. The realtime
+facade `JosjobMs.Realtime` is kept separate from the Stream facade `JosjobMs` so their
 `configured?/0` don't collide.
 
 ## Configuration
@@ -55,7 +55,7 @@ CLOUDFLARE_TURN_KEY_ID=...            # TURN key id
 CLOUDFLARE_TURN_TOKEN=...             # TURN key API token (server-side only)
 ```
 
-Verify: `iex> StellarMs.Realtime.configured?()` and `StellarMs.Realtime.turn_configured?()` → `true`.
+Verify: `iex> JosjobMs.Realtime.configured?()` and `JosjobMs.Realtime.turn_configured?()` → `true`.
 The Flutter web client derives the socket URL from `API_BASE_URL`
 (`--dart-define`), swapping `http`→`ws`.
 
@@ -68,8 +68,8 @@ Requires the credentials above + two clients.
    (WebRTC needs a secure context — `localhost` is exempt; production must be HTTPS).
 3. Sign in, go to **Dashboard → Live Coaching → Start a live session** and pick a mode.
 4. Open the app in a second browser/profile, sign in as another user, click the
-   **same** mode button (shared demo rooms: `stellar-1on1-demo` / `stellar-coaching-demo` /
-   `stellar-classroom-demo`). Both should see each other's video/audio.
+   **same** mode button (shared demo rooms: `josjob-1on1-demo` / `josjob-coaching-demo` /
+   `josjob-classroom-demo`). Both should see each other's video/audio.
 
 Mobile: Android/iOS are scaffolded with camera/mic permissions (`minSdk 23`,
 `NS*UsageDescription`), but are **not built by CI** (CI ships web only) and need
@@ -78,7 +78,7 @@ device testing. Screen share is web/desktop-only in v1.
 ## Verification (CI)
 
 - Backend: `mix compile --warnings-as-errors`, `mix format`, `mix test`
-  (`StellarMs.CloudflareRealtime` with mocked `Req.Test`; `LiveRoomChannel` join/auth/
+  (`JosjobMs.CloudflareRealtime` with mocked `Req.Test`; `LiveRoomChannel` join/auth/
   presence/gating).
 - Frontend: `flutter analyze` (No issues), `dart format`, `flutter test`
   (model + signaling parsing), `flutter build web`.

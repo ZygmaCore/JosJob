@@ -9,7 +9,7 @@ This document specifies the authentication flows, onboarding adaptive assessment
 The platform utilizes Google OAuth 2.0 as the identity provider for authentication.
 
 > [!IMPORTANT]
-> When implementing the backend OAuth flow, the [ash_authentication](https://hex.pm/packages/ash_authentication) and [ash_authentication_phoenix](https://hex.pm/packages/ash_authentication_phoenix) libraries must be used, which natively handle the Google OAuth2 strategy and map authenticated identities to the `Stellar.Accounts.User` resource.
+> When implementing the backend OAuth flow, the [ash_authentication](https://hex.pm/packages/ash_authentication) and [ash_authentication_phoenix](https://hex.pm/packages/ash_authentication_phoenix) libraries must be used, which natively handle the Google OAuth2 strategy and map authenticated identities to the `Josjob.Accounts.User` resource.
 > Use ash_rbac as role based access control library and use below roles: 
   # "employer", "coordinator", "worker", "graduate", "superuser"
 > Set initial roles for rbac in seed. 
@@ -168,9 +168,9 @@ defmodule BackendWeb.UserSocket do
         :error
 
       token ->
-        case AshAuthentication.Jwt.verify_token(token, Stellar.Accounts) do
+        case AshAuthentication.Jwt.verify_token(token, Josjob.Accounts) do
           {:ok, %{"sub" => user_id}} ->
-            case Ash.get(Stellar.Accounts.User, user_id) do
+            case Ash.get(Josjob.Accounts.User, user_id) do
               {:ok, user} ->
                 socket =
                   socket

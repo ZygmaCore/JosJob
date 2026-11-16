@@ -21,8 +21,8 @@ the course update needs to do.
 
 | Building block | Where | Reuse for courses |
 | :--- | :--- | :--- |
-| `Course` + `Lecture` Ash resources | `apps/stellar/lib/stellar/courses/` | The course model's spine already exists (`Course has_many :lectures`) |
-| Managed upload → transcode → HLS | `StellarMs.CloudflareStream` (app `:stellar_ms`) | Instructors add video lectures without any self-hosted media infra |
+| `Course` + `Lecture` Ash resources | `apps/josjob/lib/josjob/courses/` | The course model's spine already exists (`Course has_many :lectures`) |
+| Managed upload → transcode → HLS | `JosjobMs.CloudflareStream` (app `:josjob_ms`) | Instructors add video lectures without any self-hosted media infra |
 | VOD HTTP API | `/api/courses`, `/api/lectures/:id`, `/api/vod/*` | Course screens read these; the course-builder posts to `/api/vod/*` |
 | Interactive cross-platform player | `lib/vod/` → `VodPlayerPage` | The course "Lecture Viewer" video panel — plays HLS on web (hls.js) + native |
 | Time-based checkpoints | `SyncFromCloudflare` → `video_checkpoints` | The seek-bar chapters / "topics" panel in the lecture viewer |
@@ -135,7 +135,7 @@ policies do
   policy action_type(:read) do
     authorize_if actor_attribute_equals(:role, :admin)
     authorize_if relates_to_actor_via([:course, :instructor])   # own course
-    authorize_if Stellar.Courses.Checks.EnrolledInCourse         # student
+    authorize_if Josjob.Courses.Checks.EnrolledInCourse         # student
   end
 end
 ```
@@ -184,8 +184,8 @@ A minimal bridge from "VOD demo" to "video lectures inside a full course":
 
 ## 5. What NOT to rebuild
 
-- **Don't** re-implement upload/transcode/playback — reuse `StellarMs` (the
-  media-streaming app `:stellar_ms`), `VodApi`, and `VodPlayerPage`.
+- **Don't** re-implement upload/transcode/playback — reuse `JosjobMs` (the
+  media-streaming app `:josjob_ms`), `VodApi`, and `VodPlayerPage`.
 - **Don't** add a second video player — the `VodPlayback` abstraction already
   covers web (hls.js) + native.
 - **Don't** proxy video bytes through the backend or the LiveView chunked upload

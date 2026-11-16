@@ -92,14 +92,14 @@ graph TD
 To implement this fast, the database maintains a dense matrix of completed lectures per enrollment, modeled as an Ash Resource.
 
 ```elixir
-defmodule Stellar.Courses.EnrollmentProgress do
+defmodule Josjob.Courses.EnrollmentProgress do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "enrollment_progresses"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -111,8 +111,8 @@ defmodule Stellar.Courses.EnrollmentProgress do
   end
 
   relationships do
-    belongs_to :enrollment, Stellar.Courses.Enrollment
-    belongs_to :lecture, Stellar.Courses.Lecture
+    belongs_to :enrollment, Josjob.Courses.Enrollment
+    belongs_to :lecture, Josjob.Courses.Lecture
   end
 
   actions do
@@ -125,12 +125,12 @@ end
 
 ### Backend Validation Function (Ecto Transaction)
 ```elixir
-defmodule Stellar.Courses.ProgressionService do
-  alias Stellar.Courses.{Enrollment, EnrollmentProgress}
+defmodule Josjob.Courses.ProgressionService do
+  alias Josjob.Courses.{Enrollment, EnrollmentProgress}
 
   # Evaluates and updates student progress pointers when a quiz is passed using Ash
   def process_quiz_pass(student_id, course_id, current_lecture_id, score) do
-    Ash.run_transaction(Stellar.Courses, fn ->
+    Ash.run_transaction(Josjob.Courses, fn ->
       # 1. Retrieve user enrollment and progress records via Ash resources
       with {:ok, enrollment} <- 
              Enrollment

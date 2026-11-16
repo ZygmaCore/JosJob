@@ -148,7 +148,7 @@ graph TD
         # Under the hood, this uses an Ash custom read action (e.g. :assignable)
         # on the InstructorMaterial resource.
         def list_assignable_instructor_materials(course_id, instructor_id) do
-          Stellar.Courses.InstructorMaterial
+          Josjob.Courses.InstructorMaterial
           |> Ash.Query.filter(
             instructor_id == ^instructor_id and
             (visibility == "public" or ^course_id in allowed_course_ids)
@@ -173,13 +173,13 @@ To facilitate personalized mentoring, the platform implements a 1-on-1 appointme
         def book_appointment(student_id, slot_id, topic) do
           # This operation runs in a transaction. We update the slot state and create the appointment.
           # Ash provides transactional actions or multi-resource changes via Ash.Changeset.
-          Ash.run_transaction(Stellar.Courses, fn ->
-            with {:ok, slot} <- Ash.get(Stellar.Courses.ConsultationSlot, slot_id),
+          Ash.run_transaction(Josjob.Courses, fn ->
+            with {:ok, slot} <- Ash.get(Josjob.Courses.ConsultationSlot, slot_id),
                  true <- slot.status == "available",
                  {:ok, _updated_slot} <- Ash.update(slot, :book),
                  room_hash = :crypto.hash(:sha256, "#{slot_id}-#{student_id}") |> Base.encode16(),
                  {:ok, appointment} <- 
-                   Stellar.Courses.Appointment
+                   Josjob.Courses.Appointment
                    |> Ash.Changeset.for_create(:create, %{
                      slot_id: slot_id,
                      student_id: student_id,

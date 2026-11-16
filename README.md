@@ -1,6 +1,6 @@
-# JosJob - Learning & Job Placement on Stellar
+# JosJob - Online Learning & Job Placement
 
-JosJob mengembangkan platform Stellar untuk menghubungkan pencarian kerja dan
+JosJob menghubungkan pencarian kerja dan
 pembelajaran. Backend memakai Elixir/Phoenix, Ash Framework, dan PostgreSQL;
 frontend terpadu memakai Flutter. Arah produk adalah **Match -> Gap -> Learn ->
 Re-match**: mencocokkan CV dengan lowongan, mengenali kekurangan skill,
@@ -36,25 +36,25 @@ pengiriman notifikasi lengkap. Integrasi eksternal memerlukan kredensial masing-
 ## Arsitektur dan struktur repositori
 
 Backend merupakan modular monolith: sepuluh aplikasi Elixir dalam satu umbrella,
-satu release OTP `stellar`, satu endpoint Phoenix, dan database bersama melalui
-`Stellar.Repo`. Flutter berada di repositori yang sama tetapi di luar daftar app Mix.
+satu release OTP `josjob`, satu endpoint Phoenix, dan database bersama melalui
+`Josjob.Repo`. Flutter berada di repositori yang sama tetapi di luar daftar app Mix.
 
 | Direktori | Tanggung jawab |
 | --- | --- |
-| `apps/stellar` | Akun, organisasi, RBAC, pembayaran, Repo, migrasi dan seed |
-| `apps/stellar_web` | HTTP/JSON API, LiveView admin, autentikasi web dan Phoenix Channels |
-| `apps/stellar_job` | Resource lowongan, pencarian dan operasi employer dengan pembatasan organisasi |
-| `apps/stellar_lrn` | Katalog, kelas, enrollment dan materi pembelajaran |
-| `apps/stellar_doc` | Dokumen dan grant akses |
-| `apps/stellar_ms` | Provider media Cloudflare dan storage kompatibel S3 |
-| `apps/stellar_rag` | Ekstraksi dan ingestion dokumen |
-| `apps/stellar_ai` | Kerangka agent Jido; analisis CV dan matching masih direncanakan |
-| `apps/stellar_quiz`, `apps/stellar_rt` | App scaffold; signaling aktif berada di `stellar_web` |
-| `apps/stellar_fe` | Flutter client, layanan API, session dan outbox onboarding |
+| `apps/josjob` | Akun, organisasi, RBAC, pembayaran, Repo, migrasi dan seed |
+| `apps/josjob_web` | HTTP/JSON API, LiveView admin, autentikasi web dan Phoenix Channels |
+| `apps/josjob_job` | Resource lowongan, pencarian dan operasi employer dengan pembatasan organisasi |
+| `apps/josjob_lrn` | Katalog, kelas, enrollment dan materi pembelajaran |
+| `apps/josjob_doc` | Dokumen dan grant akses |
+| `apps/josjob_ms` | Provider media Cloudflare dan storage kompatibel S3 |
+| `apps/josjob_rag` | Ekstraksi dan ingestion dokumen |
+| `apps/josjob_ai` | Kerangka agent Jido; analisis CV dan matching masih direncanakan |
+| `apps/josjob_quiz`, `apps/josjob_rt` | App scaffold; signaling aktif berada di `josjob_web` |
+| `apps/josjob_fe` | Flutter client, layanan API, session dan outbox onboarding |
 | `config/`, `rel/`, `deployment/` | Konfigurasi, helper release dan berkas deployment |
 | `docs/`, `PRD/`, `e2e/` | Dokumentasi teknis, spesifikasi produk dan Playwright |
 
-Migrasi database berada di `apps/stellar/priv/repo/migrations`.
+Migrasi database berada di `apps/josjob/priv/repo/migrations`.
 [Project map](docs/PROJECT_MAP.md) menyediakan penelusuran fitur dan sumber;
 beberapa inventarisnya mendeskripsikan snapshot lama. Gunakan source dan test
 terkini untuk memverifikasi perilaku.
@@ -71,7 +71,7 @@ Windows pada dependensi Rust/NIF `xberg`.
 ```dotenv
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
-POSTGRES_DB=stellar_dev
+POSTGRES_DB=josjob_dev
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5438
 PORT=4000
@@ -89,7 +89,7 @@ preview lokal; deployment memerlukan `SECRET_KEY_BASE` dan
 
 ```bash
 docker compose -f docker-compose.fullstack.yml --env-file envs/.env up -d --build
-docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f stellar_be
+docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f josjob_be
 ```
 
 | Layanan | Alamat lokal |
@@ -142,19 +142,19 @@ seed di host, export/set variabel tersebut pada shell sebelum `mix ecto.setup`.
 ## Pengembangan Flutter
 
 Gunakan Flutter dengan Dart yang memenuhi `^3.12.0` sesuai
-[`pubspec.yaml`](apps/stellar_fe/pubspec.yaml).
+[`pubspec.yaml`](apps/josjob_fe/pubspec.yaml).
 
 ```bash
-cd apps/stellar_fe
+cd apps/josjob_fe
 flutter pub get
 flutter run -d chrome --web-port=8081 --dart-define=API_BASE_URL=http://localhost:4000
 ```
 
 `API_BASE_URL` dan `GOOGLE_CLIENT_ID` adalah konfigurasi saat build. Untuk
 Google sign-in, tambahkan `--dart-define=GOOGLE_CLIENT_ID=<google-web-client-id>`.
-Pada Docker, isi variabel yang sama di `envs/.env`, lalu rebuild `stellar_fe`.
+Pada Docker, isi variabel yang sama di `envs/.env`, lalu rebuild `josjob_fe`.
 Mengubah environment backend saja tidak memperbarui bundle Flutter.
-Lihat [panduan frontend](apps/stellar_fe/README.md) untuk defines file dan aset
+Lihat [panduan frontend](apps/josjob_fe/README.md) untuk defines file dan aset
 SQLite WASM/Drift.
 
 ## Autentikasi dan integrasi
@@ -204,17 +204,22 @@ Dari root, jalankan pemeriksaan backend yang diwajibkan repositori:
 mix precommit
 ```
 
+Untuk Windows, gunakan Linux/WSL untuk dependency native dan lihat
+[panduan testing backend](docs/BACKEND_TESTING.md). Alias test di root
+membuat database test dan menjalankan migrasi sebelum app umbrella pertama
+dimulai, sehingga checkout dengan database kosong dapat langsung diuji.
+
 Alias ini berjalan dalam environment test dan menjalankan compile dengan
 warnings sebagai error, `deps.unlock --unused`, format dan test. Periksa diff
 setelahnya karena alias dapat mengubah file. `mix test` dapat dipakai untuk
 menjalankan suite secara terpisah.
 
-Database test memakai `stellar_test` dengan suffix opsional
+Database test memakai `josjob_test` dengan suffix opsional
 `MIX_TEST_PARTITION`. Konfigurasi test membaca `POSTGRES_*` langsung dari
 environment proses; set pada shell jika berbeda dari default
 `postgres/postgres` di `localhost:5438`.
 
-Dari `apps/stellar_fe`:
+Dari `apps/josjob_fe`:
 
 ```bash
 flutter analyze
@@ -237,12 +242,13 @@ default port `4000` pada konfigurasi Playwright perlu di-override.
 
 ## Dokumentasi dan deployment
 
+- [Panduan transisi nama aplikasi dan instalasi lama](docs/REBRANDING.md)
 - [Project map dan hubungan fitur](docs/PROJECT_MAP.md)
 - [PRD utama](PRD/PRD.md) dan [keputusan produk](PRD/DECISIONS.md)
 - [API autentikasi](docs/api/auth.md), [pembelajaran](docs/api/learning.md), dan [lowongan](docs/api/jobs.md)
 - [Konfigurasi Compose full stack](docker-compose.fullstack.yml) dan [Compose deployment dev](docker-compose.dev.yml)
 
-Release backend bernama `stellar`; helper migrasi, seed dan server berada di
+Release backend bernama `josjob`; helper migrasi, seed dan server berada di
 `rel/overlays/bin`. Checkout ini tidak menyertakan workflow CI/CD, sehingga
 pipeline deploy otomatis tidak dapat diasumsikan tersedia.
 

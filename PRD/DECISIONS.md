@@ -13,21 +13,22 @@
 | # | Keputusan | Tanggal | Sumber |
 | --- | --- | --- | --- |
 | D1 | Produk: **JosJob**, tim: **admin123**, Case 1. Anggota: Fathan Akram (Leader), Alhikam Dirga, Dimas Sakti, Juang Zebua. | 2026-11-10 | Abstrak final (otoritatif bila ada info rancu) |
-| D2 | Project dibangun **ON TOP Stellar yang sudah ada** (renovasi), bukan bangun ulang. | 2026-11-10 | User |
+| D2 | Project dibangun **ON TOP platform pembelajaran yang sudah ada** (renovasi), bukan bangun ulang. Nama platform telah diseragamkan melalui D17. | 2026-11-10 | User |
 | D3 | Stack microservices Go/TypeScript/Python dari PRD awal **gugur**. Stack yang dipakai: Elixir/Phoenix + Ash + Flutter (modular monolith). | 2026-11-10 | User + verifikasi repo |
 | D4 | **Scraping batal.** Data lowongan: synthetic + employer-posted. | 2026-11-10 | User |
-| D5 | Monetisasi di sisi **pembelajaran/course** (Stripe, sudah ada di Stellar). Sisi job gratis untuk graduate. | 2026-11-11 | User |
+| D5 | Monetisasi di sisi **pembelajaran/course** (Stripe, sudah ada di JosJob). Sisi job gratis untuk graduate. | 2026-11-11 | User |
 | D6 | AI: **Gemini API free tier** sebagai primary (embed + LLM), fallback **9Router** (self-hosted, localhost-only). | 2026-11-11 | User |
 | D7 | 9Router **STRICT localhost**; backend sebagai proxy. Alur: frontend → backend → 9Router → backend → frontend. | 2026-11-11 | User |
 | D8 | **IP lookup dibuang.** Lokasi ditanyakan sekali ("mau nyari kerja di daerah mana"), disimpan di local browser saja. | 2026-11-11 | User |
 | D9 | Privasi: patuh **GDPR**. Consent checkbox sebelum CV diproses. CV **tidak** dihapus otomatis; user boleh hapus atau biarkan; CV tersimpan dapat dipakai ulang untuk apply. Privacy Policy + ToS dibuat. | 2026-11-11 | User |
-| D10 | Deploy di **VPS** (sudah dites build + deploy Stellar, jalan). Domain sudah ada. Cloudflare dipakai nanti (bareng streaming Stellar). Go-public: arsitektur deployment dimatangkan lagi bila menang. | 2026-11-11 | User |
+| D10 | Deploy di **VPS** (sudah dites build + deploy JosJob, jalan). Domain sudah ada. Cloudflare dipakai nanti (bareng streaming JosJob). Go-public: arsitektur deployment dimatangkan lagi bila menang. | 2026-11-11 | User |
 | D11 | CV rusak/tidak terbaca: pesan tegas, tidak ada info berguna terekstrak; user memperbaiki CV dan scan ulang. Tidak ada penilaian terhadap AI-nya (model Gemini / 9Router). | 2026-11-11 | User |
 | D12 | Testing: manual untuk full flag; **tanpa Gemini di CI/CD** (hindari rate limit). 9Router: farming banyak free model, round-robin. | 2026-11-11 | User |
 | D13 | Ranking v1 dimatangkan dulu (match + recency, deterministik). Ranking v2 tetap ada di plan sebagai desain; apakah ditulis sebagai unused code masih pertanyaan terbuka untuk backdev. | 2026-11-11 | User |
 | D14 | Istilah: "backend"/"frontend" = **orangnya** (backdev 1 orang, frontdev 1 orang; user dapat intervensi/membantu). | 2026-11-11 | User |
 | D15 | Reviewer PRD: user + 1 orang lagi. | 2026-11-11 | User |
 | D16 | PRD oneshot ini (folder `PRD/`) menggantikan PRD arsitektur v1 (13 halaman, 10 Nov 2026) sebagai acuan utama. | 2026-11-11 | User (permintaan oneshot) |
+| D17 | Seragamkan identitas produk menjadi **JosJob**, namespace Elixir menjadi `Josjob*`, dan nama app/package/release menjadi `josjob*` pada branch refactor terpisah. Lihat `docs/REBRANDING.md` untuk transisi instalasi yang sudah ada. | 2026-11-12 | User |
 
 ## 2. Keputusan yang masih terbuka (level tim)
 
@@ -56,8 +57,8 @@
 - **T2.** Abstrak masih memuat baris disclaimer bahwa nama/angka/data
   diciptakan untuk contoh gaya — bertentangan dengan status abstrak sebagai
   final. Lihat O12.
-- **T3.** Aturan originality handbook vs reuse Stellar: pekerjaan baru selama
-  lomba adalah `stellar_job` + `stellar_ai` + integrasi; Stellar harus
+- **T3.** Aturan originality handbook vs reuse JosJob: pekerjaan baru selama
+  lomba adalah `josjob_job` + `josjob_ai` + integrasi; JosJob harus
   diatribusi, bukan diklaim sebagai karya baru. Declaration of Originality
   wajib di semifinal.
 - **T4.** Round-robin free model (9Router) membuat skor tidak deterministik

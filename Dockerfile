@@ -3,7 +3,7 @@
 # =============================================================================
 # Backend (Elixir umbrella) — local dev / preview image.
 #
-# Runs the Phoenix JSON API (app :stellar_web, all umbrella apps) as an OTP
+# Runs the Phoenix JSON API (app :josjob_web, all umbrella apps) as an OTP
 # release. Built as a PROD release on purpose: config/runtime.exs binds the
 # endpoint on all interfaces in prod, whereas dev mode binds 127.0.0.1 (which is
 # unreachable from outside the container) and spawns asset watchers. The release
@@ -19,7 +19,7 @@
 # target list has x86_64-unknown-linux-gnu but no -musl, and the C NIFs link
 # glibc too. Versions pinned to .tool-versions (elixir 1.19.5 / erlang 27.3.4.3).
 #
-#   docker compose --env-file envs/.env up -d --build stellar_be   ->  :4000
+#   docker compose --env-file envs/.env up -d --build josjob_be   ->  :4000
 # =============================================================================
 
 ARG ELIXIR_IMAGE=hexpm/elixir:1.19.5-erlang-27.3.4.3-debian-bookworm-20260610-slim
@@ -74,8 +74,11 @@ COPY rel rel
 # Normalize CRLF -> LF on the release helper scripts in case the build context
 # came from a Windows checkout (a stray \r breaks their /bin/sh shebang).
 RUN sed -i 's/\r$//' rel/overlays/bin/* 2>/dev/null || true
+# Ensure executable bits survive checkouts/filesystems that drop them —
+# otherwise bin/migrate fails with "Permission denied" at container start.
+RUN chmod +x rel/overlays/bin/*
 RUN mix compile
-RUN mix release stellar
+RUN mix release josjob
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM ${RUNNER_IMAGE} AS runtime
@@ -92,7 +95,9 @@ RUN apt-get update -y \
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 MIX_ENV=prod
 WORKDIR /app
 
-COPY --from=build /app/_build/prod/rel/stellar ./
+COPY --from=build /app/_build/prod/rel/josjob ./
+# Safety net: pastikan script release (bin/migrate, bin/seed, bin/server) executable.
+RUN chmod +x bin/*
 
 # config/runtime.exs (Dotenvy) reads $RELEASE_ROOT/.env and .prod.overrides.env.
 # Create empty files so a missing file can never trip the loader — real values

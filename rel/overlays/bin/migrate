@@ -1,5 +1,5 @@
 #!/bin/sh
-# Jalankan migrasi DB via Stellar.Release.migrate (tanpa Mix).
+# Jalankan migrasi DB via Josjob.Release.migrate (tanpa Mix).
 set -eu
 cd -P -- "$(dirname -- "$(readlink -f -- "$0")")"
-exec ./stellar eval Stellar.Release.migrate
+exec ./josjob eval Josjob.Release.migrate
