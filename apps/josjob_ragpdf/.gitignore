@@ -1,0 +1,10 @@
+/_build/
+/deps/
+/cover/
+/doc/
+/.elixir_ls/
+/.env
+/tmp/
+erl_crash.dump
+*.ez
+josjob_ragpdf-*.tar
