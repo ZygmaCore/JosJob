@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title desc">
+<title id="title">JosJob robot graduate mascot</title>
+<desc id="desc">Friendly smiling robot head wearing a graduation cap; blue and warm cream, transparent background.</desc>
+<!-- A genuine, fully scalable SVG built from editable vector paths (no embedded bitmap). -->
+<g id="josjob-robot-head">
+  <g id="headphone-pads" fill="#8EC5F0">
+    <rect x="99" y="285" width="70" height="111" rx="35" />
+    <rect x="343" y="285" width="70" height="111" rx="35" />
+  </g>
+  <path id="mortarboard" fill="#2457A7" d="M77 166 L237 72 Q256 61 275 72 L435 166 Q450 175 438 188 Q435 191 430 194 L356 232 Q347 237 339 233 Q256 192 173 233 Q165 237 157 233 L82 194 Q65 185 77 166 Z" />
+  <path id="cap-band-cream" fill="#FFF8E9" d="M153 229 C177 197 213 186 256 185 C299 186 337 197 359 229 L359 245 C334 220 298 208 256 208 C213 208 177 221 153 245 Z" />
+  <path id="cap-crown-blue" fill="#2457A7" d="M158 244 C185 220 221 209 256 209 C293 209 329 220 354 244 L361 273 C329 250 297 239 256 239 C215 239 182 250 151 273 Z" />
+  <path id="tassel-cord" d="M392 188 C405 192 410 203 410 216 L410 242" fill="none" stroke="#8EC5F0" stroke-width="17" stroke-linecap="round"/>
+  <ellipse id="tassel-drop" cx="410" cy="251" rx="21" ry="28" fill="#8EC5F0" />
+  <path id="robot-helmet" fill="#2457A7" d="M256 232 C318 232 358 247 377 279 C390 300 389 344 388 375 C387 419 354 441 300 448 C274 452 238 452 212 448 C158 441 125 419 124 375 C123 344 122 300 135 279 C154 247 194 232 256 232 Z" />
+  <path id="faceplate" fill="#FFF8E9" d="M256 266 C314 266 352 287 352 328 L352 355 C352 392 313 413 256 413 C199 413 160 392 160 355 L160 328 C160 287 198 266 256 266 Z" />
+  <g id="eyes" fill="none" stroke="#2457A7" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path id="left-eye" d="M193 332 C204 310 218 310 229 332"/>
+    <path id="right-eye" d="M283 332 C294 310 308 310 319 332"/>
+  </g>
+  <path id="smiling-mouth" fill="#2457A7" d="M226 353 Q224 346 233 346 L279 346 Q288 346 286 353 C283 373 269 384 256 384 C243 384 229 373 226 353 Z" />
+</g>
+</svg>

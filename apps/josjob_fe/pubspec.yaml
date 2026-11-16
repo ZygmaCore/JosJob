@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   # Fonts for the JosJob landing page, per the UI design system.
   google_fonts: ^6.2.1
+  flutter_svg: ^2.2.4
 
   # Backend auth integration (see docs/api/auth.md + lib/services).
   http: ^1.6.0
@@ -88,6 +89,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/branding/josjob-logo.svg
     - assets/images/josjob_logo.png
   fonts:
     - family: General Sans
