@@ -57,10 +57,13 @@ fi
 # Simpan semua output ke file agar kegagalan bisa diperiksa setelahnya.
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-# Pakai sudo hanya kalau user belum punya akses Docker.
+# Pakai sudo hanya kalau user benar-benar punya akses Docker tanpa password.
+# Kalau tidak ada akses sama sekali, DOCKER dibiarkan kosong dan preflight
+# (setelah trap terpasang) yang akan berhenti dengan pesan jelas.
+DOCKER=()
 if docker info >/dev/null 2>&1; then
   DOCKER=(docker)
-else
+elif sudo -n docker info >/dev/null 2>&1; then
   DOCKER=(sudo docker)
 fi
 # --progress plain: tampilkan output tiap langkah build (mix/deps/Rust),
@@ -139,6 +142,14 @@ if [ "$(free_kb)" -lt 2097152 ]; then
   log "Sisa < 2 GB — prune build cache yang tidak dipakai >24 jam"
   "${DOCKER[@]}" builder prune -f --filter until=24h || true
   log "Sisa disk sekarang: $(df -h / | tail -n 1 | awk '{print $4}')"
+fi
+
+if [ "${#DOCKER[@]}" -eq 0 ]; then
+  echo "Tidak punya akses Docker tanpa password, dan sudo non-interaktif juga tidak tersedia." >&2
+  echo "Perbaiki dengan:" >&2
+  echo "  sudo usermod -aG docker $(id -un)   # lalu login ulang (atau: newgrp docker)" >&2
+  echo "Cek: docker info" >&2
+  exit 1
 fi
 
 [ -f "$ENV_FILE" ] || { echo "Missing $ENV_FILE" >&2; exit 1; }

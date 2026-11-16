@@ -55,4 +55,15 @@ if [ "${WAIT_FOR_BUILD:-0}" = "1" ]; then
 fi
 
 echo "Build lama sudah tidak ada. Mulai deploy..."
+
+# User manager systemd bisa punya daftar group yang basi (mis. baru saja
+# ditambahkan ke group docker lewat usermod). `sg` membaca /etc/group, jadi
+# pakai itu kalau docker belum bisa diakses langsung.
+if ! docker info >/dev/null 2>&1; then
+  if getent group docker | cut -d: -f4 | tr ',' '\n' | grep -qx "$(id -un)"; then
+    echo "Akses docker lewat group belum aktif di sesi ini — re-exec via 'sg docker'."
+    exec sg docker -c "exec '$REPO_DIR/deploy-dev.sh'"
+  fi
+fi
+
 exec "$REPO_DIR/deploy-dev.sh"
