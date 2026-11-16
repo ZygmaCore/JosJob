@@ -77,9 +77,8 @@ class _DashboardShellState extends State<_DashboardShell> {
       final Widget overview = _view == _DashView.jobs
           ? _OverviewJobs(data: data, firstName: _firstName)
           : isOrg(_effectiveRole)
-          ? _OverviewOrg(data: data, firstName: _firstName)
+          ? _OverviewOrg(firstName: _firstName)
           : _OverviewIndividual(
-              data: data,
               firstName: _firstName,
               onBrowseCourses: () => _select(_navIndexOf(data, 'Courses')),
             );

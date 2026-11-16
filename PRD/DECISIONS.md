@@ -29,6 +29,8 @@
 | D15 | Reviewer PRD: user + 1 orang lagi. | 2026-11-11 | User |
 | D16 | PRD oneshot ini (folder `PRD/`) menggantikan PRD arsitektur v1 (13 halaman, 10 Nov 2026) sebagai acuan utama. | 2026-11-11 | User (permintaan oneshot) |
 | D17 | Seragamkan identitas produk menjadi **JosJob**, namespace Elixir menjadi `Josjob*`, dan nama app/package/release menjadi `josjob*` pada branch refactor terpisah. Lihat `docs/REBRANDING.md` untuk transisi instalasi yang sudah ada. | 2026-11-12 | User |
+| D18 | Live Coaching adalah layanan coach yang independen dari course: profil, availability dan booking sendiri. Course diarahkan ke curriculum halaman baca, video dan quiz. Course curriculum masih direncanakan; MVP coaching independen mengikuti D19. Lihat [proposal pemisahan](LEARNING_AND_COACHING_REDESIGN.md). | 2026-11-17 | User |
+| D19 | MVP coaching: appointment 1-on-1, gratis terlebih dahulu. Group session dan paid coaching berada di luar versi pertama. | 2026-11-17 | User |
 
 ## 2. Keputusan yang masih terbuka (level tim)
 
@@ -48,6 +50,8 @@
 | O12 | Baris disclaimer "invented" di abstrak | Hapus sebelum submission | Hapus | user (dokumen) |
 | O13 | Status submission preliminary 10 Nov | Sudah submit atau belum? | Konfirmasi segera | user (dokumen) |
 | O14 | Siapa frontdev / backdev (nama)? | — | Tulis namanya di sini begitu diputuskan | tim |
+| O15 | Format coaching versi pertama | 1-on-1 dahulu / 1-on-1 dan group | Diputuskan: 1-on-1 dahulu (D19) | user |
+| O16 | Coaching gratis atau berbayar | Gratis dahulu / paid melalui Stripe | Diputuskan: gratis dahulu (D19); paid coaching ditunda | user |
 
 ## 3. Ketegangan yang diketahui (bukan keputusan — dicatat agar tidak lupa)
 

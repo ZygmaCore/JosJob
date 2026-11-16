@@ -36,6 +36,12 @@ implementasi, dan pengujian — sesuai rincian tugas di Notion.
 
 ## 2. Konteks
 
+Pembaruan arah produk, 2026-11-17: course diarahkan menjadi curriculum berisi
+halaman baca, video dan quiz. Live Coaching menjadi layanan coach dengan profil,
+availability dan booking yang mandiri dari course. Curriculum course masih direncanakan; MVP coaching memakai
+profil, slot dan booking sendiri (1-on-1 gratis). Lihat [proposal pemisahan learning dan coaching](LEARNING_AND_COACHING_REDESIGN.md)
+dan D18 pada [log keputusan](DECISIONS.md); format MVP diputuskan 1-on-1 gratis pada D19.
+
 ### 2.1 Produk dan tim
 
 | Item | Isi |

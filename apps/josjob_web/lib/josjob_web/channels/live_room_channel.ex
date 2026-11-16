@@ -18,12 +18,17 @@ defmodule JosjobWeb.LiveRoomChannel do
       ter-enroll DITOLAK (`unauthorized`) — inilah gerbang enrollment. Ini menutup
       celah spoofing host untuk sesi kelas nyata.
 
-  ## Batas v1 (room bebas / demo, TANPA prefix `class:`)
+  ## Batas v1 (room bebas/demo di luar namespace kelas dan booking)
     - Room bebas masih memakai `role` dari payload klien → perintah host
       (`host:end/mute/remove`) bisa dipalsukan. Dipertahankan untuk kompatibilitas
       demo; alur UI nyata (teacher/student) memakai room `class:` yang tergerbang.
     - Enforcement publish (mis. classroom guest wajib view-only) masih di sisi klien;
       penegakan di server = follow-up.
+
+  ## Independent coaching (`coaching:<booking_id>:one_on_one`)
+    Booking admission derives coach/learner roles, verifies confirmation and the
+    appointment window, and rejects malformed IDs without using the demo fallback.
+    Cancellation and expiration close connected booking channels.
   """
   use JosjobWeb, :channel
 
@@ -48,6 +53,9 @@ defmodule JosjobWeb.LiveRoomChannel do
       mode not in @modes ->
         {:error, %{reason: "invalid_mode"}}
 
+      String.starts_with?(room_id, "coaching:") and mode != "one_on_one" ->
+        {:error, %{reason: "invalid_mode"}}
+
       true ->
         case resolve_role(room_id, params, socket) do
           {:ok, role} -> finish_join(room_id, mode, role, params, socket)
@@ -60,18 +68,37 @@ defmodule JosjobWeb.LiveRoomChannel do
   # Room `class:<id>` → role diturunkan di server (gerbang enrollment); payload
   # `role` diabaikan. Room bebas → role dari payload (divalidasi @roles).
   defp resolve_role(room_id, params, socket) do
-    case class_id_from_room(room_id) do
-      {:ok, class_id} ->
-        case Learning.live_role(class_id, socket.assigns.user_id) do
-          nil -> :forbidden
-          role -> {:ok, Atom.to_string(role)}
-        end
+    if String.starts_with?(room_id, "coaching:") do
+      with {:ok, id} <- coaching_booking_id(room_id),
+           role when role in [:host, :guest] <-
+             JosjobLrn.Coaching.live_role(id, socket.assigns.user_id) do
+        {:ok, Atom.to_string(role)}
+      else
+        _ -> :forbidden
+      end
+    else
+      case class_id_from_room(room_id) do
+        {:ok, class_id} ->
+          case Learning.live_role(class_id, socket.assigns.user_id) do
+            nil -> :forbidden
+            role -> {:ok, Atom.to_string(role)}
+          end
 
-      :error ->
-        role = params["role"] || "guest"
-        if role in @roles, do: {:ok, role}, else: :invalid_role
+        :error ->
+          role = params["role"] || "guest"
+          if role in @roles, do: {:ok, role}, else: :invalid_role
+      end
     end
   end
+
+  defp coaching_booking_id("coaching:" <> rest) do
+    case String.split(rest, ":") do
+      [id, "one_on_one"] -> Ecto.UUID.cast(id)
+      _ -> :error
+    end
+  end
+
+  defp coaching_booking_id(_), do: :error
 
   # `class:<uuid>` atau `class:<uuid>:<mode>` → {:ok, uuid}; selain itu :error.
   defp class_id_from_room("class:" <> rest) do
@@ -99,6 +126,25 @@ defmodule JosjobWeb.LiveRoomChannel do
         published_mids: []
       })
 
+    socket =
+      case coaching_booking_id(room_id) do
+        {:ok, id} ->
+          Phoenix.PubSub.subscribe(Josjob.PubSub, "coaching_booking:#{id}")
+          booking = Ash.get!(JosjobLrn.Coaching.Booking, id, authorize?: false)
+
+          Process.send_after(
+            self(),
+            :check_coaching_access,
+            max(1, DateTime.diff(booking.ends_at, DateTime.utc_now(), :millisecond) + 1)
+          )
+
+          send(self(), :check_coaching_access)
+          assign(socket, :coaching_booking_id, id)
+
+        _ ->
+          assign(socket, :coaching_booking_id, nil)
+      end
+
     send(self(), :after_join)
 
     {:ok,
@@ -110,6 +156,17 @@ defmodule JosjobWeb.LiveRoomChannel do
   end
 
   @impl true
+  def handle_info(event, %{assigns: %{coaching_booking_id: id}} = socket)
+      when event in [:check_coaching_access, :coaching_booking_changed] and is_binary(id) do
+    if JosjobLrn.Coaching.live_role(id, socket.assigns.user_id) do
+      Process.send_after(self(), :check_coaching_access, 30_000)
+      {:noreply, socket}
+    else
+      push(socket, "room_ended", %{reason: "booking_unavailable"})
+      {:stop, :normal, socket}
+    end
+  end
+
   def handle_info(:after_join, socket) do
     {:ok, _ref} =
       JosjobWeb.Presence.track(socket, socket.assigns.participant_id, %{

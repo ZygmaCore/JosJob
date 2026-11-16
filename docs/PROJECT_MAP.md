@@ -19,6 +19,20 @@ See [the jobs API and verification notes](api/jobs.md). The indexed commit and
 the historical implementation inventory below predate this branch; CV analysis,
 AI ranking, saved jobs and applications remain separate planned work.
 
+The Learn dashboard overview now uses authenticated summaries from
+`GET /api/me/learning-overview` instead of sample statistics and course cards.
+See [the overview API and permission rules](api/learning-overview.md).
+
+Live Coaching now uses `GET /api/me/live-coaching` for independent approved
+coach profiles, availability slots and free one-on-one bookings. Admission uses
+`coaching:<booking_id>:one_on_one`; course/class enrollment is not a prerequisite.
+Legacy class rooms remain separate. See [the coaching API](api/live-coaching.md).
+
+Product decisions D18/D19 separate coaching from courses. Coaching's Profile,
+Slot and Booking resources live in `JosjobLrn.Coaching`, alongside the existing
+Learning domain. Ordered reading/video/quiz course curriculum remains planned.
+See [the redesign proposal](../PRD/LEARNING_AND_COACHING_REDESIGN.md).
+
 ## Read this first
 
 JosJob extends the existing learning and placement foundation. The new

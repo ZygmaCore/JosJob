@@ -4,6 +4,7 @@ import 'auth/auth_page.dart';
 import 'auth/org_pending_page.dart';
 import 'onboarding/onboarding_page.dart';
 import 'dashboard/dashboard_page.dart';
+import 'dashboard/screens/live_coaching_view.dart';
 import 'explore/explore_page.dart';
 import 'quiz/quiz_page.dart';
 import 'vod/vod_page.dart';
@@ -104,6 +105,7 @@ class MyApp extends StatelessWidget {
     '/register': () => const RegisterPage(),
     '/onboarding': () => const OnboardingFlow(),
     '/dashboard': () => const DashboardPage(),
+    '/coaching': () => const CoachingPage(),
     '/explore': () => const ExploreCoursePage(),
     '/quiz': () => const QuizPage(),
     '/vod': () => const VodPlayerPage(),
@@ -120,6 +122,7 @@ class MyApp extends StatelessWidget {
   // In-app destinations that additionally require a completed mandatory
   // onboarding step (mirrors the cold-start decision in [_startScreen]).
   static const Set<String> _needsOnboarding = {
+    '/coaching',
     '/dashboard',
     '/explore',
     '/quiz',

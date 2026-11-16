@@ -209,6 +209,15 @@ defmodule JosjobWeb.Router do
       post "/classes/:id/enroll/confirm", EnrollmentController, :confirm
       delete "/classes/:id/enroll", EnrollmentController, :delete
       get "/me/enrollments", EnrollmentController, :index
+      get "/me/learning-overview", LearningOverviewController, :show
+      get "/me/live-coaching", LiveCoachingController, :index
+      put "/coaching/profile", CoachingController, :save_profile
+      post "/coaching/slots", CoachingController, :create_slot
+      delete "/coaching/slots/:id", CoachingController, :close_slot
+      post "/coaching/bookings", CoachingController, :book
+      patch "/coaching/bookings/:id", CoachingController, :update_booking
+      get "/coaching/admin/profiles", CoachingController, :admin_profiles
+      patch "/coaching/admin/profiles/:id", CoachingController, :review
 
       # Kelas yang diampu instructor (teacher) — untuk memulai sesi live per-kelas.
       get "/me/classes", ClassController, :index

@@ -87,3 +87,16 @@ class ExploreCoursesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const _ExploreShell(embedded: true);
 }
+
+/// Open the existing catalog detail and enrollment flow from other surfaces.
+Future<void> showCatalogCourse(BuildContext context, CourseSummary course) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CoursePreviewSheet(
+        course: _Course.fromApi(course),
+        initialSaved: false,
+        onToggleSaved: (_) {},
+      ),
+    );

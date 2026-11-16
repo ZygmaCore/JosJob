@@ -62,14 +62,6 @@ class _DashCourse {
   });
 }
 
-/// A live-coaching mentor / session.
-class _Mentor {
-  final String name;
-  final String topic;
-  final String time;
-  const _Mentor(this.name, this.topic, this.time);
-}
-
 /// A team member on the org learner table.
 enum _LearnerStatus { onTrack, behind, completed }
 
@@ -95,46 +87,6 @@ class _TargetCert {
   final String provider;
   final String reason;
   const _TargetCert(this.title, this.provider, this.reason);
-}
-
-/// Focus areas a coach specialises in — the browse filter buckets in
-/// Live Coaching → Explore coaches.
-enum _CoachFocus {
-  career('Career'),
-  interview('Interview'),
-  skills('Skills'),
-  confidence('Confidence'),
-  leadership('Leadership');
-
-  const _CoachFocus(this.label);
-  final String label;
-}
-
-/// Sort order for the coach browse results.
-enum _CoachSort {
-  topRated('Top rated'),
-  mostSessions('Most sessions');
-
-  const _CoachSort(this.label);
-  final String label;
-}
-
-/// A bookable coach shown in Live Coaching → Explore coaches.
-class _Coach {
-  final String name;
-  final String expertise;
-  final String tagline;
-  final double rating;
-  final int sessions;
-  final _CoachFocus focus;
-  const _Coach(
-    this.name,
-    this.expertise,
-    this.tagline,
-    this.rating,
-    this.sessions,
-    this.focus,
-  );
 }
 
 /// An entry in the org activity feed.
