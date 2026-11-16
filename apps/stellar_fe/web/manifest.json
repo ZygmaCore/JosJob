@@ -1,11 +1,11 @@
 {
-    "name": "Atveti Stellar",
-    "short_name": "Stellar",
+    "name": "JosJob",
+    "short_name": "JosJob",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Atveti Stellar — Online Learning & AI Job Placement.",
+    "description": "Job discovery and online learning for graduates and career builders in Indonesia.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
