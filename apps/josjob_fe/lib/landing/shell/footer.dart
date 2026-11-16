@@ -76,7 +76,7 @@ class _Footer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'JosJob · A job search connected to learning.',
+                    '© 2026 JosJob. All rights reserved.',
                     style: TextStyle(
                       fontFamily: 'General Sans',
                       fontSize: 13,
@@ -85,7 +85,7 @@ class _Footer extends StatelessWidget {
                   ),
                   SizedBox(height: mobile ? 8 : 0),
                   Text(
-                    'Built on the Stellar learning platform',
+                    'Online Learning & Job Placement',
                     style: TextStyle(
                       fontFamily: 'General Sans',
                       fontSize: 13,

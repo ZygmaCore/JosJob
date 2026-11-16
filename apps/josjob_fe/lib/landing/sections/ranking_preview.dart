@@ -218,7 +218,7 @@ class _PreviewRow extends StatelessWidget {
             fontFamily: 'Geist Mono',
             color: AppColors.ink2,
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(width: 12),

@@ -29,7 +29,7 @@ class _FinalCta extends StatelessWidget {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Text(
-                    'Find work that fits your skills, build what is missing, or bring an opportunity closer to new talent.',
+                    'Explore roles and build skills, or publish a job directly from your verified organization workspace.',
                     style: _lead(context, color: AppColors.boardText),
                   ),
                 ),

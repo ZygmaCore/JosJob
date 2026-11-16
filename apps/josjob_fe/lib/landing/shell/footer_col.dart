@@ -16,7 +16,7 @@ class _FooterCol extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'General Sans',
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: AppColors.landingInk,
           ),
         ),
