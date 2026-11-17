@@ -1,12 +1,13 @@
 defmodule JosjobWeb.Api.JobController do
   use JosjobWeb, :controller
   alias JosjobJob.Listings
+  alias JosjobWeb.Api.JobJSON
 
   def index(conn, params) do
     case Listings.list(conn.assigns.current_user, params) do
       {:ok, page} ->
         json(conn, %{
-          data: Enum.map(page.jobs, &job_json(&1, page.organizations)),
+          data: Enum.map(page.jobs, &JobJSON.listing(&1, page.organizations)),
           meta: page.meta,
           organizations: page.organizations
         })
@@ -20,7 +21,7 @@ defmodule JosjobWeb.Api.JobController do
     user = conn.assigns.current_user
 
     case Listings.get(user, id) do
-      {:ok, job} -> json(conn, %{data: job_json(job, Listings.organizations(user))})
+      {:ok, job} -> json(conn, %{data: JobJSON.listing(job, Listings.organizations(user))})
       error -> respond_error(conn, error)
     end
   end
@@ -30,7 +31,9 @@ defmodule JosjobWeb.Api.JobController do
 
     case Listings.create(user, params["organization_id"], params) do
       {:ok, job} ->
-        conn |> put_status(:created) |> json(%{data: job_json(job, Listings.organizations(user))})
+        conn
+        |> put_status(:created)
+        |> json(%{data: JobJSON.listing(job, Listings.organizations(user))})
 
       error ->
         respond_error(conn, error)
@@ -41,7 +44,7 @@ defmodule JosjobWeb.Api.JobController do
     user = conn.assigns.current_user
 
     case Listings.update(user, id, params) do
-      {:ok, job} -> json(conn, %{data: job_json(job, Listings.organizations(user))})
+      {:ok, job} -> json(conn, %{data: JobJSON.listing(job, Listings.organizations(user))})
       error -> respond_error(conn, error)
     end
   end
@@ -51,33 +54,6 @@ defmodule JosjobWeb.Api.JobController do
       :ok -> send_resp(conn, :no_content, "")
       error -> respond_error(conn, error)
     end
-  end
-
-  defp job_json(job, orgs) do
-    org = Enum.find(orgs, &(&1.id == job.organization_id))
-
-    %{
-      id: job.id,
-      title: job.title,
-      description: job.description,
-      organization_id: job.organization_id,
-      company: job.organization.name,
-      location: job.location,
-      industry: job.industry,
-      employment_type: job.employment_type,
-      work_mode: job.work_mode,
-      requirements: job.requirements,
-      highlights: job.highlights,
-      salary_min: job.salary_min,
-      salary_max: job.salary_max,
-      currency: job.currency,
-      salary_period: "month",
-      status: job.status,
-      synthetic: job.synthetic,
-      posted_at: job.posted_at,
-      created_at: job.created_at,
-      can_manage: not is_nil(org) and org.can_manage
-    }
   end
 
   defp respond_error(conn, {:error, :not_found}),

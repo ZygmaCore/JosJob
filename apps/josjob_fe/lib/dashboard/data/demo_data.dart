@@ -10,7 +10,6 @@ class _DashboardData {
   final List<_StatData> stats;
   final List<_DashCourse> continueLearning;
   final List<_DashCourse> recommended;
-  final List<_Certificate> certificates;
   final List<_Learner> learners;
   final List<_DashCourse> offerings;
   final List<_ActivityItem> activity;
@@ -21,7 +20,6 @@ class _DashboardData {
     required this.stats,
     this.continueLearning = const [],
     this.recommended = const [],
-    this.certificates = const [],
     this.learners = const [],
     this.offerings = const [],
     this.activity = const [],
@@ -33,25 +31,6 @@ class _DashboardData {
 /// Selects the data bundle for a role. Null defaults to the individual view.
 _DashboardData _dataFor(OnboardRole? role) =>
     isOrg(role) ? _orgData : _individualData;
-
-// ---- Certificates matched to the learner's profile (Target certificates) --
-const _targetCertificates = <_TargetCert>[
-  _TargetCert(
-    'Certificate III in Hospitality',
-    'JosJob',
-    'Matches your Front Office applications',
-  ),
-  _TargetCert(
-    'First Aid & CPR (HLTAID011)',
-    'St John',
-    'Required by 3 of your saved roles',
-  ),
-  _TargetCert(
-    'Food Safety Supervisor',
-    'JosJob',
-    'Boosts your guest-services matches',
-  ),
-];
 
 // =========================================================================
 // INDIVIDUAL (worker / graduate)
@@ -162,10 +141,6 @@ final _individualData = _DashboardData(
       duration: '5h',
       rating: 4.7,
     ),
-  ],
-  certificates: const [
-    _Certificate('Workplace Safety Level 1', 'JosJob', 'Issued Jun 2026'),
-    _Certificate('Digital Literacy Foundations', 'JosJob', 'Issued Apr 2026'),
   ],
   weeklyHours: const [1.2, 2.0, 1.5, 2.8, 2.2, 0.8, 1.6],
 );

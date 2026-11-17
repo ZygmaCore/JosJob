@@ -6,6 +6,7 @@ import '../../live/data/live_models.dart' show LiveRoomMode, ParticipantRole;
 import '../../services/live_coaching_api.dart';
 import '../../services/session.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/app_form_field.dart';
 
 typedef CoachingAuthorize =
     Future<T> Function<T>(Future<T> Function(String) call);
@@ -187,6 +188,7 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
+      builder: appFormDialog,
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 365)),
       initialDate: now.add(const Duration(days: 1)),
@@ -196,6 +198,7 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
     }
     final time = await showTimePicker(
       context: context,
+      builder: appFormDialog,
       initialTime: const TimeOfDay(hour: 9, minute: 0),
     );
     if (time == null || !mounted) {
@@ -525,23 +528,21 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
         style: _style(13, color: AppColors.body),
       ),
       const SizedBox(height: 14),
-      TextField(
+      AppFormField(
         key: const ValueKey('search-coaches'),
+        label: 'Search coaches',
+        hint: 'Name or expertise',
         controller: _search,
         onChanged: (_) => setState(() {}),
-        decoration: InputDecoration(
-          labelText: 'Search coaches',
-          hintText: 'Name or expertise',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _search.text.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  onPressed: () => setState(_search.clear),
-                  icon: const Icon(Icons.close),
-                ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-        ),
+        textInputAction: TextInputAction.search,
+        prefixIcon: const Icon(Icons.search, size: 20),
+        suffixIcon: _search.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Clear search',
+                onPressed: () => setState(_search.clear),
+                icon: const Icon(Icons.close),
+              ),
       ),
       const SizedBox(height: 16),
       if (coaches.isEmpty)
@@ -625,16 +626,15 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
     TextEditingController controller, {
     int min = 0,
     int lines = 1,
+    String? hint,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
-    child: TextFormField(
+    child: AppFormField(
+      label: label,
+      hint: hint,
       controller: controller,
       onChanged: (_) => _dirty = true,
       maxLines: lines,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
       validator: (v) => (v?.trim().length ?? 0) < min
           ? 'Enter at least $min characters.'
           : null,
@@ -652,37 +652,53 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
     ),
     _title('Your profile'),
     _card(
-      Form(
-        key: _form,
-        child: Column(
-          children: [
-            _field('Display name', _name, min: 2),
-            _field('Headline', _headline, min: 3),
-            _field('About your coaching', _bio, min: 10, lines: 4),
-            _field('Expertise (comma-separated)', _expertise),
-            TextFormField(
-              controller: _minutes,
-              onChanged: (_) => _dirty = true,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Session duration in minutes',
-                helperText: '15–120 minutes. All appointments are free.',
-                border: OutlineInputBorder(),
+      Theme(
+        data: appFormTheme(context),
+        child: Form(
+          key: _form,
+          child: Column(
+            children: [
+              _field('Display name', _name, min: 2, hint: 'Your public name'),
+              _field(
+                'Headline',
+                _headline,
+                min: 3,
+                hint: 'How you help learners',
               ),
-              validator: (v) {
-                final n = int.tryParse(v ?? '');
-                return n == null || n < 15 || n > 120
-                    ? 'Choose 15–120 minutes.'
-                    : null;
-              },
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const ValueKey('save-coach-profile'),
-              onPressed: _working ? null : _profile,
-              child: const Text('Save coach profile'),
-            ),
-          ],
+              _field(
+                'About your coaching',
+                _bio,
+                min: 10,
+                lines: 4,
+                hint: 'Your experience and coaching approach',
+              ),
+              _field(
+                'Expertise (comma-separated)',
+                _expertise,
+                hint: 'Career planning, interviews',
+              ),
+              AppFormField(
+                label: 'Session duration in minutes',
+                hint: '30',
+                helper: '15–120 minutes. All appointments are free.',
+                controller: _minutes,
+                onChanged: (_) => _dirty = true,
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  final n = int.tryParse(v ?? '');
+                  return n == null || n < 15 || n > 120
+                      ? 'Choose 15–120 minutes.'
+                      : null;
+                },
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                key: const ValueKey('save-coach-profile'),
+                onPressed: _working ? null : _profile,
+                child: const Text('Save coach profile'),
+              ),
+            ],
+          ),
         ),
       ),
     ),

@@ -32,10 +32,12 @@ the full authorized dataset, not just the preview.
   times are preserved without inventing an offset. Lists are ordered by date,
   start time, and class ID.
 
-Study hours, lesson progress, ratings, certificates, growth deltas and AI
+Study hours, lesson progress, ratings, growth deltas and AI
 recommendations are not recorded by the current learning model and are not
 fabricated. The Learn overview renders empty states and loading/retry controls,
 supports manual refresh, and refetches after a course detail sheet closes.
+Certificate records are managed separately by [the certificate API](certificates.md);
+the overview does not include an earned-certificate aggregate.
 Other dashboard destinations and the Jobs overview are outside this change.
 
 HTTP tests cover authentication, scope validation, empty accounts, own

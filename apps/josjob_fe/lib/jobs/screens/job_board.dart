@@ -94,15 +94,12 @@ class _JobsViewState extends State<JobsView> {
   }
 
   Future<void> _open(JobListing job) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => _JobDetailPage(
-          jobId: job.id,
-          api: _api,
-          authorize: _authorize,
-          organizations: _result?.organizations ?? const [],
-        ),
-      ),
+    await showJobListing(
+      context,
+      job,
+      api: _api,
+      authorize: _authorize,
+      organizations: _result?.organizations ?? const [],
     );
     if (mounted) _load();
   }

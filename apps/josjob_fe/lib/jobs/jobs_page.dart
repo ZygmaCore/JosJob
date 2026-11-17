@@ -81,6 +81,31 @@ class JobsPage extends StatelessWidget {
 // Shared helpers (library-private, visible to every part file).
 // =========================================================================
 
+/// Reuses the board's detail flow, including its fresh listing request.
+Future<void> showJobListing(
+  BuildContext context,
+  JobListing job, {
+  List<JobOrganization> organizations = const [],
+  JobAuthorizer? authorize,
+  JobsApi? api,
+}) async {
+  final client = api ?? JobsApi();
+  try {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _JobDetailPage(
+          jobId: job.id,
+          api: client,
+          authorize: authorize ?? Session.instance.runAuthed,
+          organizations: organizations,
+        ),
+      ),
+    );
+  } finally {
+    if (api == null) client.close();
+  }
+}
+
 /// Card shadow used across the module (matches the dashboard's).
 const _cardShadow = BoxShadow(
   color: Color(0x0D000000), // black @ 5%

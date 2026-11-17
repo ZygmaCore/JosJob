@@ -9,7 +9,10 @@ import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
 import '../explore/explore_page.dart'
     show ExploreCoursesView, showCatalogCourse;
 import 'overview/learning_overview_view.dart';
+import 'overview/jobs_overview_view.dart';
 import 'screens/live_coaching_view.dart';
+import 'screens/certificates_view.dart';
+import 'screens/curriculum_vitae_view.dart';
 import '../services/learning_overview_api.dart' show LearningCourse;
 import '../services/session.dart';
 import '../jobs/jobs_page.dart' show JobsView;
@@ -46,7 +49,6 @@ part 'widgets/pill_button.dart';
 part 'widgets/avatar.dart';
 part 'widgets/dash_card.dart';
 part 'widgets/section_header.dart';
-part 'widgets/greeting_header.dart';
 part 'widgets/status_chip.dart';
 part 'widgets/empty_state.dart';
 part 'widgets/onboarding_progress_card.dart';
@@ -55,19 +57,14 @@ part 'widgets/progress_ring.dart';
 part 'widgets/mini_bar_chart.dart';
 part 'widgets/stat_card.dart';
 part 'widgets/stat_grid.dart';
-part 'widgets/ai_assistant_card.dart';
-part 'widgets/certificate_row.dart';
 part 'widgets/learner_row.dart';
 part 'widgets/learner_table.dart';
 part 'widgets/offering_card.dart';
 part 'widgets/completion_overview_card.dart';
 part 'widgets/invite_card.dart';
 part 'widgets/activity_feed_card.dart';
-part 'widgets/job_match_card.dart';
 part 'widgets/applications_card.dart';
-part 'widgets/jobs_aside_cards.dart';
 part 'widgets/info_note.dart';
-part 'widgets/target_cert_card.dart';
 
 // ---- shell --------------------------------------------------------------
 part 'shell/sidebar_nav_item.dart';
@@ -85,7 +82,6 @@ part 'overview/overview_org.dart';
 part 'overview/overview_jobs.dart';
 
 // ---- screens ------------------------------------------------------------
-part 'screens/certificates_screen.dart';
 part 'screens/live_coaching_screen.dart';
 part 'screens/my_courses_screen.dart';
 part 'screens/vacancies_screen.dart';

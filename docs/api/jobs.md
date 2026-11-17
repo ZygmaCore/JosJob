@@ -4,6 +4,9 @@ This implements the job-listing slice of `PRD/backdev/PRD.md` sections 3, 6
 and 7, and `PRD/frontdev/PRD.md` section 4. CV analysis, ranked recommendations,
 saved jobs, and applications are separate work. No match scores are fabricated.
 
+The Jobs dashboard overview consumes [a scoped summary API](jobs-overview.md)
+and reuses this listing/detail contract for its latest vacancies.
+
 All endpoints require a Bearer access token. Reads are scoped to active
 organization memberships with `jobs:read`, `jobs:post` or `jobs:manage`.
 Unprovisioned users receive an empty collection. Platform superusers bypass

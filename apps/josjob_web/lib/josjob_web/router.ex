@@ -210,6 +210,13 @@ defmodule JosjobWeb.Router do
       delete "/classes/:id/enroll", EnrollmentController, :delete
       get "/me/enrollments", EnrollmentController, :index
       get "/me/learning-overview", LearningOverviewController, :show
+      get "/me/jobs-overview", JobsOverviewController, :show
+      get "/me/cv", CurriculumVitaeController, :show
+      patch "/me/cv", CurriculumVitaeController, :update
+      get "/me/certificates", CertificateController, :index
+      post "/me/certificates", CertificateController, :create
+      patch "/me/certificates/:id", CertificateController, :update
+      delete "/me/certificates/:id", CertificateController, :delete
       get "/me/live-coaching", LiveCoachingController, :index
       put "/coaching/profile", CoachingController, :save_profile
       post "/coaching/slots", CoachingController, :create_slot

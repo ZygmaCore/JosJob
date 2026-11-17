@@ -42,12 +42,7 @@ defmodule JosjobJob.Listings do
       org_ids =
         for org <- orgs, filters.scope == "browse" or org.can_manage or org.can_post, do: org.id
 
-      query = Ash.Query.filter(Job, organization_id in ^org_ids)
-
-      query =
-        if filters.scope == "browse", do: Ash.Query.filter(query, status == "active"), else: query
-
-      query = apply_filters(query, filters)
+      query = org_ids |> scoped_query(filters.scope) |> apply_filters(filters)
 
       with {:ok, total} <- Ash.count(query, authorize?: false),
            {:ok, jobs} <-
@@ -70,6 +65,49 @@ defmodule JosjobJob.Listings do
          }}
       end
     end
+  end
+
+  @doc "Counts and latest active listings under exactly the ordinary browse permissions."
+  def overview(user) do
+    orgs = organizations(user)
+    query = scoped_query(Enum.map(orgs, & &1.id), "browse")
+    now = DateTime.utc_now()
+    since = DateTime.add(now, -7 * 86_400, :second)
+
+    with {:ok, total} <- Ash.count(query, authorize?: false),
+         {:ok, remote} <-
+           query |> Ash.Query.filter(work_mode == "remote") |> Ash.count(authorize?: false),
+         {:ok, full_time} <-
+           query
+           |> Ash.Query.filter(employment_type == "full-time")
+           |> Ash.count(authorize?: false),
+         {:ok, recent} <-
+           query
+           |> Ash.Query.filter(posted_at >= ^since and posted_at <= ^now)
+           |> Ash.count(authorize?: false),
+         {:ok, jobs} <-
+           query
+           |> Ash.Query.sort(sort("newest"))
+           |> Ash.Query.limit(6)
+           |> Ash.Query.load(:organization)
+           |> Ash.read(authorize?: false) do
+      {:ok,
+       %{
+         jobs: jobs,
+         organizations: orgs,
+         stats: %{
+           available_jobs: total,
+           remote_jobs: remote,
+           full_time_jobs: full_time,
+           published_last_7_days: recent
+         }
+       }}
+    end
+  end
+
+  defp scoped_query(org_ids, scope) do
+    query = Ash.Query.filter(Job, organization_id in ^org_ids)
+    if scope == "browse", do: Ash.Query.filter(query, status == "active"), else: query
   end
 
   def get(user, id) do

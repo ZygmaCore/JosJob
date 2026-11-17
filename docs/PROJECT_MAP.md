@@ -19,9 +19,25 @@ See [the jobs API and verification notes](api/jobs.md). The indexed commit and
 the historical implementation inventory below predate this branch; CV analysis,
 AI ranking, saved jobs and applications remain separate planned work.
 
+Jobs Overview now uses `GET /api/me/jobs-overview` for scoped active-listing
+counts, latest vacancies and private saved-profile facts. Fake match scores,
+application/interview counts, profile-strength scores and open-to-work status
+have been removed from the overview. See [the Jobs overview API](api/jobs-overview.md).
+
+Jobs → Curriculum Vitae uses `GET/PATCH /api/me/cv` for saved account/onboarding
+facts, certificates, professional headline/summary and an explicitly selected
+owned PDF. The former sample persona and profile-strength card are removed.
+`JosjobJob.CvProfile` belongs to the candidate and references an optional document;
+`josjob_job` now depends on `josjob_doc`. See [the CV API](api/curriculum-vitae.md).
+
 The Learn dashboard overview now uses authenticated summaries from
 `GET /api/me/learning-overview` instead of sample statistics and course cards.
 See [the overview API and permission rules](api/learning-overview.md).
+
+The Learn Certificates destination reads `GET /api/me/certificates` from the
+`JosjobLrn.Certificates` domain and existing onboarding certifications. It supports
+private self-reported records, editing/deletion and credential links; it does not
+automatically issue awards from course enrollments. See [the certificate API](api/certificates.md).
 
 Live Coaching now uses `GET /api/me/live-coaching` for independent approved
 coach profiles, availability slots and free one-on-one bookings. Admission uses
@@ -65,15 +81,19 @@ flowchart TD
   core[josjob: accounts, orgs, RBAC, payments, Repo]
   learning[josjob_lrn: learning resources]
   documents[josjob_doc: documents and grants]
+  jobs[josjob_job: listings and candidate CV]
   rag[josjob_rag: text ingestion]
   media[josjob_ms: media and storage providers]
   web --> core
   web --> learning
   web --> documents
+  web --> jobs
   web --> rag
   web --> media
   learning --> core
   learning --> documents
+  jobs --> core
+  jobs --> documents
   documents --> core
   rag --> core
   core --> media

@@ -435,7 +435,7 @@ class _LearningOverviewViewState extends State<LearningOverviewView> {
       ],
       const SizedBox(height: 24),
       Text(
-        'Study hours, lesson progress and certificates aren’t available yet.',
+        'Study hours and lesson progress aren’t available yet.',
         key: const ValueKey('learning-unavailable-metrics'),
         style: _style(12, color: AppColors.body),
       ),

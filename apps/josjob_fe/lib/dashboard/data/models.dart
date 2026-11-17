@@ -73,22 +73,6 @@ class _Learner {
   const _Learner(this.name, this.subtitle, this.progress, this.status);
 }
 
-/// An earned certificate.
-class _Certificate {
-  final String title;
-  final String issuer;
-  final String date;
-  const _Certificate(this.title, this.issuer, this.date);
-}
-
-/// A certificate suggested to the learner, matched to their profile.
-class _TargetCert {
-  final String title;
-  final String provider;
-  final String reason;
-  const _TargetCert(this.title, this.provider, this.reason);
-}
-
 /// An entry in the org activity feed.
 class _ActivityItem {
   final IconData icon;
