@@ -276,13 +276,15 @@ BE_SHA="$(state_get BE_SHA)"
 FE_SHA="$(state_get FE_SHA)"
 
 # --- Tentukan apa yang perlu di-build --------------------------------------
+# Path yang memengaruhi isi image (bukan config runtime — perubahan env/compose
+# sudah ditangani `compose up -d`, yang otomatis recreate kalau config berubah).
 BE_PATHS=(
   apps ":(exclude)apps/josjob_fe"
   mix.exs mix.lock config rel
-  deployment/docker_elixir/Dockerfile.dev
-  docker-compose.fullstack.yml docker-compose.local.yml
+  deployment/docker_elixir
+  Dockerfile
 )
-FE_PATHS=(apps/josjob_fe docker-compose.fullstack.yml)
+FE_PATHS=(apps/josjob_fe)
 
 if [ "$DEPLOY_MODE" = "full" ]; then
   BE_NEEDED=1
