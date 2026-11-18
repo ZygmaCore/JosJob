@@ -7,14 +7,21 @@
 #   ./deploy-dev.sh
 #
 # Deploy bersifat MODULAR: hanya komponen yang benar-benar berubah sejak deploy
-# sukses terakhir yang di-build ulang. Commit terakhir per komponen disimpan di
-# .deploy-state (gitignored), jadi kalau cuma UI yang berubah, backend tidak
-# di-build sama sekali (dan sebaliknya).
+# sukses terakhir yang di-build ulang. Deteksinya DINAMIS: build context tiap
+# service dibaca dari compose (bukan hardcode nama folder), lalu file yang
+# berubah disaring pakai `.dockerignore` milik context itu — sama seperti Docker
+# menentukan apa yang ikut build. Jadi rename app / tambah app / pindah context
+# tetap terdeteksi benar.
+#
+# State disimpan per-host di .deploy-state (gitignored): commit terakhir yang
+# sukses per komponen. Mesin yang belum punya file ini akan build semua
+# (aman). Hapus file itu, atau pakai DEPLOY_MODE=full, untuk memaksa full deploy.
 #
 # Opsi (semua lewat environment variable):
 #   DEPLOY_MODE=auto|full  # auto (default) = hanya yang berubah, full = paksa semua
 #   FORCE_BE=1             # paksa build backend
 #   FORCE_FE=1             # paksa build frontend
+#   PLAN_ONLY=1            # cuma tampilkan rencana build, tidak menyentuh Docker
 #   SKIP_PULL=1            # sudah pull manual
 #   SKIP_SEED=1            # skip seed
 #   DEPLOY_FE=0            # backend saja (frontend tidak disentuh)
@@ -36,6 +43,7 @@ DEPLOY_FE="${DEPLOY_FE:-1}"
 DEPLOY_MODE="${DEPLOY_MODE:-auto}" # auto | full
 FORCE_BE="${FORCE_BE:-0}"
 FORCE_FE="${FORCE_FE:-0}"
+PLAN_ONLY="${PLAN_ONLY:-0}"
 LOG_FILE="${LOG_FILE:-$REPO_DIR/deploy-dev.log}"
 STATE_FILE="${STATE_FILE:-$REPO_DIR/.deploy-state}"
 TRIGGER="${TRIGGER:-manual}"
@@ -68,12 +76,17 @@ fi
 
 # Rotasi log per run: file aktif selalu berisi run ini (dikirim utuh ke
 # Discord sebagai attachment), run sebelumnya disimpan sebagai .1.
-if [ -s "$LOG_FILE" ]; then
+# PLAN_ONLY tidak menyentuh log deploy.
+if [ "$PLAN_ONLY" = "1" ]; then
+  :
+elif [ -s "$LOG_FILE" ]; then
   mv -f "$LOG_FILE" "$LOG_FILE.1"
 fi
 
 # Simpan semua output ke file agar kegagalan bisa diperiksa setelahnya.
-exec > >(tee -a "$LOG_FILE") 2>&1
+if [ "$PLAN_ONLY" != "1" ]; then
+  exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 # Pakai sudo hanya kalau user benar-benar punya akses Docker tanpa password.
 # Kalau tidak ada akses sama sekali, DOCKER dibiarkan kosong dan preflight
@@ -120,17 +133,171 @@ state_set() {
 
 image_exists() { "${DOCKER[@]}" image inspect "$1" >/dev/null 2>&1; }
 
-# true kalau ada perubahan pada <pathspec...> antara <base> dan <head>.
-# Base kosong / tidak dikenal (mis. setelah force-push) -> anggap berubah.
-path_changed() {
-  local base="$1" head="$2"
-  shift 2
+# --- Deteksi perubahan per service (dinamis, diturunkan dari compose) -------
+# Nama folder/app TIDAK di-hardcode: build context tiap service dibaca dari
+# compose, lalu file yang berubah disaring pakai `.dockerignore` milik context
+# itu (sama seperti Docker sendiri). Jadi kalau app di-rename, app baru
+# ditambah, atau context build dipindah, deteksi ikut menyesuaikan — aman
+# untuk handoff ke repo/mesin lain.
+COMPOSE_JSON=""
+
+load_compose_contexts() {
+  COMPOSE_JSON="$("${COMPOSE[@]}" config --format json 2>/dev/null || true)"
+}
+
+service_context() {
+  local svc="$1"
+  [ -n "$COMPOSE_JSON" ] || { printf '.'; return 0; }
+  printf '%s' "$COMPOSE_JSON" |
+    jq -r --arg svc "$svc" '.services[$svc].build.context // "."' 2>/dev/null ||
+    printf '.'
+}
+
+service_dockerfile() {
+  local svc="$1"
+  [ -n "$COMPOSE_JSON" ] || return 1
+  printf '%s' "$COMPOSE_JSON" |
+    jq -r --arg svc "$svc" '.services[$svc].build.dockerfile // "Dockerfile"' 2>/dev/null
+}
+
+# Path absolut/relatif dari compose -> relatif terhadap root repo ("." = root).
+ctx_rel() {
+  local p="${1:-.}"
+  p="${p#"$REPO_DIR"}"
+  p="${p#/}"
+  case "$p" in
+    '' | './') printf '.' ;;
+    ./*) printf '%s' "${p#./}" ;;
+    *) printf '%s' "$p" ;;
+  esac
+}
+
+# Path (relatif terhadap context) diabaikan .dockerignore?
+# Semantik dockerignore: pola tanpa "/" hanya berlaku untuk komponen pertama
+# path (root context), trailing "/" diabaikan, "!" = negasi.
+ignored_by_dockerignore() {
+  local dir="$1" path="$2" pat negate p first
+  [ -f "$dir/.dockerignore" ] || return 1
+  while IFS= read -r pat || [ -n "$pat" ]; do
+    pat="${pat%$'\r'}"
+    case "$pat" in '' | '#'*) continue ;; esac
+    negate=0
+    case "$pat" in
+      '!'*)
+        negate=1
+        pat="${pat#!}"
+        ;;
+    esac
+    p="${pat#/}"
+    p="${p%/}"
+    [ -n "$p" ] || continue
+
+    if [[ "$p" != */* ]]; then
+      # Pola root-level: cocokkan ke komponen pertama path saja.
+      first="${path%%/*}"
+      [[ "$first" == $p ]] || continue
+    else
+      [[ "$path" == $p || "$path" == $p/* ]] || continue
+    fi
+
+    [ "$negate" = "1" ] && return 1
+    return 0
+  done <"$dir/.dockerignore"
+  return 1
+}
+
+# Source yang benar-benar di-COPY/ADD dari build context (relatif context).
+# File di context yang tidak pernah di-COPY (mis. deploy-dev.sh, docs) tidak
+# mengubah image, jadi tidak boleh memicu rebuild.
+dockerfile_copy_sources() { # <service>
+  local svc="$1" ctx dockerfile
+  ctx="$(ctx_rel "$(service_context "$svc")")"
+  dockerfile="$(service_dockerfile "$svc")" || return 1
+  [ -f "$REPO_DIR/$ctx/$dockerfile" ] || return 1
+  awk '
+    /^[[:space:]]*(COPY|ADD)[[:space:]]/ {
+      if ($0 ~ /--from=/) next
+      line = $0
+      sub(/^[[:space:]]*(COPY|ADD)[[:space:]]+/, "", line)
+      sub(/[[:space:]]+#.*$/, "", line)
+      n = split(line, a, /[[:space:]]+/)
+      for (i = 1; i < n; i++) {
+        if (a[i] ~ /^--/) continue
+        if (a[i] == "") continue
+        print a[i]
+      }
+    }' "$REPO_DIR/$ctx/$dockerfile"
+}
+
+path_in_copy_sources() { # <path relatif context> <source...>
+  local path="$1" src
+  shift
+  for src in "$@"; do
+    case "$src" in
+      . | ./) return 0 ;;
+    esac
+    src="${src#./}"
+    src="${src%/}"
+    if [[ "$path" == $src || "$path" == "$src"/* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# CHANGED_HINT diisi ringkasan file pemicu (untuk log/notifikasi).
+CHANGED_HINT=""
+service_changed() { # <base_sha> <head_sha> <service>
+  local base="$1" _head="$2" svc="$3" ctx ctx_dir rel file list="" n dockerfile
+  local filter_copy=0
+  local -a sources=()
+  CHANGED_HINT=""
   [ -n "$base" ] || return 0
   git cat-file -e "${base}^{commit}" 2>/dev/null || return 0
-  if git diff --quiet "$base" "$head" -- "$@" 2>/dev/null; then
-    return 1
-  fi
+  ctx="$(ctx_rel "$(service_context "$svc")")"
+  if [ "$ctx" = "." ]; then ctx_dir="$REPO_DIR"; else ctx_dir="$REPO_DIR/$ctx"; fi
+  dockerfile="$(service_dockerfile "$svc" 2>/dev/null || echo Dockerfile)"
+  mapfile -t sources < <(dockerfile_copy_sources "$svc" 2>/dev/null || true)
+  if [ "${#sources[@]}" -gt 0 ]; then filter_copy=1; fi
+  # Dockerfile & .dockerignore sendiri selalu memengaruhi hasil build.
+  sources+=("$dockerfile" ".dockerignore")
+
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    if [ "$ctx" = "." ]; then
+      rel="$file"
+    else
+      rel="${file#"$ctx"/}"
+    fi
+    ignored_by_dockerignore "$ctx_dir" "$rel" && continue
+    if [ "$filter_copy" = "1" ] && ! path_in_copy_sources "$rel" "${sources[@]}"; then
+      continue
+    fi
+    list="${list:+$list }$file"
+  done < <(
+    { git diff --name-only "$base" -- "$ctx" 2>/dev/null || true
+      # Perubahan yang belum di-commit (untracked, di luar .gitignore) juga
+      # dihitung: image harus mencerminkan isi working tree saat deploy.
+      git ls-files --others --exclude-standard -- "$ctx" 2>/dev/null || true
+    } | sort -u
+  )
+  [ -n "$list" ] || return 1
+  n="$(printf '%s\n' $list | wc -l)"
+  CHANGED_HINT="$(printf '%s\n' $list | head -n 3 | paste -sd ',' - | sed 's/,/, /g')"
+  [ "$n" -gt 3 ] && CHANGED_HINT="$CHANGED_HINT (+$((n - 3)) lainnya)"
   return 0
+}
+
+# Nilai state setelah service dibangun: kalau working tree masih menyimpan
+# perubahan yang ikut ke image, tandai "-dirty" supaya deploy berikutnya tidak
+# menganggap image sudah sama dengan commit (aman: akan rebuild sekali lagi).
+state_value_for() { # <service>
+  local svc="$1"
+  if service_changed "$HEAD_SHA" "$HEAD_SHA" "$svc"; then
+    printf '%s-dirty' "$HEAD_SHA"
+  else
+    printf '%s' "$HEAD_SHA"
+  fi
 }
 
 # Nilai dari envs/.env (dipakai untuk build args FE; compose juga membacanya).
@@ -276,39 +443,69 @@ BE_SHA="$(state_get BE_SHA)"
 FE_SHA="$(state_get FE_SHA)"
 
 # --- Tentukan apa yang perlu di-build --------------------------------------
-# Path yang memengaruhi isi image (bukan config runtime — perubahan env/compose
-# sudah ditangani `compose up -d`, yang otomatis recreate kalau config berubah).
-BE_PATHS=(
-  apps ":(exclude)apps/josjob_fe"
-  mix.exs mix.lock config rel
-  deployment/docker_elixir
-  Dockerfile
-)
-FE_PATHS=(apps/josjob_fe)
+BE_HINT=""
+FE_HINT=""
+load_compose_contexts
+if [ -z "$COMPOSE_JSON" ]; then
+  # Kalau compose tidak bisa dibaca, jangan menebak: build semuanya.
+  echo "WARN: 'docker compose config' gagal dibaca — deteksi perubahan dimatikan, semua di-build." >&2
+fi
 
 if [ "$DEPLOY_MODE" = "full" ]; then
   BE_NEEDED=1
   FE_NEEDED=1
+  BE_HINT="DEPLOY_MODE=full"
+  FE_HINT="DEPLOY_MODE=full"
 else
-  if path_changed "$BE_SHA" "$HEAD_SHA" "${BE_PATHS[@]}"; then BE_NEEDED=1; else BE_NEEDED=0; fi
-  if path_changed "$FE_SHA" "$HEAD_SHA" "${FE_PATHS[@]}"; then FE_NEEDED=1; else FE_NEEDED=0; fi
-  if [ "$(state_get FE_ARGS)" != "$(fe_args_fingerprint)" ]; then
-    echo "Build args FE berubah (API_BASE_URL/GOOGLE_CLIENT_ID) — frontend di-build ulang."
+  if [ -z "$COMPOSE_JSON" ]; then
+    BE_NEEDED=1
     FE_NEEDED=1
+    BE_HINT="compose tidak terbaca"
+    FE_HINT="compose tidak terbaca"
+  else
+    if service_changed "$BE_SHA" "$HEAD_SHA" josjob_be; then
+      BE_NEEDED=1
+      BE_HINT="$CHANGED_HINT"
+    else
+      BE_NEEDED=0
+    fi
+    if service_changed "$FE_SHA" "$HEAD_SHA" josjob_fe; then
+      FE_NEEDED=1
+      FE_HINT="$CHANGED_HINT"
+    else
+      FE_NEEDED=0
+    fi
+    if [ "$(state_get FE_ARGS)" != "$(fe_args_fingerprint)" ]; then
+      echo "Build args FE berubah (API_BASE_URL/GOOGLE_CLIENT_ID) — frontend di-build ulang."
+      FE_NEEDED=1
+      FE_HINT="build args berubah"
+    fi
   fi
 fi
-[ "$FORCE_BE" = "1" ] && BE_NEEDED=1
-[ "$FORCE_FE" = "1" ] && FE_NEEDED=1
-[ "$DEPLOY_FE" = "1" ] || FE_NEEDED=0
+
+if [ "$FORCE_BE" = "1" ]; then
+  BE_NEEDED=1
+  BE_HINT="FORCE_BE=1"
+fi
+if [ "$FORCE_FE" = "1" ]; then
+  FE_NEEDED=1
+  FE_HINT="FORCE_FE=1"
+fi
+if [ "$DEPLOY_FE" != "1" ]; then
+  FE_NEEDED=0
+  FE_HINT="DEPLOY_FE=0"
+fi
 
 # Image bisa hilang kalau di-prune manual; kalau begitu wajib build.
 if [ "$BE_NEEDED" = "0" ] && ! image_exists "$BE_IMAGE"; then
   echo "Image $BE_IMAGE tidak ada — backend tetap di-build."
   BE_NEEDED=1
+  BE_HINT="image belum ada"
 fi
 if [ "$FE_NEEDED" = "0" ] && ! image_exists "$FE_IMAGE"; then
   echo "Image $FE_IMAGE tidak ada — frontend tetap di-build."
   FE_NEEDED=1
+  FE_HINT="image belum ada"
 fi
 
 if [ "$BE_NEEDED" = "1" ]; then be_plan="build"; else be_plan="reuse ($BE_IMAGE)"; fi
@@ -323,8 +520,23 @@ PLAN="backend: $be_plan · frontend: $fe_plan"
 
 log "Rencana deploy (mode $DEPLOY_MODE)"
 echo "  HEAD           : ${COMMIT_INFO}"
-echo "  backend        : $be_plan  (terakhir sukses: ${BE_SHA:-belum pernah})"
-echo "  frontend       : $fe_plan  (terakhir sukses: ${FE_SHA:-belum pernah})"
+if [ -n "$BE_HINT" ]; then
+  echo "  backend        : $be_plan  [$BE_HINT]"
+else
+  echo "  backend        : $be_plan  (terakhir sukses: ${BE_SHA:-belum pernah})"
+fi
+if [ -n "$FE_HINT" ]; then
+  echo "  frontend       : $fe_plan  [$FE_HINT]"
+else
+  echo "  frontend       : $fe_plan  (terakhir sukses: ${FE_SHA:-belum pernah})"
+fi
+
+if [ "$PLAN_ONLY" = "1" ]; then
+  echo
+  echo "(PLAN_ONLY=1: rencana saja, tidak ada container/image yang disentuh)"
+  trap - EXIT ERR TERM INT
+  exit 0
+fi
 
 # --- Database ---------------------------------------------------------------
 STEP="start database"
@@ -358,12 +570,14 @@ if [ "$BE_NEEDED" = "1" ]; then
   log "Verify local API (localhost:4000)"
   wait_http http://localhost:4000/ 30
 
-  state_set BE_SHA "$HEAD_SHA"
+  state_set BE_SHA "$(state_value_for josjob_be)"
 else
   STEP="start backend"
   log "Backend tidak berubah — image $BE_IMAGE dipakai ulang (tanpa rebuild)"
   # Tanpa --build: kalau config/env berubah, compose tetap recreate sendiri.
   "${COMPOSE[@]}" up -d --wait --wait-timeout 120 josjob_be
+  # Isi image sudah sama dengan commit ini untuk backend, jadi state bisa maju.
+  state_set BE_SHA "$HEAD_SHA"
 fi
 
 # --- Frontend ---------------------------------------------------------------
@@ -376,12 +590,13 @@ if [ "$FE_NEEDED" = "1" ]; then
   log "Recreate frontend"
   "${COMPOSE[@]}" up -d --force-recreate --wait --wait-timeout 180 josjob_fe
 
-  state_set FE_SHA "$HEAD_SHA"
+  state_set FE_SHA "$(state_value_for josjob_fe)"
   state_set FE_ARGS "$(fe_args_fingerprint)"
 elif [ "$DEPLOY_FE" = "1" ]; then
   STEP="start frontend"
   log "Frontend tidak berubah — image $FE_IMAGE dipakai ulang (tanpa rebuild)"
   "${COMPOSE[@]}" up -d --wait --wait-timeout 120 josjob_fe
+  state_set FE_SHA "$HEAD_SHA"
 fi
 
 # --- Health check akhir -----------------------------------------------------
