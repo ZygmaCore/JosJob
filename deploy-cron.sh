@@ -53,6 +53,24 @@ export RUN_ID
 MARKER="/tmp/josjob-notify-${RUN_ID}.done"
 rm -f "$MARKER"
 
+# Flag CLI diteruskan apa adanya ke deploy-dev.sh, mis.
+#   ./deploy-cron.sh --full      # paksa rebuild semua
+#   ./deploy-cron.sh --plan      # cuma rencana
+# Tanpa flag (jalur cron) perilakunya tetap: deploy-dev.sh mode auto.
+DEPLOY_ARGS=("$@")
+ARGS_DESC=""
+if [ "${#DEPLOY_ARGS[@]}" -gt 0 ]; then
+  ARGS_DESC=" args: ${DEPLOY_ARGS[*]}"
+  for arg in "${DEPLOY_ARGS[@]}"; do
+    case "$arg" in
+      -h | --help)
+        # Jangan ambil lock / kirim notifikasi untuk sekadar bantuan.
+        exec "$REPO_DIR/deploy-dev.sh" "$@"
+        ;;
+    esac
+  done
+fi
+
 report_fallback() {
   local status="$1" code="$2" step="$3" detail="$4"
   # Lampirkan log hanya kalau memang baru ditulis run ini (< 10 menit),
@@ -87,14 +105,14 @@ if ! flock -n 9; then
   exit 0
 fi
 
-say "Mulai deploy via cron (RUN_ID=$RUN_ID)"
+say "Mulai deploy via cron (RUN_ID=$RUN_ID$ARGS_DESC)"
 # Output lengkap sudah ditangkap deploy-dev.log lewat `tee`. Saat dijalankan
 # cron (bukan TTY), jangan duplikasi ke cron-deploy.log; saat manual, tampilkan.
 if [ -t 1 ]; then
-  "$REPO_DIR/deploy-dev.sh"
+  "$REPO_DIR/deploy-dev.sh" "${DEPLOY_ARGS[@]}"
   status=$?
 else
-  "$REPO_DIR/deploy-dev.sh" >/dev/null 2>&1
+  "$REPO_DIR/deploy-dev.sh" "${DEPLOY_ARGS[@]}" >/dev/null 2>&1
   status=$?
 fi
 say "deploy-dev.sh selesai dengan exit $status"
@@ -104,13 +122,19 @@ say "deploy-dev.sh selesai dengan exit $status"
 # terpasang (file hilang, tidak executable, env gagal di-load) — wrapper yang
 # melapor supaya tidak ada deploy gagal yang senyap.
 if [ "$status" -ne 0 ] && [ ! -f "$MARKER" ]; then
-  detail="deploy-dev.sh berhenti (exit $status) tanpa mengirim notifikasi sendiri — kemungkinan file hilang, tidak executable, atau gagal memuat envs/deploy.env."
-  if [ -s "$REPO_DIR/deploy-dev.log" ]; then
-    detail="$detail
+  if [ "$status" -eq 2 ]; then
+    # deploy-dev.sh keluar 2 saat flag tidak dikenal / --branch tanpa nilai.
+    report_fallback FAILED "$status" "argumen" \
+      "Flag tidak valid: ${DEPLOY_ARGS[*]:-tidak ada}. Jalankan ./deploy-dev.sh --help untuk daftar flag."
+  else
+    detail="deploy-dev.sh berhenti (exit $status) tanpa mengirim notifikasi sendiri — kemungkinan file hilang, tidak executable, atau gagal memuat envs/deploy.env."
+    if [ -s "$REPO_DIR/deploy-dev.log" ]; then
+      detail="$detail
 
 $(tail -n 15 "$REPO_DIR/deploy-dev.log")"
+    fi
+    report_fallback FAILED "$status" "startup" "$detail"
   fi
-  report_fallback FAILED "$status" "startup" "$detail"
 fi
 
 # Bersihkan marker notifikasi run lama (biar /tmp tidak menumpuk).

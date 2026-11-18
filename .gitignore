@@ -60,3 +60,6 @@ deploy-dev.log
 cron-deploy.log
 cron-deploy.log.1
 deploy-dev.log.1
+
+# Output `nohup ./deploy-cron.sh ...` (deploy tetap nulis ke cron-deploy.log)
+nohup.out
