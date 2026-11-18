@@ -20,6 +20,16 @@
 
 ## 1. Tujuan
 
+Pembaruan akses 2026-11-18 (D22): daftar dan detail lowongan aktif terbuka untuk
+pengunjung tanpa login. Akun baru dapat melamar tanpa provisioning organisasi.
+Login tetap diperlukan untuk lamaran dan chat; izin organisasi tetap berlaku
+untuk manajemen lowongan serta data hiring.
+
+Pembaruan implementasi 2026-11-17: lamaran, pipeline hiring, riwayat perubahan
+dan chat untuk lamaran/booking coaching telah ditambahkan. Status lama yang
+menyebut lamaran sebagai rencana pada snapshot awal tidak lagi berlaku.
+Detail: [aplikasi dan chat](../docs/api/applications-and-chat.md).
+
 Menghasilkan satu platform job seeker untuk fresh graduate yang menutup loop
 **Match → Gap → Learn → Re-match**:
 

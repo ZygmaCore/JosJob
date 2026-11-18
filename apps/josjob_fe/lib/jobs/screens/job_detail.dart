@@ -21,6 +21,18 @@ class _JobDetailPageState extends State<_JobDetailPage> {
   Future<JobListing> _fetch() =>
       widget.authorize((token) => widget.api.get(token, widget.jobId));
 
+  void _apply(JobListing job) {
+    if (!Session.instance.isSignedIn) {
+      Navigator.of(context).pushNamed('/login');
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ApplyPage(job: job, authorize: widget.authorize),
+      ),
+    );
+  }
+
   Future<void> _edit(JobListing job) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -146,6 +158,19 @@ class _JobDetailPageState extends State<_JobDetailPage> {
                               label: const Text('Edit listing'),
                             ),
                             OutlinedButton.icon(
+                              key: const ValueKey('review-job-applications'),
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ApplicationsPage(
+                                    hiring: true,
+                                    jobId: job.id,
+                                  ),
+                                ),
+                              ),
+                              icon: const Icon(Icons.people_outline),
+                              label: const Text('Review applicants'),
+                            ),
+                            OutlinedButton.icon(
                               key: const ValueKey('delete-job'),
                               onPressed: _deleting ? null : () => _delete(job),
                               icon: const Icon(Icons.delete_outline),
@@ -156,14 +181,16 @@ class _JobDetailPageState extends State<_JobDetailPage> {
                           ],
                         )
                       else
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Text(
-                            'CV matching and in-platform applications are coming next. Browse the requirements to prepare for this opportunity.',
+                        FilledButton.icon(
+                          key: const ValueKey('apply-for-job'),
+                          onPressed: job.status == 'active'
+                              ? () => _apply(job)
+                              : null,
+                          icon: const Icon(Icons.send_outlined),
+                          label: Text(
+                            Session.instance.isSignedIn
+                                ? 'Apply for this role'
+                                : 'Sign in to apply',
                           ),
                         ),
                     ],

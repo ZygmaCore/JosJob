@@ -129,7 +129,6 @@ class MyApp extends StatelessWidget {
     '/vod',
     '/vod/document',
     '/documents',
-    '/jobs',
   };
 
   // Central auth guard for every named route. On web a signed-out visitor can
@@ -160,6 +159,18 @@ class MyApp extends StatelessWidget {
     final builder = _routes[name];
     // Unknown route → landing.
     if (builder == null) return _route(const JosjobLandingPage(), '/');
+
+    // Published vacancies are available before login and onboarding.
+    if (name == '/jobs') {
+      return _route(
+        JobsPage(
+          initialQuery: settings.arguments is String
+              ? settings.arguments as String
+              : '',
+        ),
+        name!,
+      );
+    }
 
     // Auth pages: send an already-signed-in user into the app instead.
     if (_authRoutes.contains(name)) {

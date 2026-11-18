@@ -50,7 +50,7 @@ class _MobileDrawer extends StatelessWidget {
                     if (item == 'Learn') {
                       Navigator.of(context).pushNamed('/explore');
                     } else if (item == 'Jobs') {
-                      onCta();
+                      Navigator.of(context).pushNamed('/jobs');
                     } else {
                       onHowItWorks();
                     }

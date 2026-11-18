@@ -266,7 +266,7 @@ class _JobsOverviewViewState extends State<JobsOverviewView> {
     ),
     const SizedBox(height: 6),
     Text(
-      'Recently published listings you can access. Showing up to 6 roles.',
+      'Recently published opportunities. Showing up to 6 roles.',
       style: _style(13, color: AppColors.body),
     ),
     const SizedBox(height: 16),

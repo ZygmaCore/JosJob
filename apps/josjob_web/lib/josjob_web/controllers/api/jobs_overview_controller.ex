@@ -16,7 +16,7 @@ defmodule JosjobWeb.Api.JobsOverviewController do
             jobs: Enum.map(summary.jobs, &JobJSON.listing(&1, summary.organizations)),
             organizations: summary.organizations,
             profile: profile(user),
-            capabilities: %{matching: false, applications: false, interviews: false}
+            capabilities: %{matching: false, applications: true, interviews: true}
           }
         })
 

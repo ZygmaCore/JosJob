@@ -59,8 +59,14 @@ defmodule JosjobWeb.Api.JobController do
   defp respond_error(conn, {:error, :not_found}),
     do: conn |> put_status(:not_found) |> json(%{error: "not_found"})
 
+  defp respond_error(conn, {:error, :unauthorized}),
+    do: conn |> put_status(:unauthorized) |> json(%{error: "unauthorized"})
+
   defp respond_error(conn, {:error, :forbidden}),
     do: conn |> put_status(:forbidden) |> json(%{error: "forbidden"})
+
+  defp respond_error(conn, {:error, :applications_exist}),
+    do: conn |> put_status(:conflict) |> json(%{error: "applications_exist"})
 
   defp respond_error(conn, {:error, {:invalid_params, fields}}),
     do: conn |> put_status(:bad_request) |> json(%{error: "invalid_params", fields: fields})

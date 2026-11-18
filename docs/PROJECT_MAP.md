@@ -51,6 +51,34 @@ See [the redesign proposal](../PRD/LEARNING_AND_COACHING_REDESIGN.md).
 
 ## Read this first
 
+Public job access update, 2026-11-18 (D22): active listings and details are public
+across organizations. `/jobs` bypasses login/onboarding, and new accounts can
+apply without membership. Overview listing counts use the same public collection.
+Optional Bearer auth supplies employer capabilities; drafts/expired listings,
+management scope, writes, applications and chat retain their access checks.
+This supersedes earlier descriptions of organization-scoped vacancy discovery.
+See [public access verification](verification/public-jobs-2026-11-18.md).
+
+Manual vacancy/hiring data can be explicitly added with
+`apps/josjob/priv/repo/manual_job_seeds.exs`: a separate demo organization,
+candidate/employer accounts, 12 vacancies and five staged applications with chat.
+It is never seeded on startup. See [the local manual-testing guide](manual-job-testing.md).
+
+Vacancy/hiring verification, 2026-11-17: deletion and application submission now
+serialize on the same job row to prevent a concurrent foreign-key failure.
+Backend edge tests and an opt-in local Docker API/browser suite cover the hiring
+stage matrix, permissions, pagination, live chat and concurrent writes. See the
+[verification results and repeat instructions](verification/jobs-hiring-2026-11-17.md).
+
+Applications and chat update, 2026-11-17: the Applications destination now uses
+persisted application/profile snapshots and hiring history from `JosjobJob.Applications`.
+The confirmed sequence is Applied → Reviewing → Interview → Offer → Hired, with
+rejection/withdrawal exits. `JosjobRt.Chat` owns shared messaging for applications
+and independent coaching bookings. The Flutter `ChatPage` is shared by both.
+`josjob_rt` now depends on core, jobs and learning; web depends on `josjob_rt`.
+See [applications and chat](api/applications-and-chat.md). This working-tree update
+supersedes older statements below that applications and `josjob_rt` are empty.
+
 JosJob extends the existing learning and placement foundation. The new
 product loop is **Match → Gap → Learn → Re-match**: upload a CV, rank jobs,
 explain missing skills, recommend learning, then re-run matching. The learning

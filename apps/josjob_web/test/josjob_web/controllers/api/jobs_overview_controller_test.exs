@@ -28,15 +28,15 @@ defmodule JosjobWeb.Api.JobsOverviewControllerTest do
 
     assert data["capabilities"] == %{
              "matching" => false,
-             "applications" => false,
-             "interviews" => false
+             "applications" => true,
+             "interviews" => true
            }
 
     refute Map.has_key?(data["stats"], "applications")
     refute Map.has_key?(data["profile"], "strength")
   end
 
-  test "counts every authorized active listing while limiting previews and excluding other tenants",
+  test "counts public active listings across organizations while limiting previews",
        %{conn: conn} do
     owner = user!()
     learner = user!()
@@ -54,22 +54,22 @@ defmodule JosjobWeb.Api.JobsOverviewControllerTest do
 
     job!(org, owner, %{"status" => "draft"})
     job!(org, owner, %{"status" => "expired"})
-    job!(organization!(owner, "Foreign"), owner)
+    foreign = job!(organization!(owner, "Foreign"), owner)
     data = overview(conn, learner, %{"scope" => "manage", "organization_id" => org.id})
 
     assert data["stats"] == %{
-             "available_jobs" => 8,
+             "available_jobs" => 9,
              "remote_jobs" => 4,
-             "full_time_jobs" => 3,
-             "published_last_7_days" => 8
+             "full_time_jobs" => 4,
+             "published_last_7_days" => 9
            }
 
     assert length(data["jobs"]) == 6
-    ids = Enum.map(jobs, & &1.id)
-    assert Enum.all?(data["jobs"], &(&1["id"] in ids and &1["company"] == org.name))
+    ids = Enum.map([foreign | jobs], & &1.id)
+    assert Enum.all?(data["jobs"], &(&1["id"] in ids))
     assert Enum.all?(data["jobs"], &(not &1["can_manage"]))
     refute Enum.any?(data["jobs"], &Map.has_key?(&1, "match_score"))
-    assert hd(data["jobs"])["id"] == List.last(jobs).id
+    assert hd(data["jobs"])["id"] == foreign.id
     board = conn |> auth(learner) |> get(~p"/api/jobs") |> json_response(200)
     assert board["meta"]["total"] == data["stats"]["available_jobs"]
   end
@@ -99,7 +99,7 @@ defmodule JosjobWeb.Api.JobsOverviewControllerTest do
     assert Enum.all?(data["jobs"], &(&1["status"] == "active"))
   end
 
-  test "membership alone grants no listing access and superusers still see active listings only",
+  test "unprovisioned accounts and superusers see active listings with different management capabilities",
        %{conn: conn} do
     owner = user!()
     member = user!()
@@ -115,7 +115,8 @@ defmodule JosjobWeb.Api.JobsOverviewControllerTest do
 
     job = job!(org, owner)
     job!(org, owner, %{"status" => "draft"})
-    assert overview(conn, member)["stats"]["available_jobs"] == 0
+    assert overview(conn, member)["stats"]["available_jobs"] == 1
+    assert [%{"can_manage" => false}] = overview(conn, member)["jobs"]
 
     admin =
       User

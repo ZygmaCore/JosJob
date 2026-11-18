@@ -92,7 +92,7 @@ class _HeroCopy extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Create a profile to explore opportunities and learning in one place.',
+          'Browse jobs freely. Create a profile when you are ready to apply.',
           style: TextStyle(
             fontFamily: 'General Sans',
             fontSize: 12,
@@ -105,7 +105,7 @@ class _HeroCopy extends StatelessWidget {
           runSpacing: 10,
           children: [
             OutlinedButton.icon(
-              onPressed: onCta,
+              onPressed: () => Navigator.of(context).pushNamed('/jobs'),
               icon: const Icon(Icons.upload_file_outlined, size: 18),
               label: const Text('Explore jobs'),
               style: OutlinedButton.styleFrom(
@@ -141,7 +141,8 @@ class _RoleSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TextField(
     textInputAction: TextInputAction.search,
-    onSubmitted: (_) => Navigator.of(context).pushNamed('/register'),
+    onSubmitted: (query) =>
+        Navigator.of(context).pushNamed('/jobs', arguments: query.trim()),
     decoration: InputDecoration(
       border: InputBorder.none,
       enabledBorder: InputBorder.none,

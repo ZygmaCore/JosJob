@@ -114,7 +114,7 @@ class JobsApiException implements Exception {
   String toString() => message;
 }
 
-/// All calls use Session.runAuthed so an expired access token is refreshed once.
+/// Reads support visitors; signed-in calls use Session's refresh/retry behavior.
 class JobsApi {
   final http.Client _client;
   final String _baseUrl;
@@ -187,7 +187,7 @@ class JobsApi {
     final request = http.Request(method, uri)
       ..headers.addAll({
         'accept': 'application/json',
-        'authorization': 'Bearer $token',
+        if (token.isNotEmpty) 'authorization': 'Bearer $token',
       });
     if (body != null) {
       request.headers['content-type'] = 'application/json';
@@ -212,6 +212,8 @@ class JobsApi {
           404 => 'This job is no longer available.',
           400 => 'Some filters are invalid. Check the values and try again.',
           422 => 'Check the job details and try again.',
+          409 =>
+            'This listing has applications. Set its status to expired to preserve the hiring history.',
           _ => 'Jobs could not be loaded. Please try again.',
         };
         throw JobsApiException(

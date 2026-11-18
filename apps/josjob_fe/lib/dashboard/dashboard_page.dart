@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../applications/applications_view.dart';
 import '../shared/onboard_role.dart';
 import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
 import '../explore/explore_page.dart'
@@ -63,7 +64,6 @@ part 'widgets/offering_card.dart';
 part 'widgets/completion_overview_card.dart';
 part 'widgets/invite_card.dart';
 part 'widgets/activity_feed_card.dart';
-part 'widgets/applications_card.dart';
 part 'widgets/info_note.dart';
 
 // ---- shell --------------------------------------------------------------
@@ -191,22 +191,6 @@ const _cardShadow = BoxShadow(
 /// Tabular figures for numbers that sit in columns / rows.
 TextStyle _tabular(TextStyle base) =>
     base.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
-
-/// Deterministic thumbnail gradient keyed by a small seed.
-LinearGradient _thumbGradient(int seed) {
-  const pairs = <List<Color>>[
-    [AppColors.brandBlue, AppColors.accent],
-    [AppColors.navy, AppColors.brandBlue],
-    [AppColors.heroBlue, Color(0xFF56B0F5)],
-    [AppColors.orange, Color(0xFFF7B95C)],
-  ];
-  final p = pairs[seed % pairs.length];
-  return LinearGradient(
-    colors: p,
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
 
 /// Initials from a display name, e.g. "Ana Rivera" -> "AR".
 String _initials(String name) {

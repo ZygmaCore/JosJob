@@ -7,9 +7,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/jobs_api.dart';
 import '../services/session.dart';
+import '../services/auth_api.dart' show AuthException;
+import '../applications/applications_view.dart';
 
 // =========================================================================
-// JOSJOB - Authenticated job browsing and employer listing management.
+// JOSJOB - Public job browsing and authenticated employer listing management.
 //
 // The standalone browse-roles surface reached from the dashboard's Jobs view
 // ("Browse all roles") and the landing "Jobs" nav, registered at /jobs. A
@@ -30,7 +32,8 @@ part 'screens/job_editor.dart';
 // Public entry point - registered as the /jobs route in main.dart.
 // =========================================================================
 class JobsPage extends StatelessWidget {
-  const JobsPage({super.key});
+  final String initialQuery;
+  const JobsPage({super.key, this.initialQuery = ''});
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -46,6 +49,12 @@ class JobsPage extends StatelessWidget {
         ),
       ),
       actions: [
+        if (!Session.instance.isSignedIn)
+          TextButton(
+            key: const ValueKey('jobs-sign-in'),
+            onPressed: () => Navigator.of(context).pushNamed('/login'),
+            child: const Text('Sign in'),
+          ),
         if (MediaQuery.sizeOf(context).width >= 600)
           Padding(
             padding: const EdgeInsets.only(right: 28),
@@ -73,7 +82,9 @@ class JobsPage extends StatelessWidget {
       surfaceTintColor: Colors.transparent,
       backgroundColor: AppColors.surface,
     ),
-    body: const SafeArea(child: SingleChildScrollView(child: JobsView())),
+    body: SafeArea(
+      child: SingleChildScrollView(child: JobsView(initialQuery: initialQuery)),
+    ),
   );
 }
 
@@ -96,13 +107,24 @@ Future<void> showJobListing(
         builder: (_) => _JobDetailPage(
           jobId: job.id,
           api: client,
-          authorize: authorize ?? Session.instance.runAuthed,
+          authorize: authorize ?? _authorizeJobs,
           organizations: organizations,
         ),
       ),
     );
   } finally {
     if (api == null) client.close();
+  }
+}
+
+Future<T> _authorizeJobs<T>(Future<T> Function(String token) call) async {
+  final session = Session.instance;
+  if (!session.isSignedIn) return call('');
+  try {
+    return await session.runAuthed(call);
+  } on AuthException {
+    if (!session.isSignedIn) return call('');
+    rethrow;
   }
 }
 

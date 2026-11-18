@@ -51,7 +51,7 @@ class _Footer extends StatelessWidget {
                     onTap: (label) {
                       Navigator.of(
                         context,
-                      ).pushNamed(label == 'Jobs' ? '/register' : '/explore');
+                      ).pushNamed(label == 'Jobs' ? '/jobs' : '/explore');
                     },
                   ),
                   SizedBox(width: mobile ? 0 : 40, height: mobile ? 24 : 0),

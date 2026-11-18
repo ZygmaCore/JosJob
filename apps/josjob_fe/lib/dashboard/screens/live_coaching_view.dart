@@ -7,6 +7,7 @@ import '../../services/live_coaching_api.dart';
 import '../../services/session.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/app_form_field.dart';
+import '../../chat/chat_page.dart';
 
 typedef CoachingAuthorize =
     Future<T> Function<T>(Future<T> Function(String) call);
@@ -491,6 +492,25 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
                           icon: const Icon(Icons.videocam_outlined),
                           label: const Text('Join appointment'),
                         ),
+                      OutlinedButton.icon(
+                        key: ValueKey('chat-booking-${b.id}'),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => ChatPage(
+                              kind: 'coaching',
+                              contextId: b.id,
+                              title: 'Coaching conversation',
+                              authorize: widget.authorize,
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: Text(
+                          b.status == 'cancelled'
+                              ? 'View conversation'
+                              : 'Open chat',
+                        ),
+                      ),
                       if (b.canCancel)
                         TextButton(
                           key: ValueKey('cancel-booking-${b.id}'),

@@ -4,6 +4,9 @@ Coaching is independent of courses and organizations. MVP appointments are
 **free and one-on-one** (D19). Existing course and class records are preserved;
 classroom admission continues through the existing `class:` namespace.
 
+Each booking has a private text conversation for its learner and coach, using the
+same UI as hiring chat. See [applications and shared chat](applications-and-chat.md).
+
 All endpoints below require a Bearer token:
 
 | Method/path | Behavior |
