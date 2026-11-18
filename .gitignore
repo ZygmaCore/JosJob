@@ -53,6 +53,9 @@ personal.md
 # Manual deploy log (deploy-dev.sh)
 deploy-dev.log
 
+# State deploy modular (commit terakhir sukses per komponen)
+.deploy-state
+
 # Log wrapper cron (deploy otomatis 00:00 & 12:00 WIB)
 cron-deploy.log
 cron-deploy.log.1

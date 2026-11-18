@@ -9,13 +9,14 @@
 #   envs/deploy.env  ->  DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 #
 # Input lewat environment variable (semua opsional):
-#   STATUS       SUCCESS | FAILED | SKIPPED          (default: INFO)
+#   STATUS       SUCCESS | FAILED | SKIPPED | NOCHANGES | ABORTED | INFO (default: INFO)
 #   STEP         step yang sedang berjalan / gagal
 #   EXIT_CODE    exit code deploy
 #   DURATION     durasi human-readable, mis. "12m 34s"
 #   BRANCH       branch git
 #   COMMIT       "7654eb0 fix(fe): ..." (short hash + subjek)
 #   TRIGGER      manual | cron
+#   PLAN         ringkasan aksi, mis. "backend: build · frontend: reuse"
 #   DETAIL       teks tambahan (mis. tail log saat gagal)
 #   RUN_ID       id run; dipakai untuk nama file log
 #   ATTACH_LOG   path file log yang dikirim sebagai attachment (full log)
@@ -59,6 +60,7 @@ BRANCH="${BRANCH:--}"
 COMMIT="${COMMIT:--}"
 TRIGGER="${TRIGGER:--}"
 DETAIL="${DETAIL:-}"
+PLAN="${PLAN:-}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)}"
 ATTACH_LOG="${ATTACH_LOG:-}"
 ATTACH_NAME="${ATTACH_NAME:-deploy-${RUN_ID}.log}"
@@ -122,6 +124,18 @@ case "$STATUS" in
     color=15105570 # oranye
     summary="Jadwal cron tiba, tapi deploy sebelumnya masih berjalan."
     ;;
+  NOCHANGES)
+    emoji="😴"
+    title="Deploy NO CHANGES — JosJob dev"
+    color=10070743 # abu-abu
+    summary="Tidak ada perubahan kode sejak deploy terakhir. Build dilewati dan image lama dipakai ulang; service tetap sehat."
+    ;;
+  ABORTED)
+    emoji="⚠️"
+    title="Deploy ABORTED — JosJob dev"
+    color=16426522 # kuning tua
+    summary="Deploy dihentikan sebelum selesai (SIGINT/SIGTERM). Tidak ada yang dianggap ter-deploy."
+    ;;
   *)
     emoji="ℹ️"
     title="Deploy INFO — JosJob dev"
@@ -154,6 +168,7 @@ fields="$(jq -n \
   --arg duration "$DURATION" \
   --arg code "$EXIT_CODE" \
   --arg log "$attach_note" \
+  --arg plan "$PLAN" \
   '[
     {name: "Branch",   value: $branch,   inline: true},
     {name: "Commit",   value: $commit,   inline: false},
@@ -162,7 +177,8 @@ fields="$(jq -n \
     {name: "Duration", value: $duration, inline: true},
     {name: "Exit code", value: $code,    inline: true},
     {name: "Log",      value: $log,      inline: false}
-  ]')"
+  ]
+  + (if $plan == "" then [] else [{name: "Actions", value: $plan, inline: false}] end)')"
 
 payload="$(jq -n \
   --arg title "$title" \
