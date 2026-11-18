@@ -17,15 +17,27 @@
 # sukses per komponen. Mesin yang belum punya file ini akan build semua
 # (aman). Hapus file itu, atau pakai DEPLOY_MODE=full, untuk memaksa full deploy.
 #
-# Opsi (semua lewat environment variable):
+# Opsi bisa lewat FLAG CLI atau environment variable (flag menimpa env var,
+# jadi cron/systemd yang sudah menyetel env tidak perlu diubah):
+#
+#   ./deploy-dev.sh --help
+#   ./deploy-dev.sh                    # auto: hanya yang berubah
+#   ./deploy-dev.sh --full             # paksa backend + frontend
+#   ./deploy-dev.sh --plan             # cuma tampilkan rencana (tidak build/restart)
+#   ./deploy-dev.sh --be               # backend saja
+#   ./deploy-dev.sh --fe               # frontend saja
+#   ./deploy-dev.sh --force-be         # paksa build backend
+#   ./deploy-dev.sh --force-fe         # paksa build frontend
+#   ./deploy-dev.sh --skip-pull --branch=main
+#
+# Padanan env var:
 #   DEPLOY_MODE=auto|full  # auto (default) = hanya yang berubah, full = paksa semua
-#   FORCE_BE=1             # paksa build backend
-#   FORCE_FE=1             # paksa build frontend
-#   PLAN_ONLY=1            # cuma tampilkan rencana build, tidak menyentuh Docker
-#   SKIP_PULL=1            # sudah pull manual
-#   SKIP_SEED=1            # skip seed
-#   DEPLOY_FE=0            # backend saja (frontend tidak disentuh)
-#   BRANCH=main            # branch lain
+#   PLAN_ONLY=1            # = --plan
+#   DEPLOY_BE=0            # = --fe     (backend tidak disentuh)
+#   DEPLOY_FE=0            # = --be     (frontend tidak disentuh)
+#   FORCE_BE=1 / FORCE_FE=1
+#   SKIP_PULL=1 / SKIP_SEED=1
+#   BRANCH=main
 #
 # Setiap hasil deploy (sukses, gagal, tidak ada perubahan, dibatalkan) dikirim
 # ke Discord webhook yang URL-nya dibaca dari envs/deploy.env
@@ -39,6 +51,7 @@ ENV_FILE="envs/.env"
 COMPOSE_ARGS=(-f docker-compose.fullstack.yml -f docker-compose.local.yml)
 SKIP_PULL="${SKIP_PULL:-0}"
 SKIP_SEED="${SKIP_SEED:-0}"
+DEPLOY_BE="${DEPLOY_BE:-1}"
 DEPLOY_FE="${DEPLOY_FE:-1}"
 DEPLOY_MODE="${DEPLOY_MODE:-auto}" # auto | full
 FORCE_BE="${FORCE_BE:-0}"
@@ -58,6 +71,62 @@ BE_NEEDED=1
 FE_NEEDED=1
 NO_CHANGES=0
 STEP="preflight"
+
+usage() {
+  cat <<'EOF'
+Pemakaian: ./deploy-dev.sh [flag...]
+
+  (tanpa flag)        deploy modular: hanya komponen yang berubah sejak sukses terakhir
+  --plan, --dry-run   tampilkan rencana build saja (tidak build/restart apa pun)
+  --auto              paksa mode auto (kebalikan --full)
+  --full              paksa build backend + frontend
+  --be                backend saja (frontend tidak disentuh)
+  --fe                frontend saja (backend tidak disentuh)
+  --force-be          paksa build backend walau tidak ada perubahan
+  --force-fe          paksa build frontend walau tidak ada perubahan
+  --skip-pull         jangan git pull (pakai isi repo apa adanya)
+  --skip-seed         lewati seed database
+  --branch=<nama>     branch yang di-deploy (default: dev)
+  -h, --help          tampilkan bantuan ini
+
+Flag menimpa environment variable yang setara (DEPLOY_MODE, PLAN_ONLY,
+DEPLOY_BE, DEPLOY_FE, FORCE_BE, FORCE_FE, SKIP_PULL, SKIP_SEED, BRANCH).
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --plan | --dry-run) PLAN_ONLY=1 ;;
+    --auto) DEPLOY_MODE=auto ;;
+    --full) DEPLOY_MODE=full ;;
+    --be | --backend-only) DEPLOY_FE=0 ;;
+    --fe | --frontend-only) DEPLOY_BE=0 ;;
+    --force-be) FORCE_BE=1 ;;
+    --force-fe) FORCE_FE=1 ;;
+    --skip-pull) SKIP_PULL=1 ;;
+    --skip-seed) SKIP_SEED=1 ;;
+    --branch=*) BRANCH="${1#*=}" ;;
+    --branch)
+      shift
+      [ "$#" -gt 0 ] || {
+        echo "--branch butuh nilai, mis. --branch=dev" >&2
+        exit 2
+      }
+      BRANCH="$1"
+      ;;
+    *)
+      echo "Flag tidak dikenal: $1" >&2
+      echo >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 if [ "$(id -u)" -eq 0 ]; then
   echo "Jangan jalankan script ini sebagai root. Jalankan sebagai mzkrl; sudo dipakai internal." >&2
@@ -491,24 +560,34 @@ if [ "$FORCE_FE" = "1" ]; then
   FE_NEEDED=1
   FE_HINT="FORCE_FE=1"
 fi
+if [ "$DEPLOY_BE" != "1" ]; then
+  BE_NEEDED=0
+  BE_HINT="DEPLOY_BE=0"
+fi
 if [ "$DEPLOY_FE" != "1" ]; then
   FE_NEEDED=0
   FE_HINT="DEPLOY_FE=0"
 fi
 
 # Image bisa hilang kalau di-prune manual; kalau begitu wajib build.
-if [ "$BE_NEEDED" = "0" ] && ! image_exists "$BE_IMAGE"; then
+if [ "$BE_NEEDED" = "0" ] && [ "$DEPLOY_BE" = "1" ] && ! image_exists "$BE_IMAGE"; then
   echo "Image $BE_IMAGE tidak ada — backend tetap di-build."
   BE_NEEDED=1
   BE_HINT="image belum ada"
 fi
-if [ "$FE_NEEDED" = "0" ] && ! image_exists "$FE_IMAGE"; then
+if [ "$FE_NEEDED" = "0" ] && [ "$DEPLOY_FE" = "1" ] && ! image_exists "$FE_IMAGE"; then
   echo "Image $FE_IMAGE tidak ada — frontend tetap di-build."
   FE_NEEDED=1
   FE_HINT="image belum ada"
 fi
 
-if [ "$BE_NEEDED" = "1" ]; then be_plan="build"; else be_plan="reuse ($BE_IMAGE)"; fi
+if [ "$DEPLOY_BE" != "1" ]; then
+  be_plan="skip (DEPLOY_BE=0)"
+elif [ "$BE_NEEDED" = "1" ]; then
+  be_plan="build"
+else
+  be_plan="reuse ($BE_IMAGE)"
+fi
 if [ "$DEPLOY_FE" != "1" ]; then
   fe_plan="skip (DEPLOY_FE=0)"
 elif [ "$FE_NEEDED" = "1" ]; then
@@ -539,12 +618,17 @@ if [ "$PLAN_ONLY" = "1" ]; then
 fi
 
 # --- Database ---------------------------------------------------------------
-STEP="start database"
-log "Start database (paradedb)"
-"${COMPOSE[@]}" up -d --wait paradedb
+# Hanya backend yang butuh DB; kalau backend dilewati (--fe), jangan sentuh.
+if [ "$DEPLOY_BE" = "1" ]; then
+  STEP="start database"
+  log "Start database (paradedb)"
+  "${COMPOSE[@]}" up -d --wait paradedb
+fi
 
 # --- Backend ----------------------------------------------------------------
-if [ "$BE_NEEDED" = "1" ]; then
+if [ "$DEPLOY_BE" != "1" ]; then
+  log "Backend dilewati (DEPLOY_BE=0) — container & state backend tidak disentuh"
+elif [ "$BE_NEEDED" = "1" ]; then
   STEP="build backend"
   log "Build backend (deployment/docker_elixir/Dockerfile.dev)"
   log "NIF xberg dipakai dari binary prebuilt — build normal hitungan menit, bukan puluhan menit."
@@ -607,8 +691,10 @@ if ! systemctl --user is-active --quiet cloudflared-dev; then
 fi
 
 STEP="health check public API"
-log "Verify public API (api-dev.mzkrl.my.id)"
-wait_http https://api-dev.mzkrl.my.id/ 30
+if [ "$DEPLOY_BE" = "1" ]; then
+  log "Verify public API (api-dev.mzkrl.my.id)"
+  wait_http https://api-dev.mzkrl.my.id/ 30
+fi
 
 if [ "$DEPLOY_FE" = "1" ]; then
   STEP="health check public frontend"
@@ -617,7 +703,8 @@ if [ "$DEPLOY_FE" = "1" ]; then
 fi
 
 STEP="done"
-if [ "$BE_NEEDED" = "0" ] && [ "$FE_NEEDED" = "0" ] && [ "$DEPLOY_MODE" = "auto" ]; then
+if [ "$DEPLOY_BE" = "1" ] && [ "$DEPLOY_FE" = "1" ] &&
+  [ "$BE_NEEDED" = "0" ] && [ "$FE_NEEDED" = "0" ] && [ "$DEPLOY_MODE" = "auto" ]; then
   NO_CHANGES=1
   log "Deploy OK — tidak ada perubahan kode sejak deploy terakhir, semua service tetap jalan"
 else
