@@ -7,7 +7,13 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
-  const _SectionHeader(this.title, {this.actionLabel, this.onAction});
+  final bool pageTitle;
+  const _SectionHeader(
+    this.title, {
+    this.actionLabel,
+    this.onAction,
+    this.pageTitle = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +25,7 @@ class _SectionHeader extends StatelessWidget {
             child: Text(
               title,
               style: GoogleFonts.poppins(
-                fontSize: 18,
+                fontSize: pageTitle ? 26 : 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.navy,
                 letterSpacing: -0.2,
@@ -30,7 +36,6 @@ class _SectionHeader extends StatelessWidget {
         if (actionLabel != null)
           Semantics(
             button: true,
-            label: actionLabel,
             child: TextButton(
               onPressed: onAction,
               style: TextButton.styleFrom(

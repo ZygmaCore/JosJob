@@ -7,8 +7,15 @@ typedef JobAuthorizer =
 class JobsView extends StatefulWidget {
   final JobsApi? api;
   final JobAuthorizer? authorize;
+  final bool embedded;
   final String initialQuery;
-  const JobsView({super.key, this.api, this.authorize, this.initialQuery = ''});
+  const JobsView({
+    super.key,
+    this.api,
+    this.authorize,
+    this.initialQuery = '',
+    this.embedded = false,
+  });
   @override
   State<JobsView> createState() => _JobsViewState();
 }
@@ -145,7 +152,9 @@ class _JobsViewState extends State<JobsView> {
         constraints: const BoxConstraints(maxWidth: Bp.maxContent),
         child: Padding(
           padding: EdgeInsets.all(
-            MediaQuery.sizeOf(context).width < 600 ? 16 : 28,
+            widget.embedded
+                ? 0
+                : (MediaQuery.sizeOf(context).width < 600 ? 16 : 24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -181,8 +190,8 @@ class _JobsViewState extends State<JobsView> {
                       style: GoogleFonts.poppins(
                         color: AppColors.navy,
                         fontSize: MediaQuery.sizeOf(context).width < 600
-                            ? 28
-                            : 38,
+                            ? 26
+                            : 28,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -639,22 +648,13 @@ class _JobsViewState extends State<JobsView> {
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(20),
     ),
-    child: Column(
-      children: [
-        Icon(icon, size: 40, color: AppColors.iconBlue),
-        const SizedBox(height: 16),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.body,
-            height: 1.6,
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextButton(onPressed: onTap, child: Text(action)),
-      ],
+    child: AppStateView(
+      icon: icon,
+      title: action == 'Try again' ? 'Jobs unavailable' : 'No matching jobs',
+      message: text,
+      actionLabel: action,
+      onAction: onTap,
+      error: action == 'Try again',
     ),
   );
 }

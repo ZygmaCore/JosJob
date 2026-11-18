@@ -4,6 +4,7 @@ import '../../services/certificates_api.dart';
 import '../../services/open_link.dart';
 import '../../services/session.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/app_ui.dart';
 import '../../shared/app_form_field.dart';
 
 typedef CertificateAuthorize =
@@ -230,23 +231,12 @@ class _CertificatesViewState extends State<CertificatesView> {
         )
       else if (_certificates.isEmpty)
         _card(
-          Column(
-            key: const ValueKey('empty-certificates'),
-            children: [
-              const Icon(
-                Icons.workspace_premium_outlined,
-                size: 42,
-                color: AppColors.brandBlue,
-              ),
-              const SizedBox(height: 14),
-              Text('No certificates yet', style: _style(18, bold: true)),
-              const SizedBox(height: 8),
-              Text(
+          const AppStateView(
+            key: ValueKey('empty-certificates'),
+            icon: Icons.workspace_premium_outlined,
+            title: 'No certificates yet',
+            message:
                 'Add a certificate you hold to keep a record of your qualifications.',
-                textAlign: TextAlign.center,
-                style: _style(14, color: AppColors.body),
-              ),
-            ],
           ),
         )
       else

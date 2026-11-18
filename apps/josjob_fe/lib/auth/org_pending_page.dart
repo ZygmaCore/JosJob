@@ -74,7 +74,7 @@ class OrgPendingPage extends StatelessWidget {
                     header: true,
                     liveRegion: true,
                     child: Text(
-                      'Thank you! Your request has been sent to Atveti.',
+                      'Thank you! Your request has been sent to JosJob.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: compact ? 26 : 32,

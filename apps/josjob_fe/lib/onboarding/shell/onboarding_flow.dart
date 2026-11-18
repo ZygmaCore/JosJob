@@ -439,7 +439,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     nav.pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
-  void _goToDashboard() {
+  Future<void> _goToDashboard() async {
     // Keep the draft for a partial profile so "Continue" restores it; a fully
     // complete profile no longer needs one.
     if (_onboardingProgress >= 100) {
@@ -447,8 +447,17 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     } else {
       _saveDraft();
     }
+    final destination = await AuthContinuation.take();
+    if (!mounted) return;
+    if (destination != null) {
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(destination, (route) => false);
+      return;
+    }
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/dashboard'),
         builder: (_) => DashboardPage(role: _role, firstName: widget.firstName),
       ),
       (route) => false,

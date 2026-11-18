@@ -82,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() {
       _termsError = termsOk
           ? null
-          : 'Please accept the Terms to create your account.';
+          : 'Please acknowledge the preview information to create your account.';
     });
     if (!formOk) {
       // Focus the first invalid basic field. If only the organization detail
@@ -413,7 +413,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       _agreed = v;
                       if (v) _termsError = null;
                     }),
-              onLink: () => _soon(context, 'Terms & Privacy'),
             ),
             const SizedBox(height: 18),
             _PrimaryButton(

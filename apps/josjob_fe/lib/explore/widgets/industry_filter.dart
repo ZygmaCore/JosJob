@@ -85,9 +85,8 @@ class _IndustryTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: '$label, $count courses',
       child: Material(
-        color: selected ? AppColors.surface : tint,
+        color: selected ? AppColors.tintBlue : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,

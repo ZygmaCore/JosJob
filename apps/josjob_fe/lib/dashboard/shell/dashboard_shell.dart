@@ -1,14 +1,22 @@
 part of '../dashboard_page.dart';
 
 // =========================================================================
-// Responsive shell that hosts the nav + content. Nav selection is in-memory
-// (int index). Desktop: sidebar + top bar + scroll body. Mobile: top bar +
+// Responsive shell with URL-backed navigation and preserved child state.
+// Desktop: sidebar + top bar + scroll body. Mobile: top bar +
 // scroll body + bottom nav (with a drawer for the same destinations).
 // =========================================================================
 class _DashboardShell extends StatefulWidget {
   final OnboardRole? role;
   final String? firstName;
-  const _DashboardShell({required this.role, required this.firstName});
+  final String initialView, initialTab, applicationScope, applicationStatus;
+  const _DashboardShell({
+    required this.role,
+    required this.firstName,
+    required this.initialView,
+    required this.initialTab,
+    required this.applicationScope,
+    required this.applicationStatus,
+  });
 
   @override
   State<_DashboardShell> createState() => _DashboardShellState();
@@ -17,20 +25,50 @@ class _DashboardShell extends StatefulWidget {
 class _DashboardShellState extends State<_DashboardShell> {
   int _index = 0;
   _DashView _view = _DashView.learn;
+  final _contentKey = GlobalKey();
+  final _scroll = ScrollController();
+  @override
+  void initState() {
+    super.initState();
+    _view = widget.initialView == 'jobs' ? _DashView.jobs : _DashView.learn;
+    final index = _data.nav.indexWhere(
+      (d) => _slug(d.label) == widget.initialTab,
+    );
+    _index = index < 0 ? 0 : index;
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  String _slug(String label) => label.toLowerCase().replaceAll(' ', '-');
+  void _navigate(_DashView view, int index) {
+    final nav = view == _DashView.jobs
+        ? _jobsData.nav
+        : _dataFor(_effectiveRole).nav;
+    Navigator.of(context).pushNamed(
+      Uri(
+        path: '/dashboard',
+        queryParameters: {
+          'view': view == _DashView.jobs ? 'jobs' : 'learn',
+          'tab': _slug(nav[index].label),
+        },
+      ).toString(),
+    );
+  }
 
   void _select(int i) {
     if (i == _index) return;
-    setState(() => _index = i);
+    _navigate(_view, i);
   }
 
   // Flip the whole dashboard between the Learn and Jobs products. Resets the
   // nav selection so a destination from the other view isn't left highlighted.
   void _setView(_DashView v) {
     if (v == _view) return;
-    setState(() {
-      _view = v;
-      _index = 0;
-    });
+    _navigate(v, 0);
   }
 
   // Prefer the name passed from onboarding; otherwise fall back to the
@@ -114,7 +152,22 @@ class _DashboardShellState extends State<_DashboardShell> {
         case 'Curriculum Vitae':
           return const _CvScreen();
         case 'Applications':
-          return const _JobApplicationsScreen();
+          return _JobApplicationsScreen(
+            hiring: widget.applicationScope == 'hiring',
+            initialStatus: widget.applicationStatus,
+            onLocationChanged: (scope, status) =>
+                Navigator.of(context).pushNamed(
+                  Uri(
+                    path: '/dashboard',
+                    queryParameters: {
+                      'view': 'jobs',
+                      'tab': 'applications',
+                      'scope': scope,
+                      if (status.isNotEmpty) 'status': status,
+                    },
+                  ).toString(),
+                ),
+          );
       }
     } else if (isOrg(_effectiveRole)) {
       switch (label) {
@@ -170,6 +223,7 @@ class _DashboardShellState extends State<_DashboardShell> {
                 _TopBar(title: data.nav[_index].label, mobile: false),
                 Expanded(
                   child: SingleChildScrollView(
+                    controller: _scroll,
                     padding: EdgeInsets.fromLTRB(hPad, 28, hPad, 40),
                     child: Center(
                       child: ConstrainedBox(
@@ -187,7 +241,10 @@ class _DashboardShellState extends State<_DashboardShell> {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            _content(data),
+                            KeyedSubtree(
+                              key: _contentKey,
+                              child: _content(data),
+                            ),
                           ],
                         ),
                       ),
@@ -224,6 +281,7 @@ class _DashboardShellState extends State<_DashboardShell> {
         ),
       ),
       body: SingleChildScrollView(
+        controller: _scroll,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -233,7 +291,7 @@ class _DashboardShellState extends State<_DashboardShell> {
               child: _ViewSwitcher(current: _view, onChanged: _setView),
             ),
             const SizedBox(height: 20),
-            _content(data),
+            KeyedSubtree(key: _contentKey, child: _content(data)),
           ],
         ),
       ),

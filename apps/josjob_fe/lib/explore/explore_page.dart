@@ -16,6 +16,8 @@ import '../theme/app_theme.dart';
 import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
 import '../services/session.dart';
 import '../services/courses_api.dart';
+import '../services/ui_preferences.dart';
+import '../shared/app_ui.dart';
 
 // =========================================================================
 // JosJob — Explore Courses (course discovery / catalog)

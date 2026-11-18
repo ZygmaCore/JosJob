@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../shared/app_ui.dart';
 import '../applications/applications_view.dart';
 import '../shared/onboard_role.dart';
 import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
@@ -98,7 +99,16 @@ part 'screens/reports_screen.dart';
 class DashboardPage extends StatefulWidget {
   final OnboardRole? role;
   final String? firstName;
-  const DashboardPage({super.key, this.role, this.firstName});
+  final String initialView, initialTab, applicationScope, applicationStatus;
+  const DashboardPage({
+    super.key,
+    this.role,
+    this.firstName,
+    this.initialView = 'learn',
+    this.initialTab = 'overview',
+    this.applicationScope = 'mine',
+    this.applicationStatus = '',
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -107,7 +117,14 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
-    return _DashboardShell(role: widget.role, firstName: widget.firstName);
+    return _DashboardShell(
+      role: widget.role,
+      firstName: widget.firstName,
+      initialView: widget.initialView,
+      initialTab: widget.initialTab,
+      applicationScope: widget.applicationScope,
+      applicationStatus: widget.applicationStatus,
+    );
   }
 }
 

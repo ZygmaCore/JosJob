@@ -124,7 +124,7 @@ class _JobEditorState extends State<_JobEditor> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Describe the work, the skills you need and what candidates can expect. Salary amounts are monthly in the selected currency.',
+                      'Describe the work, the skills you need and what candidates can expect. Salary amounts are monthly in the selected currency. Fields marked * are required.',
                     ),
                     const SizedBox(height: 24),
                     DropdownButtonFormField<String>(
@@ -243,24 +243,18 @@ class _JobEditorState extends State<_JobEditor> {
     int? max,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: TextFormField(
+    child: AppFormField(
       key: ValueKey('job-field-$key'),
-      controller: _fields[key],
+      controller: _fields[key]!,
+      label: required ? '$label *' : label,
       enabled: !_saving,
-      minLines: lines,
       maxLines: lines,
       maxLength: max,
-      keyboardType: number
-          ? TextInputType.number
-          : lines > 1
-          ? TextInputType.multiline
-          : TextInputType.text,
+      keyboardType: number ? TextInputType.number : TextInputType.text,
       inputFormatters: number ? [FilteringTextInputFormatter.digitsOnly] : null,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        errorText: _errors[key]?.toString(),
-      ),
+      errorText: _errors[key] is List
+          ? (_errors[key] as List).join(', ')
+          : _errors[key]?.toString(),
       validator: (value) {
         if (required && (value?.trim().isEmpty ?? true)) {
           return 'This field is required.';
@@ -290,10 +284,7 @@ class _JobEditorState extends State<_JobEditor> {
     padding: const EdgeInsets.only(bottom: 16),
     child: DropdownButtonFormField<String>(
       initialValue: value,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
+      decoration: InputDecoration(labelText: label),
       items: options
           .map((v) => DropdownMenuItem(value: v, child: Text(v)))
           .toList(),

@@ -37,10 +37,9 @@ class _ViewSwitcher extends StatelessWidget {
     return Semantics(
       button: true,
       selected: active,
-      label: label,
-      child: GestureDetector(
+      child: InkWell(
         onTap: () => onChanged(view),
-        behavior: HitTestBehavior.opaque,
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),

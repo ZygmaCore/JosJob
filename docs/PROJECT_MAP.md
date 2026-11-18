@@ -51,6 +51,25 @@ See [the redesign proposal](../PRD/LEARNING_AND_COACHING_REDESIGN.md).
 
 ## Read this first
 
+UI consistency audit, 2026-11-18: a browser/source review of the Flutter app
+records prioritized styling, navigation/state and accessibility findings, with
+screenshots and acceptance checks. Read [the audit](ui-audit/2026-11-18/README.md)
+for baseline evidence. The subsequent [fix report](ui-audit/2026-11-18/FIXES.md)
+maps the implementation and verification to all 20 findings. Shared Flutter
+theme/components live in `theme/app_theme.dart` and `shared/app_ui.dart`;
+`shared/app_router.dart` connects named feature routes to browser history.
+Dashboard view/tab and application scope/stage are URL parameters. Auth return
+paths and device-local course bookmarks use `services/ui_preferences.dart`.
+
+The landing page now follows the official daisyUI Codex skill's component
+guidance in Flutter: persistent navigation, hero job search, an interactive
+Jobs/Learning/Coaching preview,
+job/learning/coaching cards, a three-step journey and accessible FAQ cards.
+`/welcome` exposes the landing page to guests and signed-in users without
+changing the signed-in `/` dashboard destination.
+See [the landing refresh notes](ui-audit/2026-11-18/landing-daisyui.md) for the
+skill installation details, implementation boundary and browser verification.
+
 Public job access update, 2026-11-18 (D22): active listings and details are public
 across organizations. `/jobs` bypasses login/onboarding, and new accounts can
 apply without membership. Overview listing counts use the same public collection.

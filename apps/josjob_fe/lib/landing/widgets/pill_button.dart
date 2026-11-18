@@ -48,7 +48,6 @@ class _PillButtonState extends State<_PillButton> {
     }
     return Semantics(
       button: true,
-      label: widget.label,
       child: AnimatedContainer(
         duration: _anim(context, 140),
         transform: Matrix4.translationValues(
@@ -59,7 +58,7 @@ class _PillButtonState extends State<_PillButton> {
         child: Material(
           color: bg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(14),
             side: side,
           ),
           elevation: _hovered ? 2 : 1,
@@ -68,7 +67,7 @@ class _PillButtonState extends State<_PillButton> {
             onTap: widget.onPressed,
             onHover: (value) => setState(() => _hovered = value),
             onHighlightChanged: (value) => setState(() => _pressed = value),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(14),
             focusColor: AppColors.primaryDeep.withValues(alpha: .18),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48),
@@ -83,8 +82,7 @@ class _PillButtonState extends State<_PillButton> {
                   children: [
                     Text(
                       widget.label,
-                      style: TextStyle(
-                        fontFamily: 'General Sans',
+                      style: GoogleFonts.poppins(
                         color: fg,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,

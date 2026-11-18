@@ -1,3 +1,5 @@
+import '../../shared/app_ui.dart';
+import '../../shared/app_formats.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../jobs/jobs_page.dart' show showJobListing;
@@ -348,21 +350,7 @@ class _JobsOverviewViewState extends State<JobsOverviewView> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.tintBlue,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                job.company.trim().isEmpty
-                    ? '?'
-                    : job.company.trim().characters.first.toUpperCase(),
-                style: _style(18, bold: true, color: AppColors.brandBlue),
-              ),
-            ),
+            CompanyAvatar(job.company),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -392,16 +380,16 @@ class _JobsOverviewViewState extends State<JobsOverviewView> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Published ${job.postedAt!.toLocal().toIso8601String().split('T').first}',
+              'Published ${AppFormats.date(job.postedAt!)}',
               style: _style(11, color: AppColors.body),
             ),
           ),
         if (job.synthetic)
           Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              'Synthetic listing',
-              style: _style(12, bold: true, color: AppColors.brandBlue),
+            child: const AppStatusBadge(
+              label: 'Synthetic demo',
+              status: 'synthetic',
             ),
           ),
         const SizedBox(height: 16),

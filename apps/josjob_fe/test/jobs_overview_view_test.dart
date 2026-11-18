@@ -96,7 +96,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(key('jobs-stat-available')).data, '12');
       expect(find.text('Junior developer'), findsOneWidget);
-      expect(find.text('Synthetic listing'), findsOneWidget);
+      expect(find.text('Synthetic demo'), findsOneWidget);
       expect(find.text('82%'), findsNothing);
       expect(find.text('96% match'), findsNothing);
       expect(find.text('Open to work'), findsNothing);

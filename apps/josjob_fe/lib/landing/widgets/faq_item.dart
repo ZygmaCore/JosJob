@@ -11,70 +11,88 @@ class _FaqItem extends StatefulWidget {
 
 class _FaqItemState extends State<_FaqItem> {
   late bool _open = widget.initiallyOpen;
+  final _focus = FocusNode();
+  bool _focused = false;
+  void _toggle() => setState(() => _open = !_open);
   @override
-  Widget build(BuildContext context) {
-    final (q, a) = widget.faq;
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            button: true,
-            expanded: _open,
-            label: q,
-            child: InkWell(
-              onTap: () => setState(() => _open = !_open),
-              focusColor: AppColors.focus,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Row(
-                  children: [
-                    Text(
-                      widget.index,
-                      style: TextStyle(
-                        fontFamily: 'General Sans',
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: AppColors.border),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          container: true,
+          button: true,
+          label: widget.faq.$1,
+          excludeSemantics: true,
+          onTap: _toggle,
+          expanded: _open,
+          focusable: true,
+          focused: _focused,
+          onFocus: _focus.requestFocus,
+          onDidGainAccessibilityFocus: _focus.requestFocus,
+          child: InkWell(
+            focusNode: _focus,
+            onFocusChange: (focused) => setState(() => _focused = focused),
+            onTap: _toggle,
+            focusColor: AppColors.focus,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.faq.$1,
+                      style: GoogleFonts.poppins(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.navy,
+                        height: 1.5,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        q,
-                        style: TextStyle(
-                          fontFamily: 'General Sans',
-                          fontSize: _isMobile(context) ? 17 : 20,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.landingInk,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      _open ? Icons.remove : Icons.add,
-                      color: AppColors.brandBlue,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    _open ? Icons.remove : Icons.add,
+                    size: 18,
+                    color: AppColors.brandBlue,
+                  ),
+                ],
               ),
             ),
           ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(bottom: 20, left: 46, right: 24),
-              child: Text(a, style: _lead(context).copyWith(fontSize: 15.5)),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+            child: Text(
+              widget.faq.$2,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppColors.body,
+                height: 1.7,
+              ),
             ),
-            crossFadeState: _open
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: _anim(context, 200),
           ),
-        ],
-      ),
-    );
-  }
+          crossFadeState: _open
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: _anim(context, 180),
+        ),
+      ],
+    ),
+  );
 }

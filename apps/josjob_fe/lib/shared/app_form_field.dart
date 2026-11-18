@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
@@ -12,6 +13,8 @@ OutlineInputBorder _border(Color color, {double width = 1.2}) =>
 class AppFormField extends StatelessWidget {
   final String label;
   final String? hint, helper;
+  final String? errorText;
+  final List<TextInputFormatter>? inputFormatters;
   final TextEditingController controller;
   final ValueChanged<String>? onChanged;
   final FormFieldValidator<String>? validator;
@@ -28,6 +31,8 @@ class AppFormField extends StatelessWidget {
     required this.controller,
     this.hint,
     this.helper,
+    this.errorText,
+    this.inputFormatters,
     this.onChanged,
     this.validator,
     this.keyboardType = TextInputType.text,
@@ -62,6 +67,8 @@ class AppFormField extends StatelessWidget {
           onChanged: onChanged,
           validator: validator,
           maxLines: maxLines,
+          minLines: maxLines,
+          inputFormatters: inputFormatters,
           maxLength: maxLength,
           keyboardType: maxLines > 1 ? TextInputType.multiline : keyboardType,
           textInputAction:
@@ -71,6 +78,7 @@ class AppFormField extends StatelessWidget {
           cursorColor: AppColors.brandBlue,
           decoration: InputDecoration(
             hintText: hint,
+            errorText: errorText,
             helperText: helper,
             helperMaxLines: 3,
             errorMaxLines: 3,
