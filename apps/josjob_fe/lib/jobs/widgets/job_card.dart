@@ -33,23 +33,7 @@ class _JobCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        gradient: _logoGradient(job.company.length),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        _initials(job.company),
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+                    CompanyAvatar(job.company, size: 48),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -86,8 +70,8 @@ class _JobCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _tag(job.employmentType),
-                    _tag(job.workMode),
+                    _tag(AppFormats.label(job.employmentType)),
+                    _tag(AppFormats.label(job.workMode)),
                     if (job.synthetic) const _JobBadge('Synthetic demo'),
                     if (job.status != 'active') _JobBadge(job.status),
                   ],

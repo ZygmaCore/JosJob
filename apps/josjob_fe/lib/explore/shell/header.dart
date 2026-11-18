@@ -52,8 +52,11 @@ class _Header extends StatelessWidget {
               Semantics(
                 header: true,
                 child: Text(
-                  'Find the course that gets you certified.',
-                  style: _h2s(context, color: AppColors.navy),
+                  'Explore courses. Build practical skills.',
+                  style: _h2s(
+                    context,
+                    color: AppColors.navy,
+                  ).copyWith(fontSize: 28),
                 ),
               ),
               const SizedBox(height: 14),
@@ -61,7 +64,7 @@ class _Header extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: Text(
                   'Browse the courses shared with you — study at your own pace, '
-                  'join live classes, and work towards a certificate. Search by '
+                  'and explore available classes. Search by '
                   'title, field or category.',
                   style: _lead(context),
                 ),

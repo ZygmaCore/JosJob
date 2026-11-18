@@ -20,7 +20,6 @@ class _SidebarNavItem extends StatelessWidget {
     return Semantics(
       button: true,
       selected: active,
-      label: dest.label,
       child: Material(
         color: active ? AppColors.tintBlue : Colors.transparent,
         borderRadius: BorderRadius.circular(12),

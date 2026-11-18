@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,6 +7,8 @@ import '../onboarding/onboarding_page.dart' show OnboardingFlow;
 import '../services/api_config.dart' show ApiConfig;
 import '../services/auth_api.dart' show AuthException, AccountType;
 import '../services/session.dart';
+import '../services/ui_preferences.dart';
+import '../shared/app_ui.dart';
 import 'org_pending_page.dart' show OrgPendingPage;
 import 'widgets/google_auth.dart';
 

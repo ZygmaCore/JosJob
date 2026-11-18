@@ -161,37 +161,7 @@ class _StatePanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            width: 76,
-            height: 76,
-            decoration: const BoxDecoration(
-              color: AppColors.tintBlue,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 40, color: AppColors.iconBlue),
-          ),
-          const SizedBox(height: 22),
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.navy,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: _lead(context).copyWith(fontSize: 14.5),
-            ),
-          ),
+          AppStateView(icon: icon, title: title, message: message),
           ...children,
         ],
       ),

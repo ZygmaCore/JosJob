@@ -19,15 +19,15 @@ class _PrimaryButton extends StatelessWidget {
       button: true,
       enabled: !busy,
       liveRegion: busy,
-      label: busy ? '$label, please wait' : label,
+      label: busy ? "$label, please wait" : null,
       child: Material(
         color: busy
             ? AppColors.brandBlue.withValues(alpha: 0.6)
             : AppColors.brandBlue,
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         child: InkWell(
           onTap: busy ? null : onPressed,
-          customBorder: const StadiumBorder(),
+          borderRadius: BorderRadius.circular(14),
           focusColor: AppColors.focus,
           child: SizedBox(
             height: 54,

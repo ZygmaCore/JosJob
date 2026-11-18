@@ -67,6 +67,7 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
       children: [
         _SectionHeader(
           'My courses',
+          pageTitle: true,
           actionLabel: 'Browse catalog',
           onAction: () => _explore(context),
         ),

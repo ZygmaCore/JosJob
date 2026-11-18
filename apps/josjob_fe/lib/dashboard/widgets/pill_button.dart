@@ -64,15 +64,17 @@ class _PillButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: label,
       child: Opacity(
         opacity: enabled ? 1 : 0.5,
         child: Material(
           color: bg,
-          shape: StadiumBorder(side: side),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: side,
+          ),
           child: InkWell(
             onTap: onPressed,
-            customBorder: const StadiumBorder(),
+            borderRadius: BorderRadius.circular(14),
             focusColor: AppColors.focus,
             child: Container(
               constraints: const BoxConstraints(minHeight: 48),

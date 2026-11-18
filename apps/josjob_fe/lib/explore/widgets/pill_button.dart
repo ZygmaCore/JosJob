@@ -23,18 +23,19 @@ class _PillButton extends StatelessWidget {
     final dense = kind == _BtnKind.dense;
     final fg = filled ? Colors.white : AppColors.brandBlue;
     return Semantics(
+      container: true,
       button: true,
-      label: label,
       child: Material(
         color: filled ? AppColors.brandBlue : Colors.transparent,
-        shape: StadiumBorder(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
           side: filled
               ? BorderSide.none
               : const BorderSide(color: AppColors.brandBlue),
         ),
         child: InkWell(
           onTap: onPressed,
-          customBorder: const StadiumBorder(),
+          borderRadius: BorderRadius.circular(14),
           focusColor: AppColors.focus,
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: dense ? 44 : 48),

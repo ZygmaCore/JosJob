@@ -6,6 +6,7 @@ import '../services/chat_api.dart';
 import '../services/session.dart';
 import '../services/workflow_client.dart';
 import '../theme/app_theme.dart';
+import '../shared/app_formats.dart';
 import 'chat_updates.dart';
 
 /// Every hiring and coaching conversation uses this same surface and composer.
@@ -216,8 +217,7 @@ class _ChatPanelState extends State<ChatPanel> {
     fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
   );
   String _time(DateTime value) {
-    final d = value.toLocal();
-    return '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return AppFormats.dateTime(value, showZone: true);
   }
 
   @override

@@ -12,7 +12,15 @@ class _Bounded extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: Bp.maxContent),
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: _gutter(context)),
+          padding: EdgeInsets.symmetric(
+            horizontal:
+                context
+                        .findAncestorWidgetOfExactType<_ExploreShell>()
+                        ?.embedded ==
+                    true
+                ? 0
+                : _gutter(context),
+          ),
           child: child,
         ),
       ),

@@ -6,15 +6,14 @@ import '../../live/data/live_models.dart' show LiveRoomMode, ParticipantRole;
 import '../../services/live_coaching_api.dart';
 import '../../services/session.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/app_formats.dart';
 import '../../shared/app_form_field.dart';
 import '../../chat/chat_page.dart';
 
 typedef CoachingAuthorize =
     Future<T> Function<T>(Future<T> Function(String) call);
 String coachingTime(DateTime start, DateTime end) {
-  String pad(int n) => n.toString().padLeft(2, '0');
-  final s = start.toLocal(), e = end.toLocal();
-  return '${s.year}-${pad(s.month)}-${pad(s.day)} · ${pad(s.hour)}:${pad(s.minute)}–${pad(e.hour)}:${pad(e.minute)}';
+  return '${AppFormats.date(start)} · ${AppFormats.clock(start)}–${AppFormats.clock(end)} (${AppFormats.timezone})';
 }
 
 class CoachingPage extends StatelessWidget {
@@ -343,35 +342,34 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _workspace = false;
-                _review = false;
-              });
-            },
-            child: const Text('Find a coach'),
+          ChoiceChip(
+            label: const Text('Find a coach'),
+            selected: !_workspace && !_review,
+            onSelected: (_) => setState(() {
+              _workspace = false;
+              _review = false;
+            }),
           ),
-          TextButton(
+          ChoiceChip(
             key: const ValueKey('coach-workspace'),
-            onPressed: () {
-              setState(() {
-                _workspace = true;
-                _review = false;
-              });
-            },
-            child: const Text('Coach workspace'),
+            label: const Text('Coach workspace'),
+            selected: _workspace && !_review,
+            onSelected: (_) => setState(() {
+              _workspace = true;
+              _review = false;
+            }),
           ),
           if (_admin)
-            TextButton(
-              onPressed: () {
+            ChoiceChip(
+              label: const Text('Review coach profiles'),
+              selected: _review,
+              onSelected: (_) {
                 setState(() {
                   _review = true;
                   _workspace = false;
                 });
                 _load();
               },
-              child: const Text('Review coach profiles'),
             ),
         ],
       ),
@@ -425,7 +423,7 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
       if (!data.configured)
         _card(
           Text(
-            'Appointment booking is available. Video calls will be enabled when live video is configured.',
+            'You can book appointments and message your coach. Video calls are currently unavailable.',
             key: const ValueKey('coaching-video-unavailable'),
             style: _style(13, color: AppColors.body),
           ),
@@ -496,6 +494,9 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
                         key: ValueKey('chat-booking-${b.id}'),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
+                            settings: RouteSettings(
+                              name: '/chats/coaching/${b.id}',
+                            ),
                             builder: (_) => ChatPage(
                               kind: 'coaching',
                               contextId: b.id,

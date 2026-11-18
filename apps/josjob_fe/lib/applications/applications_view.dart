@@ -9,6 +9,8 @@ import '../services/session.dart';
 import '../services/workflow_client.dart';
 import '../shared/app_form_field.dart';
 import '../theme/app_theme.dart';
+import '../shared/app_ui.dart';
+import '../shared/app_formats.dart';
 
 TextStyle _style(
   double size, {
@@ -20,8 +22,7 @@ TextStyle _style(
   fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
 );
 String _date(DateTime value) {
-  final d = value.toLocal();
-  return '${d.day}/${d.month}/${d.year} · ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  return AppFormats.dateTime(value, showZone: true);
 }
 
 Widget _card(Widget child, {Key? key}) => SizedBox(
@@ -37,19 +38,8 @@ Widget _card(Widget child, {Key? key}) => SizedBox(
     child: Padding(padding: const EdgeInsets.all(20), child: child),
   ),
 );
-Widget _stage(String status) => Container(
-  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-  decoration: BoxDecoration(
-    color: status == 'rejected' || status == 'withdrawn'
-        ? AppColors.paper2
-        : AppColors.tintBlue,
-    borderRadius: BorderRadius.circular(99),
-  ),
-  child: Text(
-    stageLabel(status),
-    style: _style(12, color: AppColors.navy, bold: true),
-  ),
-);
+Widget _stage(String status) =>
+    AppStatusBadge(label: stageLabel(status), status: status);
 
 class ApplicationsPage extends StatelessWidget {
   final bool hiring;
@@ -76,12 +66,16 @@ class ApplicationsView extends StatefulWidget {
   final WorkflowAuthorize? authorize;
   final bool hiring;
   final String? jobId;
+  final String initialStatus;
+  final void Function(String scope, String status)? onLocationChanged;
   const ApplicationsView({
     super.key,
     this.api,
     this.authorize,
     this.hiring = false,
     this.jobId,
+    this.initialStatus = '',
+    this.onLocationChanged,
   });
   @override
   State<ApplicationsView> createState() => _ApplicationsViewState();
@@ -90,7 +84,18 @@ class ApplicationsView extends StatefulWidget {
 class _ApplicationsViewState extends State<ApplicationsView> {
   late final ApplicationsApi _api = widget.api ?? ApplicationsApi();
   late String _scope = widget.hiring ? 'hiring' : 'mine';
-  String _status = '';
+  late String _status =
+      {
+        'applied',
+        'reviewing',
+        'interview',
+        'offer',
+        'hired',
+        'rejected',
+        'withdrawn',
+      }.contains(widget.initialStatus)
+      ? widget.initialStatus
+      : '';
   int _page = 1, _generation = 0;
   ApplicationResults? _data;
   bool _loading = true;
@@ -144,6 +149,9 @@ class _ApplicationsViewState extends State<ApplicationsView> {
   Future<void> _open(JobApplication application) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
+        settings: RouteSettings(
+          name: '/applications/${Uri.encodeComponent(application.id)}',
+        ),
         builder: (_) => ApplicationDetailPage(
           applicationId: application.id,
           api: _api,
@@ -152,6 +160,16 @@ class _ApplicationsViewState extends State<ApplicationsView> {
       ),
     );
     if (mounted) _load();
+  }
+
+  void _filterStatus(String value) {
+    if (widget.onLocationChanged != null) {
+      widget.onLocationChanged!(_scope, value);
+      return;
+    }
+    _status = value;
+    _page = 1;
+    _load();
   }
 
   @override
@@ -170,7 +188,7 @@ class _ApplicationsViewState extends State<ApplicationsView> {
             children: [
               Text(
                 _scope == 'hiring' ? 'Hiring workspace' : 'Your applications',
-                style: _style(24, bold: true, color: AppColors.navy),
+                style: _style(26, bold: true, color: AppColors.navy),
               ),
               const SizedBox(height: 6),
               Text(
@@ -202,6 +220,10 @@ class _ApplicationsViewState extends State<ApplicationsView> {
                 onSelected: _loading
                     ? null
                     : (_) {
+                        if (widget.onLocationChanged != null) {
+                          widget.onLocationChanged!(scope, '');
+                          return;
+                        }
                         _scope = scope;
                         _status = '';
                         _page = 1;
@@ -212,45 +234,71 @@ class _ApplicationsViewState extends State<ApplicationsView> {
         ),
       ],
       const SizedBox(height: 20),
-      Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          for (final s in hiringStages)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
+      if (MediaQuery.sizeOf(context).width >= 600)
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final s in hiringStages)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '${_data?.counts[s] ?? 0}  ${stageLabel(s)}',
+                  style: _style(13, bold: true, color: AppColors.navy),
+                ),
               ),
-              child: Text(
-                '${_data?.counts[s] ?? 0}  ${stageLabel(s)}',
-                style: _style(13, bold: true, color: AppColors.navy),
-              ),
-            ),
-        ],
-      ),
+          ],
+        ),
       const SizedBox(height: 18),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final s in ['', ...hiringStages, 'rejected', 'withdrawn'])
-            FilterChip(
-              key: ValueKey('application-filter-$s'),
-              label: Text(stageLabel(s)),
-              selected: _status == s,
-              onSelected: _loading
-                  ? null
-                  : (_) {
-                      _status = s;
-                      _page = 1;
-                      _load();
-                    },
-            ),
-        ],
-      ),
+      if (MediaQuery.sizeOf(context).width < 600)
+        DropdownButtonFormField<String>(
+          key: const ValueKey('applications-stage-filter'),
+          initialValue: _status,
+          decoration: InputDecoration(
+            labelText: 'Application stage',
+            helperText: '${_data?.total ?? 0} applications in this view',
+          ),
+          items: [
+            for (final s in ['', ...hiringStages, 'rejected', 'withdrawn'])
+              DropdownMenuItem(
+                value: s,
+                child: Text(
+                  '${stageLabel(s)}${s.isEmpty ? '' : ' (${_data?.counts[s] ?? 0})'}',
+                ),
+              ),
+          ],
+          onChanged: _loading
+              ? null
+              : (value) {
+                  if (value != null) _filterStatus(value);
+                },
+        )
+      else
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final s in ['', ...hiringStages, 'rejected', 'withdrawn'])
+              FilterChip(
+                key: ValueKey('application-filter-$s'),
+                label: Text(stageLabel(s)),
+                selected: _status == s,
+                onSelected: _loading
+                    ? null
+                    : (_) {
+                        _filterStatus(s);
+                      },
+              ),
+          ],
+        ),
       const SizedBox(height: 18),
       if (_loading)
         const Padding(
@@ -268,29 +316,15 @@ class _ApplicationsViewState extends State<ApplicationsView> {
         )
       else if (_data!.applications.isEmpty)
         _card(
-          Column(
+          AppStateView(
             key: const ValueKey('applications-empty'),
-            children: [
-              const Icon(
-                Icons.work_outline,
-                size: 40,
-                color: AppColors.brandBlue,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _scope == 'hiring'
-                    ? 'No applications to review'
-                    : 'No applications here yet',
-                style: _style(18, bold: true),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _scope == 'hiring'
-                    ? 'Applications to your organization’s listings will appear here.'
-                    : 'Apply to an active role to start tracking your progress.',
-                style: _style(13, color: AppColors.body),
-              ),
-            ],
+            icon: Icons.work_outline,
+            title: _scope == 'hiring'
+                ? 'No applications to review'
+                : 'No applications here yet',
+            message: _scope == 'hiring'
+                ? 'Applications to your organization’s listings will appear here.'
+                : 'Apply to an active role to start tracking your progress.',
           ),
         )
       else ...[
@@ -522,8 +556,17 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
             ),
             FilledButton(
               key: const ValueKey('confirm-application-stage'),
+              style: target == 'withdrawn' || target == 'rejected'
+                  ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
+                  : null,
               onPressed: () => Navigator.pop(c, true),
-              child: const Text('Confirm'),
+              child: Text(
+                target == 'withdrawn'
+                    ? 'Withdraw application'
+                    : target == 'rejected'
+                    ? 'Reject application'
+                    : 'Move to ${stageLabel(target)}',
+              ),
             ),
           ],
         ),
@@ -616,6 +659,9 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                                 key: const ValueKey('application-chat'),
                                 onPressed: () => Navigator.of(context).push(
                                   MaterialPageRoute<void>(
+                                    settings: RouteSettings(
+                                      name: '/chats/application/${_data!.id}',
+                                    ),
                                     builder: (_) => ChatPage(
                                       kind: 'application',
                                       contextId: _data!.id,
@@ -902,6 +948,7 @@ class _ApplyPageState extends State<ApplyPage> {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
+          settings: RouteSettings(name: '/applications/${result.id}'),
           builder: (_) => ApplicationDetailPage(
             applicationId: result.id,
             authorize: widget.authorize,

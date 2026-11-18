@@ -259,7 +259,11 @@ async function reveal(page: Page, locator: Locator) {
 }
 async function fill(page: Page, locator: Locator, value: string) {
   await reveal(page, locator); await locator.first().click(); await frames(page);
-  await locator.first().fill(value); await locator.first().press('Tab');
+  await locator.first().press('ControlOrMeta+A'); await frames(page);
+  await locator.first().press('Backspace'); await frames(page);
+  await locator.first().pressSequentially(value, {delay: 20}); await frames(page);
+  await expect(locator.first()).toHaveValue(value);
+  await locator.first().press('Tab');
 }
 async function login(page: Page, role: string) {
   await page.goto(appUrl); await semantics(page);
@@ -341,7 +345,7 @@ test('candidate and employer browsers apply, exchange live chat and finish all h
       await employer.getByRole('button', {name: `Move to ${stage[0].toUpperCase()}${stage.slice(1)}`, exact: true}).click();
       await fill(employer, employer.getByRole('textbox').last(), `Browser shared note: ${stage}`);
       const changed = employer.waitForResponse(r => r.request().method() === 'PATCH' && r.url().endsWith(`/api/applications/${application.id}`));
-      await employer.getByRole('button', {name: 'Confirm', exact: true}).click(); expect((await changed).status()).toBe(200);
+      await employer.getByRole('button', {name: `Move to ${stage[0].toUpperCase()}${stage.slice(1)}`, exact: true}).last().click(); expect((await changed).status()).toBe(200);
     }
     const history = (await call('candidate', 'GET', `/api/applications/${application.id}`)).data;
     expect(history.history.map((e: any) => e.status)).toEqual(['applied', 'reviewing', 'interview', 'offer', 'hired']);
@@ -350,4 +354,43 @@ test('candidate and employer browsers apply, exchange live chat and finish all h
     await candidate.getByRole('button', {name: /Refresh messages/}).click();
     await expect(candidate.getByText(/This conversation is read-only/)).toBeVisible();
   } finally {await candidateContext.close(); await employerContext.close();}
+});
+
+test('guest application returns to the selected job after signing in and reloading login', async ({page}) => {
+  await page.goto(`${appUrl}/#/jobs/${fixture.published_job_id}`); await semantics(page);
+  const apply = page.getByRole('button', {name: /Sign in to apply/});
+  await reveal(page, apply); await apply.click();
+  await page.reload(); await semantics(page);
+  await fill(page, page.getByRole('textbox').nth(0), fixture.candidate.email);
+  await fill(page, page.getByRole('textbox').nth(1), fixture.candidate.password);
+  await page.getByRole('button', {name: /^Log in/}).first().click();
+  await expect(page.getByText('Profile to share', {exact: true})).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${fixture.published_job_id}\\?apply=1$`));
+  // Viewing the form is read-only; no duplicate application is submitted.
+});
+
+test('dashboard hiring filters survive resize, reload and browser history', async ({page}) => {
+  await login(page, 'owner');
+  const location = `${appUrl}/#/dashboard?view=jobs&tab=applications&scope=hiring&status=reviewing`;
+  const loads: string[] = [];
+  page.on('request', r => {if (new URL(r.url()).pathname === '/api/applications') loads.push(r.url());});
+  await page.goto(location); await semantics(page);
+  await expect.poll(() => loads.length).toBeGreaterThan(0);
+  await expect(page.getByRole('checkbox', {name: 'Hiring', exact: true})).toBeChecked();
+  await page.setViewportSize({width: 390, height: 844}); await frames(page);
+  await expect(page.getByRole('combobox', {name: /Application stage/}).or(page.getByRole('button', {name: /Application stage/})).first()).toBeVisible();
+  expect(new URL(loads.at(-1)!).searchParams.get('scope')).toBe('hiring');
+  expect(new URL(loads.at(-1)!).searchParams.get('status')).toBe('reviewing');
+  await page.reload(); await semantics(page);
+  await expect(page.getByRole('checkbox', {name: 'Hiring', exact: true})).toBeChecked();
+  await page.setViewportSize({width: 1440, height: 1000}); await frames(page);
+  await page.getByRole('button', {name: 'Vacancies', exact: true}).first().click();
+  await expect(page).toHaveURL(/tab=vacancies/);
+  await page.reload(); await semantics(page);
+  await expect(page.getByRole('button', {name: /Post a job/})).toBeVisible();
+  await page.goBack(); await semantics(page);
+  await expect(page).toHaveURL(/scope=hiring&status=reviewing/);
+  await expect(page.getByRole('checkbox', {name: 'Hiring', exact: true})).toBeChecked();
+  await page.goForward(); await semantics(page);
+  await expect(page).toHaveURL(/tab=vacancies/);
 });

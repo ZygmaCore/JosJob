@@ -43,6 +43,7 @@ class _ExploreShellState extends State<_ExploreShell> {
     super.didChangeDependencies();
     if (!_didInit) {
       _didInit = true;
+      _restoreSaved();
       _load();
     }
   }
@@ -144,10 +145,54 @@ class _ExploreShellState extends State<_ExploreShell> {
     });
   }
 
-  void _toggleSaved(String id) {
-    final saved = !_saved.contains(id);
-    setState(() => saved ? _saved.add(id) : _saved.remove(id));
-    _soon(context, saved ? 'Saved to your list' : 'Removed from your list');
+  final _preferences = const UiPreferences();
+  bool _savingBookmark = false;
+  Future<void> _restoreSaved() async {
+    final id = Session.instance.user?.id;
+    if (id == null) return;
+    try {
+      final saved = await _preferences.savedCourses(id);
+      if (mounted) {
+        setState(() {
+          _saved.clear();
+          _saved.addAll(saved);
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        _soon(context, 'Saved courses could not be loaded on this device.');
+      }
+    }
+  }
+
+  Future<void> _toggleSaved(String id) async {
+    final user = Session.instance.user;
+    if (user == null || _savingBookmark) return;
+    _savingBookmark = true;
+    final updated = {..._saved};
+    final saved = updated.add(id);
+    if (!saved) updated.remove(id);
+    try {
+      await _preferences.saveCourses(user.id, updated);
+      if (!mounted) return;
+      setState(() {
+        _saved.clear();
+        _saved.addAll(updated);
+      });
+      _soon(
+        context,
+        saved ? 'Saved on this device' : 'Removed from this device',
+      );
+    } catch (_) {
+      if (mounted) {
+        _soon(
+          context,
+          'Could not save this course on this device. Please try again.',
+        );
+      }
+    } finally {
+      _savingBookmark = false;
+    }
   }
 
   void _goHome() {

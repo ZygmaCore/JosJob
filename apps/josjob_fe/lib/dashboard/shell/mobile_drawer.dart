@@ -32,14 +32,10 @@ class _MobileDrawer extends StatelessWidget {
                 children: [
                   const _BrandMark(),
                   const Spacer(),
-                  Semantics(
-                    button: true,
-                    label: 'Close menu',
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      tooltip: 'Close',
-                      icon: const Icon(Icons.close, color: AppColors.body),
-                    ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    tooltip: 'Close menu',
+                    icon: const Icon(Icons.close, color: AppColors.body),
                   ),
                 ],
               ),

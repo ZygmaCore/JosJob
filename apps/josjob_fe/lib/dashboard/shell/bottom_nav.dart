@@ -59,7 +59,6 @@ class _BottomNavItem extends StatelessWidget {
     return Semantics(
       button: true,
       selected: active,
-      label: dest.label,
       child: InkWell(
         onTap: onTap,
         child: Column(

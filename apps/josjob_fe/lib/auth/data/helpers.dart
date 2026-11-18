@@ -33,8 +33,12 @@ void _backToSite(BuildContext context) {
 // Returning users land in the app after logging in. Uses the named /dashboard
 // route (no stored role -> the default learner view, with the Learn|Jobs
 // switcher), clearing the auth stack behind it.
-void _goDashboard(BuildContext context) {
-  Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
+Future<void> _goDashboard(BuildContext context) async {
+  final destination = await AuthContinuation.take();
+  if (!context.mounted) return;
+  Navigator.of(
+    context,
+  ).pushNamedAndRemoveUntil(destination ?? '/dashboard', (route) => false);
 }
 
 void _soon(BuildContext context, String what) {
