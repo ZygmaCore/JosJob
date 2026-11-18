@@ -138,6 +138,11 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
               trailing: Icons.arrow_forward,
             ),
             _PillButton(
+              'Explore jobs',
+              kind: _BtnKind.ghost,
+              onPressed: () => Navigator.of(context).pushNamed('/jobs'),
+            ),
+            _PillButton(
               'See how it works',
               kind: _BtnKind.ghost,
               onPressed: () => _jump(_journeyKey),

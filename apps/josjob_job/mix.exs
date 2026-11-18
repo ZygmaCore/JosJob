@@ -26,6 +26,7 @@ defmodule JosjobJob.MixProject do
   defp deps do
     [
       {:josjob, in_umbrella: true},
+      {:josjob_doc, in_umbrella: true},
       {:ash, "~> 3.0"},
       {:ash_postgres, "~> 2.0"}
     ]

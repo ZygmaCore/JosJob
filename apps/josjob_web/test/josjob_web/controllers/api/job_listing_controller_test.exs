@@ -12,11 +12,16 @@ defmodule JosjobWeb.Api.JobListingControllerTest do
     %{student: student, employer: employer, org: org, job: job}
   end
 
-  test "requires authentication", %{conn: conn} do
-    assert json_response(get(conn, ~p"/api/jobs"), 401)["error"] == "unauthorized"
+  test "visitors can list and open published vacancies without organization access", c do
+    body = c.conn |> get(~p"/api/jobs") |> json_response(200)
+    assert [%{"id" => id, "can_manage" => false}] = body["data"]
+    assert id == c.job.id
+    assert body["organizations"] == []
+    assert c.conn |> get(~p"/api/jobs/#{id}") |> json_response(200)
+    assert c.conn |> get(~p"/api/jobs", %{scope: "manage"}) |> json_response(401)
   end
 
-  test "lists active jobs in authorized organizations only", %{
+  test "lists active jobs across organizations and hides unpublished vacancies", %{
     conn: conn,
     student: user,
     employer: employer,
@@ -25,15 +30,15 @@ defmodule JosjobWeb.Api.JobListingControllerTest do
   } do
     job!(org, employer, %{"status" => "draft", "title" => "Private draft"})
     other = organization!(employer, "Other tenant")
-    job!(other, employer, %{"title" => "Secret tenant job"})
+    foreign = job!(other, employer, %{"title" => "Public vacancy"})
     body = conn |> auth(user) |> get(~p"/api/jobs") |> json_response(200)
-    assert Enum.map(body["data"], & &1["id"]) == [job.id]
-    assert body["meta"]["total"] == 1
+    assert MapSet.new(Enum.map(body["data"], & &1["id"])) == MapSet.new([job.id, foreign.id])
+    assert body["meta"]["total"] == 2
     assert hd(body["data"])["can_manage"] == false
     refute Map.has_key?(hd(body["data"]), "match_score")
   end
 
-  test "shows details but masks drafts and other tenants with 404", %{
+  test "shows published details across organizations but hides drafts and expired listings", %{
     conn: conn,
     student: user,
     employer: employer,
@@ -45,7 +50,14 @@ defmodule JosjobWeb.Api.JobListingControllerTest do
     draft = job!(org, employer, %{"status" => "draft"})
     assert conn |> auth(user) |> get(~p"/api/jobs/#{draft.id}") |> json_response(404)
     foreign = job!(organization!(employer), employer)
-    assert conn |> auth(user) |> get(~p"/api/jobs/#{foreign.id}") |> json_response(404)
+    assert conn |> auth(user) |> get(~p"/api/jobs/#{foreign.id}") |> json_response(200)
+    expired = job!(org, employer, %{"status" => "expired"})
+
+    for hidden <- [draft, expired] do
+      assert conn |> get(~p"/api/jobs/#{hidden.id}") |> json_response(404)
+      assert conn |> auth(user!()) |> get(~p"/api/jobs/#{hidden.id}") |> json_response(404)
+    end
+
     assert conn |> auth(user) |> get(~p"/api/jobs/not-a-uuid") |> json_response(404)
   end
 
@@ -114,10 +126,15 @@ defmodule JosjobWeb.Api.JobListingControllerTest do
     end
   end
 
-  test "unprovisioned users see an honest empty result", %{conn: conn} do
+  test "new users browse without provisioning and have no employer capabilities", %{
+    conn: conn,
+    job: job
+  } do
     body = conn |> auth(user!()) |> get(~p"/api/jobs") |> json_response(200)
-    assert body["data"] == []
-    assert body["meta"]["total"] == 0
+    assert [%{"id" => id, "can_manage" => false}] = body["data"]
+    assert id == job.id
+    assert body["meta"]["total"] == 1
+    assert body["organizations"] == []
   end
 
   test "students cannot use management scope to reveal drafts", %{
@@ -129,5 +146,30 @@ defmodule JosjobWeb.Api.JobListingControllerTest do
     job!(org, employer, %{"status" => "draft"})
     body = conn |> auth(user) |> get(~p"/api/jobs", %{scope: "manage"}) |> json_response(200)
     assert body["data"] == []
+  end
+
+  test "public reads reject invalid and refresh credentials, while writes remain authenticated",
+       c do
+    {:ok, tokens} = Josjob.Accounts.Tokens.issue_pair(c.student)
+
+    for token <- ["invalid-token", tokens.refresh_token] do
+      conn = Plug.Conn.put_req_header(c.conn, "authorization", "Bearer #{token}")
+      assert conn |> get(~p"/api/jobs") |> json_response(401)
+      assert conn |> get(~p"/api/jobs/#{c.job.id}") |> json_response(401)
+    end
+
+    assert c.conn |> post(~p"/api/jobs", attrs()) |> json_response(401)
+    assert c.conn |> patch(~p"/api/jobs/#{c.job.id}", %{title: "Changed"}) |> json_response(401)
+    assert c.conn |> delete(~p"/api/jobs/#{c.job.id}") |> json_response(401)
+
+    assert c.conn
+           |> post(~p"/api/jobs/#{c.job.id}/applications", %{consent: true})
+           |> json_response(401)
+
+    assert c.conn |> get(~p"/api/applications") |> json_response(401)
+
+    assert c.conn
+           |> get(~p"/api/chats/application/#{Ecto.UUID.generate()}/messages")
+           |> json_response(401)
   end
 end

@@ -32,6 +32,7 @@ ARG GOOGLE_CLIENT_ID=
 # memory-hungry (700+ MB, heavy swap on the 2 GB dev VPS) and produces nothing
 # we ship, so skip it. Add `--wasm` explicitly if we ever want a Wasm bundle.
 RUN flutter build web --release \
+      --no-web-resources-cdn \
       --pwa-strategy=none \
       --no-wasm-dry-run \
       --dart-define=API_BASE_URL="$API_BASE_URL" \

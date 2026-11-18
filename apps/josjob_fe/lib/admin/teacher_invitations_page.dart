@@ -177,6 +177,10 @@ class _TeacherInvitationsPageState extends State<TeacherInvitationsPage> {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pushNamed('/coaching'),
+            child: const Text('Coaching'),
+          ),
           TextButton.icon(
             onPressed: _signOut,
             icon: const Icon(Icons.logout_rounded, size: 18),

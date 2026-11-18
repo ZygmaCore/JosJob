@@ -61,6 +61,7 @@ defmodule JosjobWeb.MixProject do
       {:josjob_doc, in_umbrella: true},
       {:josjob_lrn, in_umbrella: true},
       {:josjob_job, in_umbrella: true},
+      {:josjob_rt, in_umbrella: true},
       {:josjob_ms, in_umbrella: true},
       {:josjob_rag, in_umbrella: true},
       {:ash_authentication_phoenix, "~> 2.0"},

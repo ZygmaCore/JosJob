@@ -20,6 +20,16 @@
 
 ## 1. Tujuan
 
+Pembaruan akses 2026-11-18 (D22): daftar dan detail lowongan aktif terbuka untuk
+pengunjung tanpa login. Akun baru dapat melamar tanpa provisioning organisasi.
+Login tetap diperlukan untuk lamaran dan chat; izin organisasi tetap berlaku
+untuk manajemen lowongan serta data hiring.
+
+Pembaruan implementasi 2026-11-17: lamaran, pipeline hiring, riwayat perubahan
+dan chat untuk lamaran/booking coaching telah ditambahkan. Status lama yang
+menyebut lamaran sebagai rencana pada snapshot awal tidak lagi berlaku.
+Detail: [aplikasi dan chat](../docs/api/applications-and-chat.md).
+
 Menghasilkan satu platform job seeker untuk fresh graduate yang menutup loop
 **Match → Gap → Learn → Re-match**:
 
@@ -35,6 +45,12 @@ PRD ini menjadi acuan bersama untuk keputusan produk, desain, arsitektur,
 implementasi, dan pengujian — sesuai rincian tugas di Notion.
 
 ## 2. Konteks
+
+Pembaruan arah produk, 2026-11-17: course diarahkan menjadi curriculum berisi
+halaman baca, video dan quiz. Live Coaching menjadi layanan coach dengan profil,
+availability dan booking yang mandiri dari course. Curriculum course masih direncanakan; MVP coaching memakai
+profil, slot dan booking sendiri (1-on-1 gratis). Lihat [proposal pemisahan learning dan coaching](LEARNING_AND_COACHING_REDESIGN.md)
+dan D18 pada [log keputusan](DECISIONS.md); format MVP diputuskan 1-on-1 gratis pada D19.
 
 ### 2.1 Produk dan tim
 

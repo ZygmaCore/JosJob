@@ -10,8 +10,6 @@ class _DashboardData {
   final List<_StatData> stats;
   final List<_DashCourse> continueLearning;
   final List<_DashCourse> recommended;
-  final List<_Mentor> coaching;
-  final List<_Certificate> certificates;
   final List<_Learner> learners;
   final List<_DashCourse> offerings;
   final List<_ActivityItem> activity;
@@ -22,8 +20,6 @@ class _DashboardData {
     required this.stats,
     this.continueLearning = const [],
     this.recommended = const [],
-    this.coaching = const [],
-    this.certificates = const [],
     this.learners = const [],
     this.offerings = const [],
     this.activity = const [],
@@ -35,132 +31,6 @@ class _DashboardData {
 /// Selects the data bundle for a role. Null defaults to the individual view.
 _DashboardData _dataFor(OnboardRole? role) =>
     isOrg(role) ? _orgData : _individualData;
-
-// ---- Shared coaching schedule (both views) ------------------------------
-const _sharedCoaching = <_Mentor>[
-  _Mentor('Maya Chen', 'Interview confidence workshop', 'Today · 3:00 PM'),
-  _Mentor('David Okoro', 'Resume review, live Q&A', 'Tomorrow · 10:00 AM'),
-  _Mentor('Priya Nair', 'Excel for reporting', 'Thu · 1:30 PM'),
-];
-
-// ---- Certificates matched to the learner's profile (Target certificates) --
-const _targetCertificates = <_TargetCert>[
-  _TargetCert(
-    'Certificate III in Hospitality',
-    'JosJob',
-    'Matches your Front Office applications',
-  ),
-  _TargetCert(
-    'First Aid & CPR (HLTAID011)',
-    'St John',
-    'Required by 3 of your saved roles',
-  ),
-  _TargetCert(
-    'Food Safety Supervisor',
-    'JosJob',
-    'Boosts your guest-services matches',
-  ),
-];
-
-// ---- Bookable coaches (Live Coaching → Explore coaches) -------------------
-const _exploreCoaches = <_Coach>[
-  _Coach(
-    'Maya Chen',
-    'Interview coaching',
-    'Ex-recruiter · 8 yrs',
-    4.9,
-    320,
-    _CoachFocus.interview,
-  ),
-  _Coach(
-    'David Okoro',
-    'Resume & LinkedIn',
-    'Career strategist',
-    4.8,
-    210,
-    _CoachFocus.career,
-  ),
-  _Coach(
-    'Priya Nair',
-    'Data & reporting',
-    'Analytics mentor',
-    4.7,
-    154,
-    _CoachFocus.skills,
-  ),
-  _Coach(
-    'Sam Rivera',
-    'Confidence & comms',
-    'Public-speaking coach',
-    4.9,
-    265,
-    _CoachFocus.confidence,
-  ),
-  _Coach(
-    'Aisha Khan',
-    'Leadership & management',
-    'Team-lead coach',
-    4.9,
-    342,
-    _CoachFocus.leadership,
-  ),
-  _Coach(
-    'Elena Rossi',
-    'Career transitions',
-    'Ex-HR director · 12 yrs',
-    4.8,
-    288,
-    _CoachFocus.career,
-  ),
-  _Coach(
-    'Marcus Bell',
-    'Behavioural interviews',
-    'STAR-method specialist',
-    4.7,
-    176,
-    _CoachFocus.interview,
-  ),
-  _Coach(
-    'Diego Santos',
-    'Public speaking',
-    'TEDx speaker coach',
-    4.9,
-    233,
-    _CoachFocus.confidence,
-  ),
-  _Coach(
-    'Nadia Hassan',
-    'Technical interviews',
-    'Ex-FAANG engineer',
-    4.8,
-    205,
-    _CoachFocus.interview,
-  ),
-  _Coach(
-    'Robert King',
-    'First-time managers',
-    'Leadership facilitator',
-    4.7,
-    167,
-    _CoachFocus.leadership,
-  ),
-  _Coach(
-    'Grace Lee',
-    'Salary negotiation',
-    'Compensation strategist',
-    4.8,
-    198,
-    _CoachFocus.career,
-  ),
-  _Coach(
-    'Tom Fischer',
-    'Excel & spreadsheets',
-    'Data-skills tutor',
-    4.6,
-    129,
-    _CoachFocus.skills,
-  ),
-];
 
 // =========================================================================
 // INDIVIDUAL (worker / graduate)
@@ -272,19 +142,6 @@ final _individualData = _DashboardData(
       rating: 4.7,
     ),
   ],
-  coaching: _sharedCoaching,
-  certificates: const [
-    _Certificate(
-      'Workplace Safety Level 1',
-      'JosJob',
-      'Issued Jun 2026',
-    ),
-    _Certificate(
-      'Digital Literacy Foundations',
-      'JosJob',
-      'Issued Apr 2026',
-    ),
-  ],
   weeklyHours: const [1.2, 2.0, 1.5, 2.8, 2.2, 0.8, 1.6],
 );
 
@@ -372,7 +229,6 @@ final _orgData = _DashboardData(
       enrolled: 21,
     ),
   ],
-  coaching: _sharedCoaching,
   activity: const [
     _ActivityItem(
       Icons.workspace_premium_outlined,

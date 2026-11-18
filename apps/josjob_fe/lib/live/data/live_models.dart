@@ -10,8 +10,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 /// Session shape. Differs only in default publish + layout over one SFU core.
 enum LiveRoomMode { oneOnOne, coaching, classroom }
 
-/// Role in the room. v1: supplied by the entry point (client-trusted; the
-/// backend documents this as a known gap to be replaced by server-derived role).
+/// Class and coaching-booking rooms derive this role on the server. The
+/// client-provided role is used only for legacy free/demo rooms.
 enum ParticipantRole { host, guest }
 
 /// Connection lifecycle for the call screen.

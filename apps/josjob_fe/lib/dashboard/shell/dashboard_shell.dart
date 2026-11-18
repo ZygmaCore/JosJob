@@ -75,11 +75,13 @@ class _DashboardShellState extends State<_DashboardShell> {
   Widget _content(_DashboardData data) {
     if (_index == 0) {
       final Widget overview = _view == _DashView.jobs
-          ? _OverviewJobs(data: data, firstName: _firstName)
+          ? _OverviewJobs(
+              firstName: _firstName,
+              onBrowseJobs: () => _select(_navIndexOf(data, 'Vacancies')),
+            )
           : isOrg(_effectiveRole)
-          ? _OverviewOrg(data: data, firstName: _firstName)
+          ? _OverviewOrg(firstName: _firstName)
           : _OverviewIndividual(
-              data: data,
               firstName: _firstName,
               onBrowseCourses: () => _select(_navIndexOf(data, 'Courses')),
             );
@@ -134,7 +136,7 @@ class _DashboardShellState extends State<_DashboardShell> {
         case 'Live Coaching':
           return const _LiveCoachingScreen();
         case 'Certificates':
-          return _CertificatesScreen(data.certificates);
+          return const CertificatesView();
       }
     }
     return _PlaceholderPanel(data.nav[_index], view: _view);

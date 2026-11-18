@@ -5,6 +5,9 @@ defmodule JosjobWeb.Plugs.ApiAuth do
   Memverifikasi tanda tangan token (`AshAuthentication.Jwt.verify/2`), menolak
   refresh token, lalu memuat user ke `conn.assigns.current_user`. Bila gagal,
   membalas 401 dan menghentikan pipeline.
+
+  `optional: true` permits a missing Authorization header for public reads.
+  Supplied credentials still undergo the same verification and rejection.
   """
   import Plug.Conn
 
@@ -13,7 +16,15 @@ defmodule JosjobWeb.Plugs.ApiAuth do
 
   def init(opts), do: opts
 
-  def call(conn, _opts) do
+  def call(conn, opts) do
+    if Keyword.get(opts, :optional, false) and get_req_header(conn, "authorization") == [] do
+      assign(conn, :current_user, nil)
+    else
+      authenticate(conn)
+    end
+  end
+
+  defp authenticate(conn) do
     with ["Bearer " <> token] <- get_req_header(conn, "authorization"),
          {:ok, claims, _resource} <- Jwt.verify(token, :josjob),
          :ok <- ensure_access_token(claims),

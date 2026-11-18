@@ -4,6 +4,7 @@ import 'auth/auth_page.dart';
 import 'auth/org_pending_page.dart';
 import 'onboarding/onboarding_page.dart';
 import 'dashboard/dashboard_page.dart';
+import 'dashboard/screens/live_coaching_view.dart';
 import 'explore/explore_page.dart';
 import 'quiz/quiz_page.dart';
 import 'vod/vod_page.dart';
@@ -104,6 +105,7 @@ class MyApp extends StatelessWidget {
     '/register': () => const RegisterPage(),
     '/onboarding': () => const OnboardingFlow(),
     '/dashboard': () => const DashboardPage(),
+    '/coaching': () => const CoachingPage(),
     '/explore': () => const ExploreCoursePage(),
     '/quiz': () => const QuizPage(),
     '/vod': () => const VodPlayerPage(),
@@ -120,13 +122,13 @@ class MyApp extends StatelessWidget {
   // In-app destinations that additionally require a completed mandatory
   // onboarding step (mirrors the cold-start decision in [_startScreen]).
   static const Set<String> _needsOnboarding = {
+    '/coaching',
     '/dashboard',
     '/explore',
     '/quiz',
     '/vod',
     '/vod/document',
     '/documents',
-    '/jobs',
   };
 
   // Central auth guard for every named route. On web a signed-out visitor can
@@ -157,6 +159,18 @@ class MyApp extends StatelessWidget {
     final builder = _routes[name];
     // Unknown route → landing.
     if (builder == null) return _route(const JosjobLandingPage(), '/');
+
+    // Published vacancies are available before login and onboarding.
+    if (name == '/jobs') {
+      return _route(
+        JobsPage(
+          initialQuery: settings.arguments is String
+              ? settings.arguments as String
+              : '',
+        ),
+        name!,
+      );
+    }
 
     // Auth pages: send an already-signed-in user into the app instead.
     if (_authRoutes.contains(name)) {

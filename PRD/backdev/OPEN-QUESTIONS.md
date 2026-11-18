@@ -43,6 +43,10 @@ sebagai desain?
 
 ## Q4. Set status lamaran
 
+Diputuskan 2026-11-17 pada D20: Applied → Reviewing → Interview → Offer → Hired.
+Rekomendasi lama di bawah sudah digantikan. Lihat
+[kontrak aplikasi dan chat](../../docs/api/applications-and-chat.md).
+
 **Pertanyaan:** Status lamaran apa saja yang didukung?
 
 - Opsi A: Pending / Reviewed / Accepted / Rejected.

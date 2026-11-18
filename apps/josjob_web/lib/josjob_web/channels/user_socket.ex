@@ -19,6 +19,7 @@ defmodule JosjobWeb.UserSocket do
   # Channel contoh. Channel lain (progress/chat/quiz/ai_assistant) menyusul saat
   # fiturnya dibangun.
   channel("user:notifications:*", JosjobWeb.NotificationChannel)
+  channel("chat:*", JosjobWeb.ChatChannel)
 
   # Live streaming (WebRTC via Cloudflare Realtime SFU) — signaling per-room.
   channel("live_room:*", JosjobWeb.LiveRoomChannel)
@@ -26,7 +27,7 @@ defmodule JosjobWeb.UserSocket do
   @impl true
   def connect(params, socket, _connect_info) do
     with token when is_binary(token) and token != "" <- Map.get(params, "token"),
-         {:ok, %{"sub" => subject}, _claims} <-
+         {:ok, %{"sub" => subject} = claims, _resource} <-
            AshAuthentication.Jwt.verify(token, :josjob),
          {:ok, user} <- AshAuthentication.subject_to_user(subject, User) do
       socket =
@@ -34,6 +35,7 @@ defmodule JosjobWeb.UserSocket do
         |> assign(:current_user, user)
         |> assign(:user_id, user.id)
         |> assign(:is_superuser, user.is_superuser)
+        |> assign(:token_expires_at, claims["exp"])
 
       {:ok, socket}
     else

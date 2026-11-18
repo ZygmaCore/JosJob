@@ -1,9 +1,10 @@
 defmodule JosjobJob do
-  @moduledoc "Job listings domain. HTTP callers use JosjobJob.Listings for scoped access."
+  @moduledoc "Job listings and candidate CV domain. Scoped access lives in Listings and CurriculumVitae."
   use Ash.Domain
 
   resources do
     resource(JosjobJob.Job)
+    resource(JosjobJob.CvProfile)
   end
 
   @doc """

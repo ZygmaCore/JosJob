@@ -95,6 +95,10 @@ defmodule JosjobWeb.Router do
     plug JosjobWeb.Plugs.ApiAuth
   end
 
+  pipeline :api_optional_auth do
+    plug JosjobWeb.Plugs.ApiAuth, optional: true
+  end
+
   # Gate API superuser (setelah :api_auth). Untuk endpoint admin JSON (undangan teacher).
   pipeline :require_superuser_api do
     plug JosjobWeb.Plugs.RequireSuperuserApi
@@ -155,12 +159,18 @@ defmodule JosjobWeb.Router do
       delete "/subscriptions/:id", PaymentController, :cancel_subscription
     end
 
-    # Katalog student (Bearer).
+    # Published vacancies are public; optional auth supplies management capabilities.
     scope "/jobs" do
-      pipe_through :api_auth
+      pipe_through :api_optional_auth
 
       get "/", JobController, :index
       get "/:id", JobController, :show
+    end
+
+    scope "/jobs" do
+      pipe_through :api_auth
+
+      post "/:job_id/applications", ApplicationController, :create
       post "/", JobController, :create
       patch "/:id", JobController, :update
       delete "/:id", JobController, :delete
@@ -209,6 +219,27 @@ defmodule JosjobWeb.Router do
       post "/classes/:id/enroll/confirm", EnrollmentController, :confirm
       delete "/classes/:id/enroll", EnrollmentController, :delete
       get "/me/enrollments", EnrollmentController, :index
+      get "/me/learning-overview", LearningOverviewController, :show
+      get "/me/jobs-overview", JobsOverviewController, :show
+      get "/applications", ApplicationController, :index
+      get "/applications/:id", ApplicationController, :show
+      patch "/applications/:id", ApplicationController, :update
+      get "/chats/:kind/:id/messages", ChatController, :index
+      post "/chats/:kind/:id/messages", ChatController, :create
+      get "/me/cv", CurriculumVitaeController, :show
+      patch "/me/cv", CurriculumVitaeController, :update
+      get "/me/certificates", CertificateController, :index
+      post "/me/certificates", CertificateController, :create
+      patch "/me/certificates/:id", CertificateController, :update
+      delete "/me/certificates/:id", CertificateController, :delete
+      get "/me/live-coaching", LiveCoachingController, :index
+      put "/coaching/profile", CoachingController, :save_profile
+      post "/coaching/slots", CoachingController, :create_slot
+      delete "/coaching/slots/:id", CoachingController, :close_slot
+      post "/coaching/bookings", CoachingController, :book
+      patch "/coaching/bookings/:id", CoachingController, :update_booking
+      get "/coaching/admin/profiles", CoachingController, :admin_profiles
+      patch "/coaching/admin/profiles/:id", CoachingController, :review
 
       # Kelas yang diampu instructor (teacher) — untuk memulai sesi live per-kelas.
       get "/me/classes", ClassController, :index

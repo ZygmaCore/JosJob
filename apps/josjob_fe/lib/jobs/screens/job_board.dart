@@ -7,15 +7,15 @@ typedef JobAuthorizer =
 class JobsView extends StatefulWidget {
   final JobsApi? api;
   final JobAuthorizer? authorize;
-  const JobsView({super.key, this.api, this.authorize});
+  final String initialQuery;
+  const JobsView({super.key, this.api, this.authorize, this.initialQuery = ''});
   @override
   State<JobsView> createState() => _JobsViewState();
 }
 
 class _JobsViewState extends State<JobsView> {
   late final JobsApi _api = widget.api ?? JobsApi();
-  JobAuthorizer get _authorize =>
-      widget.authorize ?? Session.instance.runAuthed;
+  JobAuthorizer get _authorize => widget.authorize ?? _authorizeJobs;
   final _query = TextEditingController();
   final _location = TextEditingController();
   final _industry = TextEditingController();
@@ -30,6 +30,7 @@ class _JobsViewState extends State<JobsView> {
   @override
   void initState() {
     super.initState();
+    _query.text = widget.initialQuery;
     _load();
   }
 
@@ -94,15 +95,12 @@ class _JobsViewState extends State<JobsView> {
   }
 
   Future<void> _open(JobListing job) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => _JobDetailPage(
-          jobId: job.id,
-          api: _api,
-          authorize: _authorize,
-          organizations: _result?.organizations ?? const [],
-        ),
-      ),
+    await showJobListing(
+      context,
+      job,
+      api: _api,
+      authorize: _authorize,
+      organizations: _result?.organizations ?? const [],
     );
     if (mounted) _load();
   }
@@ -192,7 +190,7 @@ class _JobsViewState extends State<JobsView> {
                     Text(
                       _manage
                           ? 'Create and manage opportunities for your organization.'
-                          : 'Explore opportunities from your organizations. Find a role worth growing into.',
+                          : 'Explore opportunities from hiring teams. Find a role worth growing into.',
                       style: GoogleFonts.poppins(
                         color: AppColors.body,
                         fontSize: 14,
@@ -308,8 +306,6 @@ class _JobsViewState extends State<JobsView> {
                   Icons.work_outline,
                   _manage
                       ? 'No listings yet. Create your first opportunity.'
-                      : orgs.isEmpty
-                      ? 'No opportunities are available to your account yet. Your organization needs to grant jobs access.'
                       : 'No jobs found. Try a broader role, location or industry.',
                   'Clear filters',
                   _reset,
