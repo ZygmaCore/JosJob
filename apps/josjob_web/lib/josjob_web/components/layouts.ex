@@ -203,6 +203,13 @@ defmodule JosjobWeb.Layouts do
         icon: "hero-document-text"
       },
       %{
+        key: :rag_lab,
+        label: "RAG Lab",
+        path: "/rag/lab",
+        icon: "hero-beaker",
+        visible: :any
+      },
+      %{
         key: :my_documents,
         label: "My Documents",
         path: "/my/documents",
