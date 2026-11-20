@@ -35,7 +35,7 @@ config :josjob,
 config :josjob_doc, ash_domains: [JosjobDoc.Documents]
 
 # Ekosistem course (Section/Course/Class/Enrollment) di app :josjob_lrn, pakai Josjob.Repo.
-config :josjob_lrn, ash_domains: [JosjobLrn.Learning]
+config :josjob_lrn, ash_domains: [JosjobLrn.Learning, JosjobLrn.Coaching, JosjobLrn.Certificates]
 
 config :josjob_job, ash_domains: [JosjobJob]
 
@@ -73,6 +73,8 @@ config :josjob_web,
     Josjob.Invitations,
     JosjobDoc.Documents,
     JosjobLrn.Learning,
+    JosjobLrn.Coaching,
+    JosjobLrn.Certificates,
     JosjobJob
   ]
 

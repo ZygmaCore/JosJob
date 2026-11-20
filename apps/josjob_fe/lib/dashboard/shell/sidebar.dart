@@ -61,32 +61,10 @@ class _Sidebar extends StatelessWidget {
 // Brand lockup reused by the sidebar and mobile top bar.
 class _BrandMark extends StatelessWidget {
   const _BrandMark();
-
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      header: true,
-      label: 'JosJob',
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.auto_awesome, color: AppColors.brandBlue, size: 22),
-          const SizedBox(width: 8),
-          Text(
-            'JosJob',
-            style: GoogleFonts.poppins(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.brandBlue,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const AppBrand();
 }
 
-// User card + logout at the sidebar foot.
 class _UserCard extends StatelessWidget {
   final String name;
   final OnboardRole? role;
@@ -125,14 +103,10 @@ class _UserCard extends StatelessWidget {
             ],
           ),
         ),
-        Semantics(
-          button: true,
-          label: 'Log out',
-          child: IconButton(
-            onPressed: () => _logout(context),
-            tooltip: 'Log out',
-            icon: const Icon(Icons.logout, size: 20, color: AppColors.body),
-          ),
+        IconButton(
+          onPressed: () => _logout(context),
+          tooltip: 'Log out',
+          icon: const Icon(Icons.logout, size: 20, color: AppColors.body),
         ),
       ],
     );

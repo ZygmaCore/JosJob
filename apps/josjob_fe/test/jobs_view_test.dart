@@ -103,9 +103,71 @@ void main() {
     await tester.pumpAndSettle();
     expect(requests.last.url.path, '/api/jobs/job-1');
     expect(find.byKey(const ValueKey('job-detail')), findsOneWidget);
+    expect(find.byKey(const ValueKey('apply-for-job')), findsOneWidget);
     expect(find.text('Apply now'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'visitors browse and open details, then sign in before applying',
+    (tester) async {
+      final requests = <http.Request>[];
+      final api = JobsApi(
+        baseUrl: 'http://test',
+        client: MockClient((request) async {
+          requests.add(request);
+          final listing = jobJson()..['can_manage'] = false;
+          return http.Response(
+            jsonEncode(
+              request.url.path.endsWith('job-1')
+                  ? {'data': listing}
+                  : {
+                      'data': [listing],
+                      'organizations': [],
+                      'meta': {'page': 1, 'total': 1, 'total_pages': 1},
+                    },
+            ),
+            200,
+          );
+        }),
+      );
+      addTearDown(api.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          routes: {
+            '/login': (_) => const Scaffold(body: Text('Sign in to continue')),
+          },
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: JobsView(api: api, initialQuery: 'Developer'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(requests.single.url.queryParameters['q'], 'Developer');
+      expect(find.byKey(const ValueKey('post-job')), findsNothing);
+      await tester.ensureVisible(find.byKey(const ValueKey('job-job-1')));
+      await tester.tap(find.byKey(const ValueKey('job-job-1')));
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in to apply'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('review-job-applications')),
+        findsNothing,
+      );
+      await tester.ensureVisible(find.byKey(const ValueKey('apply-for-job')));
+      await tester.tap(find.byKey(const ValueKey('apply-for-job')));
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in to continue'), findsOneWidget);
+      expect(
+        requests.every(
+          (r) => r.method == 'GET' && !r.headers.containsKey('authorization'),
+        ),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'employer creates a draft and confirms deletion through the API',

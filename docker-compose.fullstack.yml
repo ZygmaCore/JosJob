@@ -5,9 +5,9 @@
 #     josjob_be (Elixir/Phoenix API)   -> http://localhost:4000
 #     josjob_fe (Flutter web, unified) -> http://localhost:8081
 #
-# The backend runs in a Linux/glibc container on purpose: the xberg Rust NIF has
-# no Windows-MSVC precompiled binary (and is force-built from source), so it
-# won't `mix compile` on a native Windows box — the container sidesteps that.
+# The backend runs in a Linux/glibc container on purpose: the xberg Rust NIF ships
+# a prebuilt binary for linux-gnu (it has no Windows-MSVC build), so it won't
+# `mix compile` on a native Windows box — the container sidesteps that.
 # See the root Dockerfile header for details.
 #
 # The FE bakes API_BASE_URL at build time; to talk to THIS local backend it must

@@ -4,33 +4,37 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../shared/app_ui.dart';
+import '../applications/applications_view.dart';
 import '../shared/onboard_role.dart';
 import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
-import '../quiz/quiz_page.dart' show QuizPage;
-import '../vod/vod_page.dart' show VodPlayerPage;
-import '../explore/explore_page.dart' show ExploreCoursesView;
-import '../live/live_call_page.dart' show LiveCallPage;
-import '../live/data/live_models.dart'
-    show LiveRoomMode, ParticipantRole, classRoomId;
+import '../explore/explore_page.dart'
+    show ExploreCoursesView, showCatalogCourse;
+import 'overview/learning_overview_view.dart';
+import 'overview/jobs_overview_view.dart';
+import 'screens/live_coaching_view.dart';
+import 'screens/certificates_view.dart';
+import 'screens/curriculum_vitae_view.dart';
+import '../services/learning_overview_api.dart' show LearningCourse;
 import '../services/session.dart';
 import '../jobs/jobs_page.dart' show JobsView;
-import '../services/auth_api.dart' show AccountType, AuthException;
-import '../services/classes_api.dart';
+import '../services/auth_api.dart' show AccountType;
 import '../services/courses_api.dart'
-    show CoursesApi, EnrolledCourse, CourseApiException;
+    show CoursesApi, CourseSummary, EnrolledCourse, CourseApiException;
 
 // =========================================================================
-// JosJob — Role-adaptive Dashboard (UI only, no backend)
+// JosJob — Role-adaptive Dashboard
 //
 // Reached after onboarding completes (and from main.dart). Renders a
 // responsive shell — desktop sidebar + top bar, mobile top bar + bottom nav —
 // with a role-adaptive Overview screen. INDIVIDUAL roles (worker / graduate)
 // see a learner dashboard; ORG roles (employer / coordinator) see a manager
-// dashboard. Every other nav destination shows a polished placeholder.
+// dashboard. Other destinations retain their existing behavior.
 //
 // Design system is inherited from the landing / auth / onboarding modules:
-// AppColors blue palette, Poppins, pill buttons, rounded cards. All data is
-// hard-coded sample content — nothing is persisted or fetched.
+// AppColors blue palette, Poppins, pill buttons, rounded cards. Data is
+// fetched for the Learn overview, course catalog, enrollments and vacancies.
+// Some other destinations still contain sample content.
 //
 // The whole module is assembled from `part` files, one component per file,
 // grouped under shell/ overview/ widgets/ data/. This library file owns every
@@ -47,7 +51,6 @@ part 'widgets/pill_button.dart';
 part 'widgets/avatar.dart';
 part 'widgets/dash_card.dart';
 part 'widgets/section_header.dart';
-part 'widgets/greeting_header.dart';
 part 'widgets/status_chip.dart';
 part 'widgets/empty_state.dart';
 part 'widgets/onboarding_progress_card.dart';
@@ -56,30 +59,13 @@ part 'widgets/progress_ring.dart';
 part 'widgets/mini_bar_chart.dart';
 part 'widgets/stat_card.dart';
 part 'widgets/stat_grid.dart';
-part 'widgets/course_progress_card.dart';
-part 'widgets/recommended_course_card.dart';
-part 'widgets/weekly_activity_card.dart';
-part 'widgets/coaching_tile.dart';
-part 'widgets/up_next_card.dart';
-part 'widgets/ai_assistant_card.dart';
-part 'widgets/certificate_row.dart';
-part 'widgets/certificates_card.dart';
 part 'widgets/learner_row.dart';
 part 'widgets/learner_table.dart';
 part 'widgets/offering_card.dart';
 part 'widgets/completion_overview_card.dart';
 part 'widgets/invite_card.dart';
 part 'widgets/activity_feed_card.dart';
-part 'widgets/job_match_card.dart';
-part 'widgets/applications_card.dart';
-part 'widgets/jobs_aside_cards.dart';
 part 'widgets/info_note.dart';
-part 'widgets/target_cert_card.dart';
-part 'widgets/coach_card.dart';
-part 'widgets/coach_search_field.dart';
-part 'widgets/coach_focus_chips.dart';
-part 'widgets/coach_sort_control.dart';
-part 'widgets/enrolled_classes_card.dart';
 
 // ---- shell --------------------------------------------------------------
 part 'shell/sidebar_nav_item.dart';
@@ -97,9 +83,7 @@ part 'overview/overview_org.dart';
 part 'overview/overview_jobs.dart';
 
 // ---- screens ------------------------------------------------------------
-part 'screens/certificates_screen.dart';
 part 'screens/live_coaching_screen.dart';
-part 'screens/coach_browser.dart';
 part 'screens/my_courses_screen.dart';
 part 'screens/vacancies_screen.dart';
 part 'screens/cv_screen.dart';
@@ -115,7 +99,16 @@ part 'screens/reports_screen.dart';
 class DashboardPage extends StatefulWidget {
   final OnboardRole? role;
   final String? firstName;
-  const DashboardPage({super.key, this.role, this.firstName});
+  final String initialView, initialTab, applicationScope, applicationStatus;
+  const DashboardPage({
+    super.key,
+    this.role,
+    this.firstName,
+    this.initialView = 'learn',
+    this.initialTab = 'overview',
+    this.applicationScope = 'mine',
+    this.applicationStatus = '',
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -124,7 +117,14 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
-    return _DashboardShell(role: widget.role, firstName: widget.firstName);
+    return _DashboardShell(
+      role: widget.role,
+      firstName: widget.firstName,
+      initialView: widget.initialView,
+      initialTab: widget.initialTab,
+      applicationScope: widget.applicationScope,
+      applicationStatus: widget.applicationStatus,
+    );
   }
 }
 
@@ -163,9 +163,6 @@ void _demoAction(BuildContext c) {
 /// Open the Explore Courses catalog (route registered in main.dart).
 void _explore(BuildContext c) => Navigator.of(c).pushNamed('/explore');
 
-/// Open the Quizzes & assessments hub (route registered in main.dart).
-void _quiz(BuildContext c) => Navigator.of(c).pushNamed('/quiz');
-
 /// Open the Jobs board (route registered in main.dart).
 void _browseJobs(BuildContext c) => Navigator.of(c).pushNamed('/jobs');
 
@@ -177,42 +174,20 @@ void _uploadVod(BuildContext c) => Navigator.of(c).pushNamed('/vod/document');
 /// each of your documents is shared with (route registered in main.dart).
 void _documents(BuildContext c) => Navigator.of(c).pushNamed('/documents');
 
-/// Resume a course by opening the lecture video (VOD player). The demo courses
-/// don't map to specific backend lectures, so the player resolves the first
-/// available lecture from the API itself.
-void _resumeCourse(BuildContext c) {
-  Navigator.of(c)
-      .push(MaterialPageRoute(builder: (_) => const VodPlayerPage()));
-}
-
-/// Jump straight into a live classroom quiz session (the "Join" action on a
-/// live-coaching tile). Opens the quiz hub already fast-forwarded to the live
-/// screen, so backing out lands on the hub.
-void _liveClass(BuildContext c) => Navigator.of(
-  c,
-).push(MaterialPageRoute(builder: (_) => const QuizPage(autoStartLive: true)));
-
-/// Open a real-time WebRTC video session (Cloudflare Realtime SFU). Everyone
-/// who opens the same [room] joins the same call. Pushed as a full page so it
-/// inherits the dashboard's auth guard.
-void _startLive(
-  BuildContext c, {
-  required LiveRoomMode mode,
-  required ParticipantRole role,
-  required String room,
-}) {
-  final name = Session.instance.user?.firstName;
-  Navigator.of(c).push(
-    MaterialPageRoute(
-      builder: (_) => LiveCallPage(
-        roomId: room,
-        mode: mode,
-        role: role,
-        displayName: (name != null && name.isNotEmpty) ? name : null,
+Future<void> _openLearningCourse(BuildContext context, LearningCourse course) =>
+    showCatalogCourse(
+      context,
+      CourseSummary(
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        industries: const [],
+        classCount: 0,
+        currency: course.currency,
+        sectionName: course.section,
+        priceCents: course.priceCents,
       ),
-    ),
-  );
-}
+    );
 
 /// Log out — clear the stored session, then navigate home clearing the stack.
 void _logout(BuildContext c) {
@@ -233,22 +208,6 @@ const _cardShadow = BoxShadow(
 /// Tabular figures for numbers that sit in columns / rows.
 TextStyle _tabular(TextStyle base) =>
     base.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
-
-/// Deterministic thumbnail gradient keyed by a small seed.
-LinearGradient _thumbGradient(int seed) {
-  const pairs = <List<Color>>[
-    [AppColors.brandBlue, AppColors.accent],
-    [AppColors.navy, AppColors.brandBlue],
-    [AppColors.heroBlue, Color(0xFF56B0F5)],
-    [AppColors.orange, Color(0xFFF7B95C)],
-  ];
-  final p = pairs[seed % pairs.length];
-  return LinearGradient(
-    colors: p,
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
 
 /// Initials from a display name, e.g. "Ana Rivera" -> "AR".
 String _initials(String name) {

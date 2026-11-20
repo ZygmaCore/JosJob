@@ -45,7 +45,7 @@ class _TopNav extends StatelessWidget {
                                 ).pushNamed('/explore'),
                                 'Jobs' => () => Navigator.of(
                                   context,
-                                ).pushNamed('/register'),
+                                ).pushNamed('/jobs'),
                                 _ => onHowItWorks,
                               },
                             ),

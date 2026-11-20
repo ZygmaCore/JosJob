@@ -4,6 +4,7 @@ import 'auth/auth_page.dart';
 import 'auth/org_pending_page.dart';
 import 'onboarding/onboarding_page.dart';
 import 'dashboard/dashboard_page.dart';
+import 'dashboard/screens/live_coaching_view.dart';
 import 'explore/explore_page.dart';
 import 'quiz/quiz_page.dart';
 import 'vod/vod_page.dart';
@@ -17,12 +18,17 @@ import 'bootstrap/bootstrap_page.dart';
 import 'services/session.dart';
 import 'services/auth_api.dart' show AccountType;
 import 'services/sync/sync_engine.dart';
+import 'services/ui_preferences.dart';
+import 'applications/applications_view.dart';
+import 'chat/chat_page.dart';
+import 'shared/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Rehydrate a previously "remembered" session so a browser reload skips the
   // landing page and lands straight in the app.
   await Session.instance.restore();
+  await AuthContinuation.restore();
   // A signed-out visitor never opens the outbox DB (the sync engine's flush is
   // a no-op until sign-in), so start the engine now and let them reach the
   // landing page instantly. A signed-in session opens the DB at startup, so
@@ -31,40 +37,40 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final _routeInformation = AppRouteInformationProvider();
+  late final _router = AppRouterDelegate(
+    routeFactory: _onGenerateRoute,
+    builder: (context, child) => Session.instance.isSignedIn
+        ? AppBootstrap(onReady: SyncEngine.instance.start, child: child)
+        : child,
+  );
+
+  @override
+  void dispose() {
+    _router.dispose();
+    _routeInformation.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Atveti Stellar',
+    return MaterialApp.router(
+      title: 'JosJob',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.brandBlue,
-          primary: AppColors.brandBlue,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: AppColors.bg,
-        useMaterial3: true,
-      ),
-      home: _startScreen(),
-      // Every named push/deep-link goes through the guard — there is no
-      // ungated `routes:` map that could bypass the auth check.
-      onGenerateRoute: _onGenerateRoute,
-      // Gate the WHOLE app — not just the root route — behind the sqlite3.wasm
-      // prefetch splash on a signed-in startup, so the download progress shows
-      // on every load/reload. A reload straight to e.g. /#/dashboard resolves
-      // through onGenerateRoute and never touches `home`, so gating `home`
-      // alone would skip the splash there; wrapping the Navigator here covers
-      // it once for whatever the initial route is. Only a signed-in startup
-      // opens the outbox DB (the sync engine flushes it on launch), so this
-      // starts the engine once the wasm is warm; signed-out visitors get the
-      // app immediately, downloading nothing.
-      builder: (context, child) {
-        if (!Session.instance.isSignedIn) return child!;
-        return AppBootstrap(onReady: SyncEngine.instance.start, child: child!);
-      },
+      theme: appTheme(),
+      routerDelegate: _router,
+      routeInformationParser: const AppRouteParser(),
+      routeInformationProvider: _routeInformation,
+      // The delegate gates Navigator content while keeping Router mounted so
+      // browser history remains responsive during the SQLite startup splash.
     );
   }
 
@@ -81,7 +87,7 @@ class MyApp extends StatelessWidget {
   //   • teacher   → Teacher workspace (documents),
   //   • org       → dashboard once approved, else the "request received" page,
   //   • otherwise → onboarding until the mandatory step is done, then dashboard.
-  Widget _homeFor(Session session) {
+  Widget _homeFor(Session session, {Uri? location}) {
     final user = session.user;
     if (user?.isSuperuser == true) return const TeacherInvitationsPage();
     if (user?.isTeacher == true) {
@@ -89,14 +95,22 @@ class MyApp extends StatelessWidget {
     }
     if (user?.accountType == AccountType.organization) {
       return user?.approved == true
-          ? DashboardPage(firstName: user?.firstName)
+          ? _dashboard(user?.firstName, location)
           : const OrgPendingPage();
     }
     final onboarded = user?.mandatoryCompleted ?? false;
     return onboarded
-        ? DashboardPage(firstName: user?.firstName)
+        ? _dashboard(user?.firstName, location)
         : OnboardingFlow(firstName: user?.firstName);
   }
+
+  Widget _dashboard(String? firstName, Uri? location) => DashboardPage(
+    firstName: firstName,
+    initialView: location?.queryParameters['view'] ?? 'learn',
+    initialTab: location?.queryParameters['tab'] ?? 'overview',
+    applicationScope: location?.queryParameters['scope'] ?? 'mine',
+    applicationStatus: location?.queryParameters['status'] ?? '',
+  );
 
   // Named-route table. Private so [_onGenerateRoute] is the ONLY entry point.
   static final Map<String, Widget Function()> _routes = {
@@ -104,6 +118,7 @@ class MyApp extends StatelessWidget {
     '/register': () => const RegisterPage(),
     '/onboarding': () => const OnboardingFlow(),
     '/dashboard': () => const DashboardPage(),
+    '/coaching': () => const CoachingPage(),
     '/explore': () => const ExploreCoursePage(),
     '/quiz': () => const QuizPage(),
     '/vod': () => const VodPlayerPage(),
@@ -120,13 +135,13 @@ class MyApp extends StatelessWidget {
   // In-app destinations that additionally require a completed mandatory
   // onboarding step (mirrors the cold-start decision in [_startScreen]).
   static const Set<String> _needsOnboarding = {
+    '/coaching',
     '/dashboard',
     '/explore',
     '/quiz',
     '/vod',
     '/vod/document',
     '/documents',
-    '/jobs',
   };
 
   // Central auth guard for every named route. On web a signed-out visitor can
@@ -144,6 +159,10 @@ class MyApp extends StatelessWidget {
     // accepting creates/links the account. Parsed from the full URL (query
     // string), which is why it's matched before the exact-name route table.
     final uri = Uri.parse(name ?? '/');
+    if (uri.path == '/') return _route(_startScreen(), '/');
+    if (uri.path == '/welcome') {
+      return _route(const JosjobLandingPage(), '/welcome');
+    }
     if (uri.path == '/invite') {
       return _route(
         InviteAcceptPage(token: uri.queryParameters['token']),
@@ -154,27 +173,78 @@ class MyApp extends StatelessWidget {
     final signedIn = session.isSignedIn;
     final onboarded = session.user?.mandatoryCompleted ?? false;
 
-    final builder = _routes[name];
+    Widget Function()? builder = _routes[uri.path];
+    final parts = uri.pathSegments;
+    final jobDetail = parts.length == 2 && parts.first == 'jobs';
+    if (jobDetail) {
+      builder = () => JobDetailsPage(
+        jobId: parts[1],
+        apply: uri.queryParameters['apply'] == '1',
+      );
+    }
+    if (parts.length == 2 && parts.first == 'applications') {
+      builder = () => ApplicationDetailPage(applicationId: parts[1]);
+    }
+    if (uri.path == '/applications') {
+      builder = () => ApplicationsPage(
+        hiring: uri.queryParameters['scope'] == 'hiring',
+        jobId: uri.queryParameters['job_id'],
+      );
+    }
+    if (parts.length == 3 &&
+        parts.first == 'chats' &&
+        {'application', 'coaching'}.contains(parts[1])) {
+      builder = () => ChatPage(
+        kind: parts[1],
+        contextId: parts[2],
+        title: parts[1] == 'application'
+            ? 'Hiring conversation'
+            : 'Coaching conversation',
+      );
+    }
     // Unknown route → landing.
     if (builder == null) return _route(const JosjobLandingPage(), '/');
 
+    // Published vacancies are available before login and onboarding.
+    if (jobDetail) return _route(builder(), uri.toString());
+    if (uri.path == '/jobs') {
+      return _route(
+        JobsPage(
+          initialQuery: settings.arguments is String
+              ? settings.arguments as String
+              : uri.queryParameters['q'] ?? '',
+        ),
+        name!,
+      );
+    }
+
     // Auth pages: send an already-signed-in user into the app instead.
-    if (_authRoutes.contains(name)) {
+    if (_authRoutes.contains(uri.path)) {
       return signedIn ? _route(_startScreen(), '/') : _route(builder(), name!);
     }
 
     // Protected from here on: no session ⇒ back to the landing page.
-    if (!signedIn) return _route(const JosjobLandingPage(), '/');
+    if (!signedIn) {
+      AuthContinuation.remember(uri.toString());
+      return _route(const LoginPage(), '/login');
+    }
 
     // Superuser-only routes: bounce everyone else to their own home.
-    if (_needsSuperuser.contains(name) && session.user?.isSuperuser != true) {
+    if (_needsSuperuser.contains(uri.path) &&
+        session.user?.isSuperuser != true) {
       return _route(_homeFor(session), '/');
     }
 
     // The generic dashboard route resolves to the role-specific home
     // (superuser → invitations, teacher → workspace, org → dashboard/pending…).
-    if (name == '/dashboard') {
-      return _route(_homeFor(session), '/dashboard');
+    if (uri.path == '/dashboard') {
+      if (!onboarded &&
+          session.user?.accountType != AccountType.organization &&
+          session.user?.isTeacher != true &&
+          session.user?.isSuperuser != true) {
+        AuthContinuation.remember(uri.toString());
+      }
+      return _route(_homeFor(session, location: uri), uri.toString());
     }
 
     // Corporation / Institution accounts are pending review — they never reach
@@ -188,7 +258,8 @@ class MyApp extends StatelessWidget {
       return _route(builder(), name!);
     }
     // Not-yet-onboarded ⇒ finish onboarding before any in-app destination.
-    if (!onboarded && _needsOnboarding.contains(name)) {
+    if (!onboarded && _needsOnboarding.contains(uri.path)) {
+      AuthContinuation.remember(uri.toString());
       return _route(
         OnboardingFlow(firstName: session.user?.firstName),
         '/onboarding',

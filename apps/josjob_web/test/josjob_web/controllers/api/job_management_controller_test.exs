@@ -93,9 +93,9 @@ defmodule JosjobWeb.Api.JobManagementControllerTest do
     assert conn
            |> auth(user)
            |> patch(~p"/api/jobs/#{foreign.id}", %{title: "Stolen"})
-           |> json_response(404)
+           |> json_response(403)
 
-    assert conn |> auth(user) |> delete(~p"/api/jobs/#{foreign.id}") |> json_response(404)
+    assert conn |> auth(user) |> delete(~p"/api/jobs/#{foreign.id}") |> json_response(403)
     assert Ash.get!(JosjobJob.Job, foreign.id, authorize?: false)
     own = job!(org, user)
     student = user!()

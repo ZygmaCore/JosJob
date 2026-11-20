@@ -56,6 +56,13 @@ class _LoginPageState extends State<LoginPage> {
         remember: _remember,
       );
       if (!mounted) return;
+      if (AuthContinuation.destination != null &&
+          (user.mandatoryCompleted ||
+              user.accountType == AccountType.organization) &&
+          (user.accountType != AccountType.organization || user.approved)) {
+        await _goDashboard(context);
+        return;
+      }
       // Corporation / Institution accounts are pending review and have no
       // onboarding or dashboard — always send them to the acknowledgement.
       if (user.accountType == AccountType.organization) {
@@ -107,19 +114,18 @@ class _LoginPageState extends State<LoginPage> {
     return _AuthShell(
       brandHeadline: 'Pick up right\nwhere you left off.',
       brandSub:
-          'Log back in to keep learning and get matched — your courses, '
-          'coaching, and job matches are waiting.',
+          'Log back in to manage your courses, coaching appointments and applications.',
       brandPoints: const [
         'Learn where you work, at your own pace',
         'Live coaching via live streaming',
-        'AI job matching to live vacancies',
+        'Browse current vacancies and track applications',
       ],
       child: _done
           ? _AuthSuccess(
               title: _welcomeTitle(),
               message:
                   "You're signed in. Jump into your dashboard to keep "
-                  'learning and see your latest job matches.',
+                  'learning and manage your applications.',
               cta: 'Go to dashboard',
               onCta: () => _goDashboard(context),
             )
@@ -174,9 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const Spacer(),
                           TextButton(
-                            onPressed: _busy
-                                ? null
-                                : () => _soon(context, 'Password reset'),
+                            onPressed: null,
                             style: TextButton.styleFrom(
                               foregroundColor: AppColors.brandBlue,
                               padding: const EdgeInsets.symmetric(
@@ -185,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             child: Text(
-                              'Forgot password?',
+                              'Recovery unavailable',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,

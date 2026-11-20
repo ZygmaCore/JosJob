@@ -1,5 +1,11 @@
 # Real-time Collaboration & Discussion Chat
 
+Historical design only. The current application/coaching implementation is
+documented in [applications and shared chat](api/applications-and-chat.md).
+It persists each message before delivery and uses Flutter's existing Session
+and shared chat widget; the buffered course-room and Riverpod design below is
+not the implemented system.
+
 This document details the real-time chat architecture, Phoenix Channel setup, OTP supervision trees for server-side state, message persistence buffers, and Riverpod frontend bindings.
 
 ---

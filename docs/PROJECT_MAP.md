@@ -19,7 +19,84 @@ See [the jobs API and verification notes](api/jobs.md). The indexed commit and
 the historical implementation inventory below predate this branch; CV analysis,
 AI ranking, saved jobs and applications remain separate planned work.
 
+Jobs Overview now uses `GET /api/me/jobs-overview` for scoped active-listing
+counts, latest vacancies and private saved-profile facts. Fake match scores,
+application/interview counts, profile-strength scores and open-to-work status
+have been removed from the overview. See [the Jobs overview API](api/jobs-overview.md).
+
+Jobs → Curriculum Vitae uses `GET/PATCH /api/me/cv` for saved account/onboarding
+facts, certificates, professional headline/summary and an explicitly selected
+owned PDF. The former sample persona and profile-strength card are removed.
+`JosjobJob.CvProfile` belongs to the candidate and references an optional document;
+`josjob_job` now depends on `josjob_doc`. See [the CV API](api/curriculum-vitae.md).
+
+The Learn dashboard overview now uses authenticated summaries from
+`GET /api/me/learning-overview` instead of sample statistics and course cards.
+See [the overview API and permission rules](api/learning-overview.md).
+
+The Learn Certificates destination reads `GET /api/me/certificates` from the
+`JosjobLrn.Certificates` domain and existing onboarding certifications. It supports
+private self-reported records, editing/deletion and credential links; it does not
+automatically issue awards from course enrollments. See [the certificate API](api/certificates.md).
+
+Live Coaching now uses `GET /api/me/live-coaching` for independent approved
+coach profiles, availability slots and free one-on-one bookings. Admission uses
+`coaching:<booking_id>:one_on_one`; course/class enrollment is not a prerequisite.
+Legacy class rooms remain separate. See [the coaching API](api/live-coaching.md).
+
+Product decisions D18/D19 separate coaching from courses. Coaching's Profile,
+Slot and Booking resources live in `JosjobLrn.Coaching`, alongside the existing
+Learning domain. Ordered reading/video/quiz course curriculum remains planned.
+See [the redesign proposal](../PRD/LEARNING_AND_COACHING_REDESIGN.md).
+
 ## Read this first
+
+UI consistency audit, 2026-11-18: a browser/source review of the Flutter app
+records prioritized styling, navigation/state and accessibility findings, with
+screenshots and acceptance checks. Read [the audit](ui-audit/2026-11-18/README.md)
+for baseline evidence. The subsequent [fix report](ui-audit/2026-11-18/FIXES.md)
+maps the implementation and verification to all 20 findings. Shared Flutter
+theme/components live in `theme/app_theme.dart` and `shared/app_ui.dart`;
+`shared/app_router.dart` connects named feature routes to browser history.
+Dashboard view/tab and application scope/stage are URL parameters. Auth return
+paths and device-local course bookmarks use `services/ui_preferences.dart`.
+
+The landing page now follows the official daisyUI Codex skill's component
+guidance in Flutter: persistent navigation, hero job search, an interactive
+Jobs/Learning/Coaching preview,
+job/learning/coaching cards, a three-step journey and accessible FAQ cards.
+`/welcome` exposes the landing page to guests and signed-in users without
+changing the signed-in `/` dashboard destination.
+See [the landing refresh notes](ui-audit/2026-11-18/landing-daisyui.md) for the
+skill installation details, implementation boundary and browser verification.
+
+Public job access update, 2026-11-18 (D22): active listings and details are public
+across organizations. `/jobs` bypasses login/onboarding, and new accounts can
+apply without membership. Overview listing counts use the same public collection.
+Optional Bearer auth supplies employer capabilities; drafts/expired listings,
+management scope, writes, applications and chat retain their access checks.
+This supersedes earlier descriptions of organization-scoped vacancy discovery.
+See [public access verification](verification/public-jobs-2026-11-18.md).
+
+Manual vacancy/hiring data can be explicitly added with
+`apps/josjob/priv/repo/manual_job_seeds.exs`: a separate demo organization,
+candidate/employer accounts, 12 vacancies and five staged applications with chat.
+It is never seeded on startup. See [the local manual-testing guide](manual-job-testing.md).
+
+Vacancy/hiring verification, 2026-11-17: deletion and application submission now
+serialize on the same job row to prevent a concurrent foreign-key failure.
+Backend edge tests and an opt-in local Docker API/browser suite cover the hiring
+stage matrix, permissions, pagination, live chat and concurrent writes. See the
+[verification results and repeat instructions](verification/jobs-hiring-2026-11-17.md).
+
+Applications and chat update, 2026-11-17: the Applications destination now uses
+persisted application/profile snapshots and hiring history from `JosjobJob.Applications`.
+The confirmed sequence is Applied → Reviewing → Interview → Offer → Hired, with
+rejection/withdrawal exits. `JosjobRt.Chat` owns shared messaging for applications
+and independent coaching bookings. The Flutter `ChatPage` is shared by both.
+`josjob_rt` now depends on core, jobs and learning; web depends on `josjob_rt`.
+See [applications and chat](api/applications-and-chat.md). This working-tree update
+supersedes older statements below that applications and `josjob_rt` are empty.
 
 JosJob extends the existing learning and placement foundation. The new
 product loop is **Match → Gap → Learn → Re-match**: upload a CV, rank jobs,
@@ -51,15 +128,19 @@ flowchart TD
   core[josjob: accounts, orgs, RBAC, payments, Repo]
   learning[josjob_lrn: learning resources]
   documents[josjob_doc: documents and grants]
+  jobs[josjob_job: listings and candidate CV]
   rag[josjob_rag: text ingestion]
   media[josjob_ms: media and storage providers]
   web --> core
   web --> learning
   web --> documents
+  web --> jobs
   web --> rag
   web --> media
   learning --> core
   learning --> documents
+  jobs --> core
+  jobs --> documents
   documents --> core
   rag --> core
   core --> media

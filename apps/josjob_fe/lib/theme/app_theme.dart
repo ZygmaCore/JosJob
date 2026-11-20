@@ -1,7 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+ThemeData appTheme() {
+  final base = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(seedColor: AppColors.brandBlue),
+  );
+  final text = GoogleFonts.poppinsTextTheme(
+    base.textTheme,
+  ).apply(bodyColor: AppColors.ink, displayColor: AppColors.navy);
+  final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+  final field = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: const BorderSide(color: AppColors.border),
+  );
+  final buttonText = GoogleFonts.poppins(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
+  return base.copyWith(
+    scaffoldBackgroundColor: AppColors.bg,
+    colorScheme: base.colorScheme.copyWith(
+      primary: AppColors.brandBlue,
+      onPrimary: Colors.white,
+      primaryContainer: AppColors.tintBlue,
+      onPrimaryContainer: AppColors.navy,
+      surface: AppColors.surface,
+      onSurface: AppColors.ink,
+      error: AppColors.danger,
+      outline: AppColors.border,
+    ),
+    textTheme: text,
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.surface,
+      foregroundColor: AppColors.navy,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      toolbarHeight: 64,
+      titleTextStyle: GoogleFonts.poppins(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: AppColors.navy,
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: shape,
+        textStyle: buttonText,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: shape,
+        side: const BorderSide(color: AppColors.border),
+        textStyle: buttonText,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        shape: shape,
+        textStyle: buttonText,
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surface,
+      border: field,
+      enabledBorder: field,
+      focusedBorder: field.copyWith(
+        borderSide: const BorderSide(color: AppColors.brandBlue, width: 1.6),
+      ),
+      errorBorder: field.copyWith(
+        borderSide: const BorderSide(color: AppColors.danger),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      errorMaxLines: 3,
+      helperMaxLines: 3,
+      labelStyle: GoogleFonts.poppins(fontSize: 14, color: AppColors.body),
+      hintStyle: GoogleFonts.poppins(fontSize: 14, color: AppColors.body),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      titleTextStyle: GoogleFonts.poppins(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: AppColors.navy,
+      ),
+    ),
+    chipTheme: base.chipTheme.copyWith(
+      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.tintBlue,
+      side: const BorderSide(color: AppColors.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.navy),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: AppColors.navy,
+      contentTextStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.white),
+      shape: shape,
+    ),
+    dividerTheme: const DividerThemeData(color: AppColors.border, thickness: 1),
+  );
+}
 
 // =========================================================================
-// Shared design tokens for the Atveti Stellar unified frontend
+// Shared design tokens for the JosJob frontend
 // (Online Learning + AI Job Placement).
 //
 // Single source of truth for the blue palette and responsive breakpoints,

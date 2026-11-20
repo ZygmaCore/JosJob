@@ -10,37 +10,11 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (String label, Color bg, Color fg) = switch (status) {
-      _LearnerStatus.onTrack => (
-        'On track',
-        AppColors.tintGreen,
-        AppColors.iconGreen,
-      ),
-      _LearnerStatus.behind => (
-        'Behind',
-        AppColors.tintOrange,
-        AppColors.iconOrange,
-      ),
-      _LearnerStatus.completed => (
-        'Completed',
-        AppColors.tintBlue,
-        AppColors.brandBlue,
-      ),
+    final (label, code) = switch (status) {
+      _LearnerStatus.onTrack => ('On track', 'active'),
+      _LearnerStatus.behind => ('Behind', 'pending'),
+      _LearnerStatus.completed => ('Completed', 'completed'),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
-      ),
-    );
+    return AppStatusBadge(label: label, status: code);
   }
 }

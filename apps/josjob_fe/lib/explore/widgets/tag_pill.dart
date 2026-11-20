@@ -22,6 +22,8 @@ class _TagPill extends StatelessWidget {
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w600,

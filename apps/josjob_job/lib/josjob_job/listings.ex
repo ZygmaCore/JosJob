@@ -1,6 +1,7 @@
 defmodule JosjobJob.Listings do
-  @moduledoc "Scoped job browsing and employer writes using the existing organization RBAC."
+  @moduledoc "Public active vacancies and organization-scoped employer writes."
   require Ash.Query
+  import Ecto.Query, only: [from: 2]
   alias Josjob.Authz
   alias JosjobJob.Job
 
@@ -8,6 +9,8 @@ defmodule JosjobJob.Listings do
   @types ~w(full-time part-time internship contract freelance)
   @modes ~w(remote hybrid onsite)
   @statuses ~w(draft active expired)
+
+  def organizations(nil), do: []
 
   def organizations(user) do
     orgs =
@@ -38,16 +41,12 @@ defmodule JosjobJob.Listings do
   def list(user, params) do
     orgs = organizations(user)
 
-    with {:ok, filters} <- filters(params) do
+    with {:ok, filters} <- filters(params),
+         :ok <- authorize_scope(user, filters.scope) do
       org_ids =
         for org <- orgs, filters.scope == "browse" or org.can_manage or org.can_post, do: org.id
 
-      query = Ash.Query.filter(Job, organization_id in ^org_ids)
-
-      query =
-        if filters.scope == "browse", do: Ash.Query.filter(query, status == "active"), else: query
-
-      query = apply_filters(query, filters)
+      query = org_ids |> scoped_query(filters.scope) |> apply_filters(filters)
 
       with {:ok, total} <- Ash.count(query, authorize?: false),
            {:ok, jobs} <-
@@ -71,6 +70,50 @@ defmodule JosjobJob.Listings do
       end
     end
   end
+
+  @doc "Counts and latest public active listings, with caller-specific management capabilities."
+  def overview(user) do
+    orgs = organizations(user)
+    query = scoped_query(Enum.map(orgs, & &1.id), "browse")
+    now = DateTime.utc_now()
+    since = DateTime.add(now, -7 * 86_400, :second)
+
+    with {:ok, total} <- Ash.count(query, authorize?: false),
+         {:ok, remote} <-
+           query |> Ash.Query.filter(work_mode == "remote") |> Ash.count(authorize?: false),
+         {:ok, full_time} <-
+           query
+           |> Ash.Query.filter(employment_type == "full-time")
+           |> Ash.count(authorize?: false),
+         {:ok, recent} <-
+           query
+           |> Ash.Query.filter(posted_at >= ^since and posted_at <= ^now)
+           |> Ash.count(authorize?: false),
+         {:ok, jobs} <-
+           query
+           |> Ash.Query.sort(sort("newest"))
+           |> Ash.Query.limit(6)
+           |> Ash.Query.load(:organization)
+           |> Ash.read(authorize?: false) do
+      {:ok,
+       %{
+         jobs: jobs,
+         organizations: orgs,
+         stats: %{
+           available_jobs: total,
+           remote_jobs: remote,
+           full_time_jobs: full_time,
+           published_last_7_days: recent
+         }
+       }}
+    end
+  end
+
+  defp authorize_scope(nil, "manage"), do: {:error, :unauthorized}
+  defp authorize_scope(_user, _scope), do: :ok
+
+  defp scoped_query(_org_ids, "browse"), do: Ash.Query.filter(Job, status == "active")
+  defp scoped_query(org_ids, "manage"), do: Ash.Query.filter(Job, organization_id in ^org_ids)
 
   def get(user, id) do
     with {:ok, id} <- Ecto.UUID.cast(id),
@@ -116,16 +159,43 @@ defmodule JosjobJob.Listings do
   end
 
   def delete(user, id) do
-    with {:ok, job} <- get(user, id),
-         true <- Authz.can?(user, job.organization_id, "jobs:manage") do
-      Ash.destroy(job, authorize?: false)
+    with {:ok, id} <- Ecto.UUID.cast(id) do
+      # Submissions lock this same row. Check for applications only after acquiring
+      # it, so an in-flight submission cannot invalidate the delete decision.
+      Josjob.Repo.transaction(fn ->
+        Josjob.Repo.query!("SELECT id FROM jobs WHERE id = $1::uuid FOR UPDATE", [
+          Ecto.UUID.dump!(id)
+        ])
+
+        with {:ok, job} <- get(user, id),
+             true <- Authz.can?(user, job.organization_id, "jobs:manage") do
+          if Josjob.Repo.exists?(from(a in JosjobJob.Application, where: a.job_id == ^job.id)),
+            do: Josjob.Repo.rollback(:applications_exist)
+
+          case Ash.destroy(job, authorize?: false, return_notifications?: true) do
+            {:ok, notifications} -> notifications
+            {:error, reason} -> Josjob.Repo.rollback(reason)
+          end
+        else
+          false -> Josjob.Repo.rollback(:forbidden)
+          {:error, reason} -> Josjob.Repo.rollback(reason)
+        end
+      end)
+      |> case do
+        {:ok, notifications} ->
+          Ash.Notifier.notify(notifications)
+          :ok
+
+        error ->
+          error
+      end
     else
-      false -> {:error, :forbidden}
-      error -> error
+      :error -> {:error, :not_found}
     end
   end
 
   defp visible?(_user, nil), do: false
+  defp visible?(_user, %{status: "active"}), do: true
 
   defp visible?(user, job) do
     Enum.any?(organizations(user), fn org ->

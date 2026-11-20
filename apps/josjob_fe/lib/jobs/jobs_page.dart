@@ -7,9 +7,15 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/jobs_api.dart';
 import '../services/session.dart';
+import '../services/auth_api.dart' show AuthException;
+import '../applications/applications_view.dart';
+import '../shared/app_ui.dart';
+import '../shared/app_formats.dart';
+import '../shared/app_form_field.dart';
+import '../services/ui_preferences.dart';
 
 // =========================================================================
-// JOSJOB - Authenticated job browsing and employer listing management.
+// JOSJOB - Public job browsing and authenticated employer listing management.
 //
 // The standalone browse-roles surface reached from the dashboard's Jobs view
 // ("Browse all roles") and the landing "Jobs" nav, registered at /jobs. A
@@ -30,7 +36,8 @@ part 'screens/job_editor.dart';
 // Public entry point - registered as the /jobs route in main.dart.
 // =========================================================================
 class JobsPage extends StatelessWidget {
-  const JobsPage({super.key});
+  final String initialQuery;
+  const JobsPage({super.key, this.initialQuery = ''});
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -46,34 +53,25 @@ class JobsPage extends StatelessWidget {
         ),
       ),
       actions: [
+        if (!Session.instance.isSignedIn)
+          TextButton(
+            key: const ValueKey('jobs-sign-in'),
+            onPressed: () => Navigator.of(context).pushNamed('/login'),
+            child: const Text('Sign in'),
+          ),
         if (MediaQuery.sizeOf(context).width >= 600)
           Padding(
             padding: const EdgeInsets.only(right: 28),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.auto_awesome,
-                  color: AppColors.brandBlue,
-                  size: 22,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'JosJob',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.brandBlue,
-                  ),
-                ),
-              ],
-            ),
+            child: const AppBrand(),
           ),
       ],
       foregroundColor: AppColors.navy,
       surfaceTintColor: Colors.transparent,
       backgroundColor: AppColors.surface,
     ),
-    body: const SafeArea(child: SingleChildScrollView(child: JobsView())),
+    body: SafeArea(
+      child: SingleChildScrollView(child: JobsView(initialQuery: initialQuery)),
+    ),
   );
 }
 
@@ -81,37 +79,75 @@ class JobsPage extends StatelessWidget {
 // Shared helpers (library-private, visible to every part file).
 // =========================================================================
 
+/// Reuses the board's detail flow, including its fresh listing request.
+Future<void> showJobListing(
+  BuildContext context,
+  JobListing job, {
+  List<JobOrganization> organizations = const [],
+  JobAuthorizer? authorize,
+  JobsApi? api,
+}) async {
+  final client = api ?? JobsApi();
+  try {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: RouteSettings(name: '/jobs/${Uri.encodeComponent(job.id)}'),
+        builder: (_) => _JobDetailPage(
+          jobId: job.id,
+          api: client,
+          authorize: authorize ?? _authorizeJobs,
+          organizations: organizations,
+        ),
+      ),
+    );
+  } finally {
+    if (api == null) client.close();
+  }
+}
+
+class JobDetailsPage extends StatefulWidget {
+  final String jobId;
+  final bool apply;
+  const JobDetailsPage({super.key, required this.jobId, this.apply = false});
+  @override
+  State<JobDetailsPage> createState() => _JobDetailsPageHostState();
+}
+
+class _JobDetailsPageHostState extends State<JobDetailsPage> {
+  final _api = JobsApi();
+  @override
+  void dispose() {
+    _api.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _JobDetailPage(
+    jobId: widget.jobId,
+    api: _api,
+    authorize: _authorizeJobs,
+    organizations: const [],
+    applyOnOpen: widget.apply,
+  );
+}
+
+Future<T> _authorizeJobs<T>(Future<T> Function(String token) call) async {
+  final session = Session.instance;
+  if (!session.isSignedIn) return call('');
+  try {
+    return await session.runAuthed(call);
+  } on AuthException {
+    if (!session.isSignedIn) return call('');
+    rethrow;
+  }
+}
+
 /// Card shadow used across the module (matches the dashboard's).
 const _cardShadow = BoxShadow(
   color: Color(0x0D000000), // black @ 5%
   blurRadius: 24,
   offset: Offset(0, 10),
 );
-
-/// Deterministic company-logo gradient keyed by a small seed.
-LinearGradient _logoGradient(int seed) {
-  const pairs = <List<Color>>[
-    [AppColors.brandBlue, AppColors.accent],
-    [AppColors.navy, AppColors.brandBlue],
-    [AppColors.heroBlue, Color(0xFF56B0F5)],
-    [AppColors.orange, Color(0xFFF7B95C)],
-  ];
-  final p = pairs[seed % pairs.length];
-  return LinearGradient(
-    colors: p,
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
-
-/// Initials from a company name, e.g. "Hospitality Group" -> "HG".
-String _initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first.characters.first.toUpperCase();
-  return (parts.first.characters.first + parts.last.characters.first)
-      .toUpperCase();
-}
 
 /// Error feedback for asynchronous listing actions.
 void _demo(BuildContext c, String msg) {
@@ -140,21 +176,8 @@ class _JobBadge extends StatelessWidget {
   const _JobBadge(this.label);
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.tintGreen,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.iconGreen,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppStatusBadge(
+    label: label,
+    status: label == 'Synthetic demo' ? 'synthetic' : label,
+  );
 }

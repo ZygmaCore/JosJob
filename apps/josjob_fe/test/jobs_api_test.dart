@@ -28,6 +28,39 @@ Map<String, dynamic> jobJson({String id = 'job-1'}) => {
 
 void main() {
   test(
+    'public list and detail omit authorization when there is no session',
+    () async {
+      final requests = <http.Request>[];
+      final api = JobsApi(
+        baseUrl: 'http://test',
+        client: MockClient((request) async {
+          requests.add(request);
+          if (request.url.path.endsWith('job-1')) {
+            return http.Response(
+              jsonEncode({'data': jobJson()..['can_manage'] = false}),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'data': [jobJson()..['can_manage'] = false],
+              'organizations': [],
+              'meta': {'page': 1, 'total': 1, 'total_pages': 1},
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(api.close);
+      expect((await api.list('')).jobs, hasLength(1));
+      expect((await api.get('', 'job-1')).canManage, isFalse);
+      expect(
+        requests.every((r) => !r.headers.containsKey('authorization')),
+        isTrue,
+      );
+    },
+  );
+  test(
     'listing sends encoded filters and bearer auth, parses pagination',
     () async {
       late http.Request captured;

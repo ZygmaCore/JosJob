@@ -6,6 +6,8 @@ import '../services/documents_api.dart';
 import '../services/open_link.dart';
 import '../services/session.dart';
 import '../theme/app_theme.dart';
+import '../shared/app_ui.dart';
+import '../shared/app_formats.dart';
 import 'document_video_page.dart';
 
 part 'widgets/document_card.dart';
@@ -111,7 +113,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
         title: Text(
           'Documents',
           style: GoogleFonts.poppins(
-            fontSize: 16,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -137,13 +139,17 @@ class _DocumentsPageState extends State<DocumentsPage> {
       );
     }
     if (_error != null) {
-      return _MessageState(icon: Icons.error_outline_rounded, message: _error!);
+      return _MessageState(
+        icon: Icons.error_outline_rounded,
+        message: _error!,
+        onRetry: _load,
+      );
     }
     if (_docs.isEmpty) {
       return const _MessageState(
         icon: Icons.folder_open_rounded,
         message:
-            'No documents yet. Uploaded videos and shared documents will '
+            'Uploaded videos and shared documents will '
             'appear here.',
       );
     }
@@ -214,26 +220,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
 // ---- library-private shared helpers --------------------------------------
 
-// "Aug 1, 2026" — a lightweight date format (no intl dependency).
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-String _fmtDate(DateTime dt) {
-  final d = dt.toLocal();
-  return '${_months[d.month - 1]} ${d.day}, ${d.year}';
-}
+String _fmtDate(DateTime dt) => AppFormats.date(dt);
 
 class _SectionHeader extends StatelessWidget {
   final String text;
@@ -257,7 +244,12 @@ class _SectionHeader extends StatelessWidget {
 class _MessageState extends StatelessWidget {
   final IconData icon;
   final String message;
-  const _MessageState({required this.icon, required this.message});
+  final VoidCallback? onRetry;
+  const _MessageState({
+    required this.icon,
+    required this.message,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -266,20 +258,15 @@ class _MessageState extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(32, 120, 32, 32),
-          child: Column(
-            children: [
-              Icon(icon, size: 48, color: AppColors.body),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: AppColors.body,
-                  height: 1.5,
-                ),
-              ),
-            ],
+          child: AppStateView(
+            icon: icon,
+            title: onRetry == null
+                ? 'No documents yet'
+                : 'Documents unavailable',
+            message: message,
+            error: onRetry != null,
+            actionLabel: onRetry == null ? null : 'Try again',
+            onAction: onRetry,
           ),
         ),
       ],

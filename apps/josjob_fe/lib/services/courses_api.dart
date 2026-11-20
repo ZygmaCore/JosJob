@@ -1,3 +1,4 @@
+import '../shared/app_formats.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -36,14 +37,7 @@ int? _asIntOrNull(dynamic v) {
 
 /// Human price label from a smallest-unit amount, e.g. (4900,'usd') -> "$49.00".
 String formatPrice(int cents, String currency) {
-  final value = (cents / 100).toStringAsFixed(2);
-  final symbol = switch (currency.toLowerCase()) {
-    'usd' => r'$',
-    'eur' => '€',
-    'gbp' => '£',
-    _ => '',
-  };
-  return symbol.isEmpty ? '$value ${currency.toUpperCase()}' : '$symbol$value';
+  return AppFormats.money(cents / 100, currency, decimals: 2);
 }
 
 /// One catalog course as returned by the summary endpoint. Only the fields the

@@ -1,8 +1,6 @@
 part of '../explore_page.dart';
 
-/// Fixed-height course card: a gradient thumbnail band (industry icon chip,
-/// bookmark, optional section badge) over a body with the industry, title,
-/// description and class count. Fixed height so cards align across a Wrap row.
+/// Course card grows with its text so tags and actions remain inside the border.
 class _CourseCard extends StatelessWidget {
   final _Course course;
   final bool saved;
@@ -19,15 +17,16 @@ class _CourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final visual = _industryVisual(course.primaryIndustry);
     return SizedBox(
-      height: 356,
       child: _HoverLift(
         builder: (hover) => Semantics(
-          button: true,
-          label: '${course.title}, ${visual.short}',
+          container: true,
+          explicitChildNodes: true,
           child: Material(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(20),
             child: InkWell(
+              excludeFromSemantics: true,
+              canRequestFocus: false,
               onTap: onOpen,
               borderRadius: BorderRadius.circular(20),
               focusColor: AppColors.focus,
@@ -49,13 +48,7 @@ class _CourseCard extends StatelessWidget {
                       saved: saved,
                       onSave: onSave,
                     ),
-                    Expanded(
-                      child: _CardBody(
-                        course: course,
-                        visual: visual,
-                        onOpen: onOpen,
-                      ),
-                    ),
+                    _CardBody(course: course, visual: visual, onOpen: onOpen),
                   ],
                 ),
               ),
@@ -131,7 +124,9 @@ class _CardBand extends StatelessWidget {
               // announce).
               child: IconButton(
                 onPressed: onSave,
-                tooltip: saved ? 'Remove from saved' : 'Save course',
+                tooltip: saved
+                    ? 'Remove from saved on this device'
+                    : 'Save course on this device',
                 icon: Icon(
                   saved ? Icons.bookmark : Icons.bookmark_border,
                   color: saved ? AppColors.brandBlue : AppColors.navy,
@@ -280,7 +275,7 @@ class _CardBody extends StatelessWidget {
               ),
             ),
           ],
-          const Spacer(),
+          const SizedBox(height: 16),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 10),
           Row(

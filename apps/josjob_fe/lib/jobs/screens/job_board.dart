@@ -7,15 +7,22 @@ typedef JobAuthorizer =
 class JobsView extends StatefulWidget {
   final JobsApi? api;
   final JobAuthorizer? authorize;
-  const JobsView({super.key, this.api, this.authorize});
+  final bool embedded;
+  final String initialQuery;
+  const JobsView({
+    super.key,
+    this.api,
+    this.authorize,
+    this.initialQuery = '',
+    this.embedded = false,
+  });
   @override
   State<JobsView> createState() => _JobsViewState();
 }
 
 class _JobsViewState extends State<JobsView> {
   late final JobsApi _api = widget.api ?? JobsApi();
-  JobAuthorizer get _authorize =>
-      widget.authorize ?? Session.instance.runAuthed;
+  JobAuthorizer get _authorize => widget.authorize ?? _authorizeJobs;
   final _query = TextEditingController();
   final _location = TextEditingController();
   final _industry = TextEditingController();
@@ -30,6 +37,7 @@ class _JobsViewState extends State<JobsView> {
   @override
   void initState() {
     super.initState();
+    _query.text = widget.initialQuery;
     _load();
   }
 
@@ -94,15 +102,12 @@ class _JobsViewState extends State<JobsView> {
   }
 
   Future<void> _open(JobListing job) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => _JobDetailPage(
-          jobId: job.id,
-          api: _api,
-          authorize: _authorize,
-          organizations: _result?.organizations ?? const [],
-        ),
-      ),
+    await showJobListing(
+      context,
+      job,
+      api: _api,
+      authorize: _authorize,
+      organizations: _result?.organizations ?? const [],
     );
     if (mounted) _load();
   }
@@ -147,7 +152,9 @@ class _JobsViewState extends State<JobsView> {
         constraints: const BoxConstraints(maxWidth: Bp.maxContent),
         child: Padding(
           padding: EdgeInsets.all(
-            MediaQuery.sizeOf(context).width < 600 ? 16 : 28,
+            widget.embedded
+                ? 0
+                : (MediaQuery.sizeOf(context).width < 600 ? 16 : 24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,8 +190,8 @@ class _JobsViewState extends State<JobsView> {
                       style: GoogleFonts.poppins(
                         color: AppColors.navy,
                         fontSize: MediaQuery.sizeOf(context).width < 600
-                            ? 28
-                            : 38,
+                            ? 26
+                            : 28,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -192,7 +199,7 @@ class _JobsViewState extends State<JobsView> {
                     Text(
                       _manage
                           ? 'Create and manage opportunities for your organization.'
-                          : 'Explore opportunities from your organizations. Find a role worth growing into.',
+                          : 'Explore opportunities from hiring teams. Find a role worth growing into.',
                       style: GoogleFonts.poppins(
                         color: AppColors.body,
                         fontSize: 14,
@@ -308,8 +315,6 @@ class _JobsViewState extends State<JobsView> {
                   Icons.work_outline,
                   _manage
                       ? 'No listings yet. Create your first opportunity.'
-                      : orgs.isEmpty
-                      ? 'No opportunities are available to your account yet. Your organization needs to grant jobs access.'
                       : 'No jobs found. Try a broader role, location or industry.',
                   'Clear filters',
                   _reset,
@@ -643,22 +648,13 @@ class _JobsViewState extends State<JobsView> {
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(20),
     ),
-    child: Column(
-      children: [
-        Icon(icon, size: 40, color: AppColors.iconBlue),
-        const SizedBox(height: 16),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.body,
-            height: 1.6,
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextButton(onPressed: onTap, child: Text(action)),
-      ],
+    child: AppStateView(
+      icon: icon,
+      title: action == 'Try again' ? 'Jobs unavailable' : 'No matching jobs',
+      message: text,
+      actionLabel: action,
+      onAction: onTap,
+      error: action == 'Try again',
     ),
   );
 }

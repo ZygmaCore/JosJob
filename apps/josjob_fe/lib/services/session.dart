@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'auth_api.dart';
 import 'sync/sync_engine.dart';
 import 'token_store.dart';
+import 'ui_preferences.dart';
 
 // =========================================================================
 // JosJob — Session
@@ -140,6 +141,7 @@ class Session extends ChangeNotifier {
 
   /// Clear the session locally (the server is stateless for access tokens).
   Future<void> signOut() async {
+    await AuthContinuation.clear();
     _user = null;
     _token = null;
     _refreshToken = null;

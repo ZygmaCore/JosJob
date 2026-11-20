@@ -5,11 +5,13 @@ class _JobDetailPage extends StatefulWidget {
   final JobsApi api;
   final JobAuthorizer authorize;
   final List<JobOrganization> organizations;
+  final bool applyOnOpen;
   const _JobDetailPage({
     required this.jobId,
     required this.api,
     required this.authorize,
     required this.organizations,
+    this.applyOnOpen = false,
   });
   @override
   State<_JobDetailPage> createState() => _JobDetailPageState();
@@ -18,8 +20,25 @@ class _JobDetailPage extends StatefulWidget {
 class _JobDetailPageState extends State<_JobDetailPage> {
   late Future<JobListing> _job = _fetch();
   bool _deleting = false;
+  bool _offeredApplication = false;
   Future<JobListing> _fetch() =>
       widget.authorize((token) => widget.api.get(token, widget.jobId));
+
+  void _apply(JobListing job) {
+    if (!Session.instance.isSignedIn) {
+      AuthContinuation.remember('/jobs/${Uri.encodeComponent(job.id)}?apply=1');
+      Navigator.of(context).pushNamed('/login');
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(
+          name: '/jobs/${Uri.encodeComponent(job.id)}?apply=1',
+        ),
+        builder: (_) => ApplyPage(job: job, authorize: widget.authorize),
+      ),
+    );
+  }
 
   Future<void> _edit(JobListing job) async {
     final saved = await Navigator.of(context).push<bool>(
@@ -27,7 +46,16 @@ class _JobDetailPageState extends State<_JobDetailPage> {
         builder: (_) => _JobEditor(
           api: widget.api,
           authorize: widget.authorize,
-          organizations: widget.organizations,
+          organizations: widget.organizations.isEmpty
+              ? [
+                  JobOrganization(
+                    id: job.organizationId,
+                    name: job.company,
+                    canPost: false,
+                    canManage: job.canManage,
+                  ),
+                ]
+              : widget.organizations,
           job: job,
         ),
       ),
@@ -47,6 +75,7 @@ class _JobDetailPageState extends State<_JobDetailPage> {
             child: const Text('Cancel'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -96,6 +125,15 @@ class _JobDetailPageState extends State<_JobDetailPage> {
           );
         }
         final job = snapshot.data!;
+        if (widget.applyOnOpen &&
+            !_offeredApplication &&
+            Session.instance.isSignedIn &&
+            !job.canManage) {
+          _offeredApplication = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _apply(job);
+          });
+        }
         return SafeArea(
           child: SingleChildScrollView(
             child: Center(
@@ -146,6 +184,23 @@ class _JobDetailPageState extends State<_JobDetailPage> {
                               label: const Text('Edit listing'),
                             ),
                             OutlinedButton.icon(
+                              key: const ValueKey('review-job-applications'),
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  settings: RouteSettings(
+                                    name:
+                                        '/applications?scope=hiring&job_id=${Uri.encodeComponent(job.id)}',
+                                  ),
+                                  builder: (_) => ApplicationsPage(
+                                    hiring: true,
+                                    jobId: job.id,
+                                  ),
+                                ),
+                              ),
+                              icon: const Icon(Icons.people_outline),
+                              label: const Text('Review applicants'),
+                            ),
+                            OutlinedButton.icon(
                               key: const ValueKey('delete-job'),
                               onPressed: _deleting ? null : () => _delete(job),
                               icon: const Icon(Icons.delete_outline),
@@ -156,14 +211,16 @@ class _JobDetailPageState extends State<_JobDetailPage> {
                           ],
                         )
                       else
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Text(
-                            'CV matching and in-platform applications are coming next. Browse the requirements to prepare for this opportunity.',
+                        FilledButton.icon(
+                          key: const ValueKey('apply-for-job'),
+                          onPressed: job.status == 'active'
+                              ? () => _apply(job)
+                              : null,
+                          icon: const Icon(Icons.send_outlined),
+                          label: Text(
+                            Session.instance.isSignedIn
+                                ? 'Apply for this role'
+                                : 'Sign in to apply',
                           ),
                         ),
                     ],
@@ -199,23 +256,7 @@ class _HeaderCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 54,
-                height: 54,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: _logoGradient(job.company.length),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Text(
-                  _initials(job.company),
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              CompanyAvatar(job.company, size: 48),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -252,8 +293,14 @@ class _HeaderCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               _meta(Icons.place_outlined, job.location),
-              _meta(Icons.schedule_outlined, job.employmentType),
-              _meta(Icons.business_center_outlined, job.workMode),
+              _meta(
+                Icons.schedule_outlined,
+                AppFormats.label(job.employmentType),
+              ),
+              _meta(
+                Icons.business_center_outlined,
+                AppFormats.label(job.workMode),
+              ),
               _meta(Icons.payments_outlined, job.salaryLabel),
             ],
           ),

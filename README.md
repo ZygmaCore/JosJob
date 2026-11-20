@@ -7,8 +7,8 @@ Re-match**: mencocokkan CV dengan lowongan, mengenali kekurangan skill,
 merekomendasikan pembelajaran, lalu mencocokkan ulang.
 
 **Status saat ini:** katalog pembelajaran, enrollment, dokumen, integrasi media,
-dan CRUD lowongan sudah tersedia. Analisis CV, ranking AI, rekomendasi berbasis
-gap skill, saved jobs, dan pengiriman lamaran masih merupakan pekerjaan terencana.
+dan CRUD lowongan, lamaran, hiring dan chat sudah tersedia. Analisis CV,
+ranking AI, rekomendasi berbasis gap skill dan saved jobs masih direncanakan.
 
 ## Fitur dan batas implementasi
 
@@ -28,6 +28,10 @@ Lowongan dibatasi oleh organisasi dan izin `jobs:read`, `jobs:post` atau
 Lowongan baru berstatus draft; employer berizin dapat mempublikasikannya melalui
 editor. Data contoh lama hanya menjadi fixture test, bukan hasil matching AI atau
 lowongan yang otomatis di-seed. Lihat [kontrak jobs API](docs/api/jobs.md).
+
+Lamaran sekarang memakai data database: Applied → Reviewing → Interview → Offer →
+Hired, riwayat perubahan, review employer dan chat. Booking coaching juga memiliki
+chat dengan tampilan bersama. Lihat [kontrak aplikasi dan chat](docs/api/applications-and-chat.md).
 
 Outbox offline saat ini hanya mencakup progress dan jawaban onboarding.
 Channel notifikasi tersedia sebagai fondasi join/ping, belum sebagai sistem
@@ -97,6 +101,10 @@ docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f josj
 | Flutter web | http://localhost:8081 |
 | Phoenix API dan login web | http://localhost:4000 |
 | ParadeDB/PostgreSQL | `localhost:5438` |
+
+Untuk mencoba lowongan dan proses hiring secara manual, lihat
+[akun dan data demo lokal](docs/manual-job-testing.md): 12 lowongan serta lima
+lamaran pada tahapan hiring yang berbeda. Seed demo dijalankan secara eksplisit.
 
 Backend menunggu database sehat, menjalankan migrasi, mencoba seed, lalu
 menjalankan server. Kegagalan seed dicatat tetapi tidak menghentikan server;
@@ -174,7 +182,7 @@ Untuk Flutter web, daftarkan juga origin `http://localhost:8081`.
 | `POST /api/auth/login` | Login email/password |
 | `POST /api/auth/google` | Login menggunakan Google `id_token` |
 | `POST /api/auth/refresh` | Rotasi refresh token dan penerbitan pasangan token baru |
-| `/api/jobs` | Browse dan CRUD lowongan dengan Bearer access token |
+| `/api/jobs` | Browse/detail lowongan aktif publik; pengelolaan memakai Bearer token dan izin organisasi |
 
 TTL default access token adalah 1 jam dan refresh token 30 hari, dapat diubah
 melalui `ACCESS_TOKEN_TTL` dan `REFRESH_TOKEN_TTL` (detik).

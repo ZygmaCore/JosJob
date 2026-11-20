@@ -1,9 +1,6 @@
 part of '../explore_page.dart';
 
-/// Lays course cards into a responsive grid. Column COUNT keys off the
-/// viewport width (so desktop reliably gets 3 columns regardless of the local
-/// constraint), while item width comes from the actual available width. Cards
-/// are fixed-height so a Wrap row aligns.
+/// Sizes columns from the available content width. Cards grow with their text.
 class _CourseGrid extends StatelessWidget {
   final List<_Course> courses;
   final Set<String> saved;
@@ -40,10 +37,9 @@ class _ResponsiveGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.sizeOf(context).width;
-    final cols = w >= Bp.desktop ? 3 : (w >= 768 ? 2 : 1);
     return LayoutBuilder(
       builder: (context, c) {
+        final cols = ((c.maxWidth + _gap) / 340).floor().clamp(1, 3);
         final itemW = (c.maxWidth - _gap * (cols - 1)) / cols;
         return Wrap(
           spacing: _gap,
