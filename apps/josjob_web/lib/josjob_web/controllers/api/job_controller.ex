@@ -30,6 +30,8 @@ defmodule JosjobWeb.Api.JobController do
 
     case Listings.create(user, params["organization_id"], params) do
       {:ok, job} ->
+        _ = JosjobRag.Workers.IndexJob.enqueue(job.id)
+
         conn |> put_status(:created) |> json(%{data: job_json(job, Listings.organizations(user))})
 
       error ->
@@ -41,15 +43,23 @@ defmodule JosjobWeb.Api.JobController do
     user = conn.assigns.current_user
 
     case Listings.update(user, id, params) do
-      {:ok, job} -> json(conn, %{data: job_json(job, Listings.organizations(user))})
-      error -> respond_error(conn, error)
+      {:ok, job} ->
+        _ = JosjobRag.Workers.IndexJob.enqueue(job.id)
+        json(conn, %{data: job_json(job, Listings.organizations(user))})
+
+      error ->
+        respond_error(conn, error)
     end
   end
 
   def delete(conn, %{"id" => id}) do
     case Listings.delete(conn.assigns.current_user, id) do
-      :ok -> send_resp(conn, :no_content, "")
-      error -> respond_error(conn, error)
+      :ok ->
+        _ = JosjobRag.VectorStore.delete(:job, id)
+        send_resp(conn, :no_content, "")
+
+      error ->
+        respond_error(conn, error)
     end
   end
 

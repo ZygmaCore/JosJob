@@ -19,7 +19,7 @@ config :josjob_ragpdf,
   http_client: JosjobRagpdf.HTTP,
   gemini: [
     base_url: "https://generativelanguage.googleapis.com",
-    model: "gemini-3.5-flash",
+    model: "gemini-3-flash-preview",
     api_key: nil,
     timeout_ms: 120_000,
     max_attempts: 3,

@@ -18,15 +18,7 @@ defmodule JosjobWeb.Api.CatalogController do
   # member aktif). Publik = individual learner tanpa org tetap bisa menjelajah.
   def index(conn, _params) do
     org_ids = StudentScope.org_ids(conn.assigns.current_user)
-
-    courses =
-      Course
-      |> Ash.Query.filter(
-        is_active == true and (is_public == true or organizations.id in ^org_ids)
-      )
-      |> Ash.Query.sort(title: :asc)
-      |> Ash.Query.load([:section, :industries, :classes])
-      |> Ash.read!(authorize?: false)
+    courses = Learning.visible_courses(org_ids)
 
     json(conn, %{data: Enum.map(courses, &course_summary_json/1)})
   end

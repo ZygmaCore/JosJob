@@ -211,10 +211,6 @@ defmodule JosjobLrn.DemoSeed do
   defp pick(list), do: Enum.random(list)
   defp pad(n), do: n |> Integer.to_string() |> String.pad_leading(3, "0")
 
-  defp full_name do
-    pick(@first_names) <> " " <> pick(@last_names)
-  end
-
   # ---- data nama (Indonesia) ----------------------------------------------
 
   @first_names ~w(Ayu Budi Citra Dewi Eko Fitri Gilang Hana Irfan Joko Kirana Lukman
@@ -225,6 +221,10 @@ defmodule JosjobLrn.DemoSeed do
     Setiawan Anggraini Puspita Gunawan Maharani Firmansyah Utama Lestari Pangestu
     Wulandari Hakim Nugraha Siregar Halim Kurniawan Sari Maulana Febrianti
     Ramadhan Permata Hartono Sulistyo)
+
+  defp full_name do
+    pick(@first_names) <> " " <> pick(@last_names)
+  end
 
   @org_names [
     "PT Maju Bersama",
@@ -369,7 +369,12 @@ defmodule JosjobLrn.DemoSeed do
     |> Enum.map(fn {user, i} ->
       org = Enum.at(orgs, rem(i, length(orgs)))
 
-      upsert!(Membership, :create, %{user_id: user.id, organization_id: org.id, status: pick_status()}, :unique_user_org)
+      upsert!(
+        Membership,
+        :create,
+        %{user_id: user.id, organization_id: org.id, status: pick_status()},
+        :unique_user_org
+      )
     end)
   end
 
@@ -389,12 +394,15 @@ defmodule JosjobLrn.DemoSeed do
 
       role =
         Role
-        |> Ash.Query.filter(
-          organization_id == ^membership.organization_id and key == ^role_key
-        )
+        |> Ash.Query.filter(organization_id == ^membership.organization_id and key == ^role_key)
         |> one()
 
-      upsert!(MembershipRole, :create, %{membership_id: membership.id, role_id: role.id}, :unique_membership_role)
+      upsert!(
+        MembershipRole,
+        :create,
+        %{membership_id: membership.id, role_id: role.id},
+        :unique_membership_role
+      )
     end)
     |> length()
   end
@@ -451,7 +459,12 @@ defmodule JosjobLrn.DemoSeed do
             %{
               degree: "S1",
               major: pick(["Informatika", "Manajemen", "Akuntansi", "Keperawatan"]),
-              name: pick(["Universitas Gadjah Mada", "Institut Teknologi Bandung", "Universitas Indonesia"]),
+              name:
+                pick([
+                  "Universitas Gadjah Mada",
+                  "Institut Teknologi Bandung",
+                  "Universitas Indonesia"
+                ]),
               type: "university",
               from: %{month: 8, year: 2019},
               to: %{month: 7, year: 2023}
@@ -495,7 +508,9 @@ defmodule JosjobLrn.DemoSeed do
         get_or_create_course(topic, section, i)
       end)
 
-    course_orgs = Enum.map(Enum.with_index(courses), fn {_c, i} -> Enum.at(orgs, rem(i, length(orgs))) end)
+    course_orgs =
+      Enum.map(Enum.with_index(courses), fn {_c, i} -> Enum.at(orgs, rem(i, length(orgs))) end)
+
     {courses, course_orgs}
   end
 
@@ -551,7 +566,12 @@ defmodule JosjobLrn.DemoSeed do
       student = Enum.at(users, rem(i * 7, length(users)))
       status = if rem(i, 7) == 0, do: :completed, else: :active
 
-      upsert!(Enrollment, :create, %{class_id: class.id, student_id: student.id, status: status}, :unique_class_student)
+      upsert!(
+        Enrollment,
+        :create,
+        %{class_id: class.id, student_id: student.id, status: status},
+        :unique_class_student
+      )
     end
     |> length()
   end
@@ -662,6 +682,7 @@ defmodule JosjobLrn.DemoSeed do
 
   defp job_posted_at(i, "active"),
     do: DateTime.add(DateTime.utc_now(), -rem(i, 30) * 86_400, :second)
+
   defp job_posted_at(_i, "expired"), do: DateTime.add(DateTime.utc_now(), -60 * 86_400, :second)
   defp job_posted_at(_i, _status), do: nil
 
@@ -742,14 +763,19 @@ defmodule JosjobLrn.DemoSeed do
       doc = Enum.at(documents, rem(i, length(documents)))
       user = Enum.at(users, rem(i * 5, length(users)))
 
-      upsert!(DocumentAccessGrant, :upsert, %{
-        document_id: doc.id,
-        user_id: user.id,
-        allow: true,
-        granted_by_id: granted_by_id,
-        valid_from: DateTime.utc_now(),
-        valid_until: DateTime.add(DateTime.utc_now(), 90 * 86_400, :second)
-      }, :unique_document_user)
+      upsert!(
+        DocumentAccessGrant,
+        :upsert,
+        %{
+          document_id: doc.id,
+          user_id: user.id,
+          allow: true,
+          granted_by_id: granted_by_id,
+          valid_from: DateTime.utc_now(),
+          valid_until: DateTime.add(DateTime.utc_now(), 90 * 86_400, :second)
+        },
+        :unique_document_user
+      )
     end
     |> length()
   end
@@ -788,12 +814,17 @@ defmodule JosjobLrn.DemoSeed do
     |> Enum.take(count)
     |> Enum.with_index(1)
     |> Enum.map(fn {name, i} ->
-      upsert!(Product, :upsert, %{
-        stripe_product_id: "prod_demo_#{pad(i)}",
-        name: name,
-        description: "Produk demo (sintetis) — bukan objek Stripe asli.",
-        active: true
-      }, :unique_stripe_product_id)
+      upsert!(
+        Product,
+        :upsert,
+        %{
+          stripe_product_id: "prod_demo_#{pad(i)}",
+          name: name,
+          description: "Produk demo (sintetis) — bukan objek Stripe asli.",
+          active: true
+        },
+        :unique_stripe_product_id
+      )
     end)
   end
 
@@ -803,16 +834,20 @@ defmodule JosjobLrn.DemoSeed do
     for i <- 1..count do
       product = Enum.at(products, div(i - 1, 2))
 
-      upsert!(Price, :upsert, %{
-        stripe_price_id: "price_demo_#{pad(i)}",
-        unit_amount: Enum.at(amounts, rem(i, length(amounts))),
-        currency: "usd",
-        recurring_interval: if(rem(i, 2) == 0, do: "month", else: nil),
-        active: true,
-        product_id: product.id
-      }, :unique_stripe_price_id)
+      upsert!(
+        Price,
+        :upsert,
+        %{
+          stripe_price_id: "price_demo_#{pad(i)}",
+          unit_amount: Enum.at(amounts, rem(i, length(amounts))),
+          currency: "usd",
+          recurring_interval: if(rem(i, 2) == 0, do: "month", else: nil),
+          active: true,
+          product_id: product.id
+        },
+        :unique_stripe_price_id
+      )
     end
-    |> length()
   end
 
   defp seed_customers(count, users) do
@@ -820,13 +855,18 @@ defmodule JosjobLrn.DemoSeed do
     |> Enum.take(count)
     |> Enum.with_index(1)
     |> Enum.map(fn {user, i} ->
-      upsert!(Customer, :upsert, %{
-        stripe_customer_id: "cus_demo_#{pad(i)}",
-        user_id: user.id,
-        # User.email adalah :ci_string — ambil string mentahnya (lihat
-        # Josjob.Accounts.Validations.WorkEmailForOrganization).
-        email: Ash.CiString.value(user.email)
-      }, :unique_stripe_customer_id)
+      upsert!(
+        Customer,
+        :upsert,
+        %{
+          stripe_customer_id: "cus_demo_#{pad(i)}",
+          user_id: user.id,
+          # User.email adalah :ci_string — ambil string mentahnya (lihat
+          # Josjob.Accounts.Validations.WorkEmailForOrganization).
+          email: Ash.CiString.value(user.email)
+        },
+        :unique_stripe_customer_id
+      )
     end)
   end
 
@@ -835,14 +875,19 @@ defmodule JosjobLrn.DemoSeed do
       customer = Enum.at(customers, rem(i - 1, length(customers)))
       price = Enum.at(prices, rem(i - 1, length(prices)))
 
-      upsert!(Subscription, :upsert, %{
-        stripe_subscription_id: "sub_demo_#{pad(i)}",
-        status: if(rem(i, 10) == 0, do: "past_due", else: "active"),
-        stripe_price_id: price.stripe_price_id,
-        current_period_end: DateTime.add(DateTime.utc_now(), 30 * 86_400, :second),
-        cancel_at_period_end: false,
-        customer_id: customer.id
-      }, :unique_stripe_subscription_id)
+      upsert!(
+        Subscription,
+        :upsert,
+        %{
+          stripe_subscription_id: "sub_demo_#{pad(i)}",
+          status: if(rem(i, 10) == 0, do: "past_due", else: "active"),
+          stripe_price_id: price.stripe_price_id,
+          current_period_end: DateTime.add(DateTime.utc_now(), 30 * 86_400, :second),
+          cancel_at_period_end: false,
+          customer_id: customer.id
+        },
+        :unique_stripe_subscription_id
+      )
     end
     |> length()
   end
@@ -852,15 +897,20 @@ defmodule JosjobLrn.DemoSeed do
       customer = Enum.at(customers, rem(i - 1, length(customers)))
       price = Enum.at(prices, rem(i - 1, length(prices)))
 
-      upsert!(Payment, :upsert, %{
-        stripe_payment_intent_id: "pi_demo_#{pad(i)}",
-        amount: price.unit_amount,
-        currency: "usd",
-        status: "succeeded",
-        description: "Pembayaran demo (sintetis).",
-        metadata: %{"demo" => true},
-        customer_id: customer.id
-      }, :unique_stripe_payment_intent_id)
+      upsert!(
+        Payment,
+        :upsert,
+        %{
+          stripe_payment_intent_id: "pi_demo_#{pad(i)}",
+          amount: price.unit_amount,
+          currency: "usd",
+          status: "succeeded",
+          description: "Pembayaran demo (sintetis).",
+          metadata: %{"demo" => true},
+          customer_id: customer.id
+        },
+        :unique_stripe_payment_intent_id
+      )
     end
     |> length()
   end
@@ -876,7 +926,12 @@ defmodule JosjobLrn.DemoSeed do
     wanted
     |> Enum.take(count)
     |> Enum.map(fn {section, org} ->
-      upsert!(SectionOrganization, :create, %{section_id: section.id, organization_id: org.id}, :unique_section_organization)
+      upsert!(
+        SectionOrganization,
+        :create,
+        %{section_id: section.id, organization_id: org.id},
+        :unique_section_organization
+      )
     end)
     |> length()
   end
@@ -886,7 +941,12 @@ defmodule JosjobLrn.DemoSeed do
     |> Enum.zip(course_orgs)
     |> Enum.take(count)
     |> Enum.map(fn {course, org} ->
-      upsert!(CourseOrganization, :create, %{course_id: course.id, organization_id: org.id}, :unique_course_organization)
+      upsert!(
+        CourseOrganization,
+        :create,
+        %{course_id: course.id, organization_id: org.id},
+        :unique_course_organization
+      )
     end)
     |> length()
   end
@@ -904,7 +964,12 @@ defmodule JosjobLrn.DemoSeed do
       for k <- 0..(n - 1) do
         industry = Enum.at(industries, rem(ci + k * 3, length(industries)))
 
-        upsert!(CourseIndustry, :create, %{course_id: course.id, industry_id: industry.id}, :unique_course_industry)
+        upsert!(
+          CourseIndustry,
+          :create,
+          %{course_id: course.id, industry_id: industry.id},
+          :unique_course_industry
+        )
       end
     end)
     |> length()

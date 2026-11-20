@@ -9,6 +9,8 @@
 # move said applications out of the umbrella.
 import Config
 
+config :ash, default_string_length_count: :codepoints
+
 config :ash_oban, pro?: false
 config :josjob_web, Oban, plugins: [{Oban.Plugins.Cron, []}]
 
@@ -119,6 +121,24 @@ config :josjob_rag, :atomic,
   # Existing external service hostname; rebranding does not provision a new DNS record.
   base_url: System.get_env("ATOMIC_BASE_URL", "https://stellar-rag.onprem.vip"),
   api_token: System.get_env("ATOMIC_API_TOKEN", "default_token")
+
+# Embeddings for job/course/CV ranking. `:auto` uses Gemini when a key is
+# configured and falls back to the deterministic local model otherwise.
+# Vectors are 1536-d to match the `rag_embeddings` migration and
+# `gemini-embedding-2` with outputDimensionality=1536.
+config :josjob_rag, :embeddings,
+  provider: :auto,
+  model: "gemini-embedding-2",
+  dimensions: 1536,
+  api_key: nil,
+  base_url: "https://generativelanguage.googleapis.com"
+
+# Standalone CV extraction service (`apps/josjob_ragpdf`). It is intentionally
+# not part of this umbrella; the backend talks to it over HTTP.
+config :josjob_rag, :pdf_service,
+  base_url: "http://localhost:4010",
+  api_token: nil,
+  receive_timeout: 120_000
 
 # Prefer the published NIF on supported platforms. Source builds remain opt-in
 # for custom targets/toolchains via XBERG_BUILD=true.

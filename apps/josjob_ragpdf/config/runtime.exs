@@ -67,7 +67,7 @@ gemini_api_key =
 gemini = [
   base_url:
     env!("RAGPDF_GEMINI_BASE_URL", :string, nil) || "https://generativelanguage.googleapis.com",
-  model: env!("RAGPDF_GEMINI_MODEL", :string, nil) || "gemini-3.5-flash",
+  model: env!("RAGPDF_GEMINI_MODEL", :string, nil) || "gemini-3-flash-preview",
   api_key: gemini_api_key,
   timeout_ms: integer.("RAGPDF_HTTP_TIMEOUT_MS", 120_000),
   max_attempts: integer.("RAGPDF_RETRY_MAX_ATTEMPTS", 3),

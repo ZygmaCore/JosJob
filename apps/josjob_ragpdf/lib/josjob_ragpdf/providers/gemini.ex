@@ -9,7 +9,7 @@ defmodule JosjobRagpdf.Providers.Gemini do
   Configuration (`Application.get_env(:josjob_ragpdf, :gemini)` or `opts[:config]`):
 
     * `:base_url` — default `https://generativelanguage.googleapis.com`
-    * `:model` — default `gemini-3.5-flash`
+    * `:model` — default `gemini-3-flash-preview`
     * `:api_key` — required, otherwise `{:error, :not_configured}`
     * `:timeout_ms`, `:max_attempts`, `:base_delay_ms`, `:max_delay_ms`
 
@@ -19,7 +19,7 @@ defmodule JosjobRagpdf.Providers.Gemini do
   @behaviour JosjobRagpdf.Provider
 
   @default_base_url "https://generativelanguage.googleapis.com"
-  @default_model "gemini-3.5-flash"
+  @default_model "gemini-3-flash-preview"
   @default_timeout_ms 120_000
   @default_max_attempts 3
   @default_base_delay_ms 1_000

@@ -117,6 +117,26 @@ if fe_base_url = env!("FE_BASE_URL", :string, nil) do
   config :josjob, :fe_base_url, fe_base_url
 end
 
+# RAG ranking: embeddings + the standalone CV extraction service.
+# `RAG_EMBEDDING_MODEL` is read instead of `GEMINI_MODEL` because the shared
+# envs/.env pins GEMINI_MODEL to an embedding model for a different concern;
+# this service wants its own switch. The API key is shared.
+# Di :test sengaja dilewati: config/test.exs memakai embedding lokal deterministik
+# supaya suite tidak pernah memanggil Gemini sungguhan.
+if config_env() != :test do
+  config :josjob_rag, :embeddings,
+    provider: :auto,
+    model: env!("RAG_EMBEDDING_MODEL", :string, "gemini-embedding-2"),
+    dimensions: 1536,
+    api_key: env!("GEMINI_API_KEY", :string, nil) || env!("GOOGLE_API_KEY", :string, nil),
+    base_url: env!("GEMINI_BASE_URL", :string, "https://generativelanguage.googleapis.com")
+end
+
+config :josjob_rag, :pdf_service,
+  base_url: env!("RAGPDF_BASE_URL", :string, "http://localhost:4010"),
+  api_token: env!("RAGPDF_API_TOKEN", :string, nil),
+  receive_timeout: 120_000
+
 # Object storage S3-compatible (Cloudflare R2 / AWS S3 / MinIO) untuk upload
 # dokumen non-video (pdf/doc). App media = :josjob_ms. Kosong →
 # JosjobMs.Storage.configured?() = false → upload dokumen file nyata di-skip.

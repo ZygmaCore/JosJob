@@ -18,7 +18,7 @@ defmodule JosjobRag.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :crypto]
     ]
   end
 
@@ -27,7 +27,13 @@ defmodule JosjobRag.MixProject do
     [
       {:rustler, "~> 0.38.0", runtime: false},
       {:xberg, "~> 1.0.0-rc.14"},
-      {:josjob, in_umbrella: true}
+      {:josjob, in_umbrella: true},
+      {:josjob_job, in_umbrella: true},
+      {:josjob_lrn, in_umbrella: true},
+      {:ash, "~> 3.0"},
+      {:oban, "~> 2.20"},
+      {:req, "~> 0.5"},
+      {:jason, "~> 1.4"}
     ]
   end
 end
