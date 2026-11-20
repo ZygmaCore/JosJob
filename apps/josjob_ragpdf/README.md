@@ -16,7 +16,7 @@ RAG/indexer used by the main app, while this service owns the
 Verified against the real Gemini API, not just fakes:
 
 - 1-page PDF uploaded over HTTP → `done` in ~17s with correct skills,
-  experience and education (`provider: "gemini"`, `model: "gemini-3.5-flash"`).
+  experience and education (`provider: "gemini"`, `model: "gemini-3-flash-preview"`).
 - 7-page PDF → 2 chunks (6 pages + 1-page overlap), both succeeded, merged
   result `done` containing skills from every page.
 - `mix test`: 158 tests, 0 failures (no network, no API key needed).
@@ -24,8 +24,8 @@ Verified against the real Gemini API, not just fakes:
 
 Model availability moves fast. On 2026-11-16 `gemini-2.5-flash` returned 404
 ("no longer available to new users") and `gemini-3.8-flash` returned 503 /
-timeouts under load. Default is therefore `gemini-3.5-flash`; use
-`RAGPDF_GEMINI_MODEL` to pin another one, e.g. `gemini-3.5-flash-lite` for
+timeouts under load. Default is therefore `gemini-3-flash-preview`; use
+`RAGPDF_GEMINI_MODEL` to pin another one, e.g. `gemini-flash-lite-latest` for
 lower latency. List what your key can actually use:
 
 ```bash
@@ -221,9 +221,10 @@ public. If the token is empty, auth is disabled (local development only).
 
 ## Configuration
 
-Copy `.env.example` to `.env` (gitignored). In dev/prod the service also reads
-`../../envs/.env` from the repo root, so an existing `GOOGLE_API_KEY` is picked
-up automatically. The test environment reads **no secret files**.
+In dev/prod the service reads `../../envs/.env` from the repo root, so an
+existing `GEMINI_API_KEY` is picked up automatically. An optional
+`apps/josjob_ragpdf/.env` (gitignored) overrides individual values. The test
+environment reads **no secret files**.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -245,7 +246,7 @@ up automatically. The test environment reads **no secret files**.
 | `RAGPDF_PDFTOTEXT_BIN` | `pdftotext` | text fallback binary |
 | `GEMINI_API_KEY` | — | preferred Gemini key |
 | `GOOGLE_API_KEY` | — | fallback if `GEMINI_API_KEY` is unset |
-| `RAGPDF_GEMINI_MODEL` | `gemini-3.5-flash` | pinned extraction model |
+| `RAGPDF_GEMINI_MODEL` | `gemini-3-flash-preview` | pinned extraction model |
 | `RAGPDF_GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API base |
 | `NINE_ROUTER_BASE_URL` | `http://127.0.0.1:20128/v1` | 9Router (blind-set) |
 | `NINE_ROUTER_API_KEY` | empty | 9Router key |

@@ -604,6 +604,32 @@ defmodule JosjobLrn.DemoSeed do
   ]
 
   @job_levels ["Junior", "Mid-Level", "Senior"]
+
+  # Setiap judul dipetakan ke industri yang masuk akal, sehingga requirement job
+  # diambil dari skill industri tersebut (bukan acak dari seluruh katalog).
+  # `nil` = tidak ada industri yang cocok; pakai skill umum.
+  @job_title_industries %{
+    "Backend Developer" => "Software & IT",
+    "Frontend Developer" => "Software & IT",
+    "Data Analyst" => "Software & IT",
+    "UI/UX Designer" => "Software & IT",
+    "Digital Marketing Staff" => "Retail & Sales",
+    "Customer Service" => "Retail & Sales",
+    "Akuntan Junior" => "Finance",
+    "Perawat" => "Healthcare",
+    "Chef de Partie" => "Hospitality & Tourism",
+    "Teknisi Listrik" => "Construction & Trades",
+    "Admin Gudang" => "Logistics & Transport",
+    "Sales Executive" => "Retail & Sales",
+    "Content Writer" => "Retail & Sales",
+    "QA Engineer" => "Software & IT",
+    "Barista" => "Hospitality & Tourism",
+    "Housekeeping Staff" => "Hospitality & Tourism",
+    "Project Coordinator" => "Manufacturing",
+    "Guru Les Privat" => nil,
+    "Desainer Grafis" => "Software & IT",
+    "Operator Produksi" => "Manufacturing"
+  }
   @job_locations [
     "Jakarta",
     "Bandung",
@@ -628,23 +654,35 @@ defmodule JosjobLrn.DemoSeed do
   ]
 
   defp seed_jobs(count, orgs, users) do
-    skills = Skill |> Ash.read!(authorize?: false) |> Enum.map(& &1.name)
+    skills = Skill |> Ash.read!(authorize?: false)
     industries = Industry |> Ash.read!(authorize?: false)
+    industry_names = Map.new(industries, &{&1.id, &1.name})
+
+    skills_by_industry =
+      skills
+      |> Enum.filter(& &1.industry_id)
+      |> Enum.group_by(&Map.get(industry_names, &1.industry_id), & &1.name)
+
+    general_skills = skills |> Enum.reject(& &1.industry_id) |> Enum.map(& &1.name)
 
     for i <- 0..(count - 1) do
       org = Enum.at(orgs, rem(i, length(orgs)))
-      title = "#{Enum.at(@job_levels, rem(i, 3))} #{Enum.at(@job_titles, rem(i, 20))}"
+      base_title = Enum.at(@job_titles, rem(i, length(@job_titles)))
+      title = "#{Enum.at(@job_levels, rem(i, 3))} #{base_title}"
       status = job_status(i)
+      industry_name = Map.get(@job_title_industries, base_title)
 
       get_or_create_job(%{
         title: title,
         description:
           "Lowongan demo: #{title} di #{org.name}. Data sintetis (JosjobLrn.DemoSeed).",
         location: pick(@job_locations),
-        industry: pick(industries).name,
+        # Untuk judul tanpa industri yang cocok, industri tetap dipilih acak
+        # seperti sebelumnya (requirement-nya memakai skill umum).
+        industry: industry_name || pick(industries).name,
         employment_type: Enum.at(@job_types, rem(i, length(@job_types))),
         work_mode: Enum.at(@job_modes, rem(i, length(@job_modes))),
-        requirements: Enum.take_random(skills, 3),
+        requirements: job_requirements(industry_name, skills_by_industry, general_skills, i),
         highlights: Enum.take_random(@job_highlights, 2),
         salary_min: job_salary_min(i),
         salary_max: job_salary_max(i),
@@ -657,6 +695,29 @@ defmodule JosjobLrn.DemoSeed do
       })
     end
     |> length()
+  end
+
+  # 3 requirement yang konsisten dengan industri judul. Offset memakai indeks
+  # job supaya tiap level (Junior/Mid/Senior) dapat kombinasi skill berbeda.
+  defp job_requirements(industry_name, skills_by_industry, general_skills, i) do
+    pool =
+      case industry_name && Map.get(skills_by_industry, industry_name) do
+        nil -> general_skills
+        [] -> general_skills
+        skills -> skills
+      end
+
+    rotate(pool, i, 3)
+  end
+
+  defp rotate([], _offset, _take), do: []
+
+  defp rotate(list, offset, take) do
+    list
+    |> Stream.cycle()
+    |> Stream.drop(rem(offset, length(list)))
+    |> Enum.take(take)
+    |> Enum.uniq()
   end
 
   # 7 dari 10 aktif, 2 draft, 1 expired.
