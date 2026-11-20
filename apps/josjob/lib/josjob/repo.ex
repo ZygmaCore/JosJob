@@ -4,8 +4,9 @@ defmodule Josjob.Repo do
     warn_on_missing_ash_functions?: false
 
   # citext -> email case-insensitive (Ash :ci_string).
+  # vector -> pgvector embeddings for the RAG ranking pipeline.
   def installed_extensions do
-    ["citext"]
+    ["citext", "vector"]
   end
 
   def min_pg_version do

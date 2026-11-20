@@ -96,7 +96,9 @@ defmodule Josjob.Repo.Migrations.UsersRbacMultitenant do
             name: "role_permissions_role_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), primary_key: true, null: false
+          ),
+          primary_key: true,
+          null: false
 
       add :permission_id, :uuid, null: false, primary_key: true
     end
@@ -205,7 +207,9 @@ defmodule Josjob.Repo.Migrations.UsersRbacMultitenant do
             name: "membership_roles_membership_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), primary_key: true, null: false
+          ),
+          primary_key: true,
+          null: false
 
       add :role_id,
           references(:roles,
@@ -213,7 +217,9 @@ defmodule Josjob.Repo.Migrations.UsersRbacMultitenant do
             name: "membership_roles_role_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), primary_key: true, null: false
+          ),
+          primary_key: true,
+          null: false
     end
 
     create table(:industries, primary_key: false) do

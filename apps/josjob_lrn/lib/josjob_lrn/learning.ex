@@ -111,4 +111,19 @@ defmodule JosjobLrn.Learning do
     |> Ash.Query.sort(title: :asc)
     |> Ash.read!(authorize?: false)
   end
+
+  @doc """
+  Course aktif yang boleh dilihat user dengan keanggotaan `org_ids`.
+
+  Visibilitas sama dengan katalog student: course publik terlihat siapa saja,
+  course non-publik hanya untuk member org tempat course dibagikan. Section,
+  industries, dan classes di-preload karena dipakai katalog dan ranking RAG.
+  """
+  def visible_courses(org_ids) when is_list(org_ids) do
+    Course
+    |> Ash.Query.filter(is_active == true and (is_public == true or organizations.id in ^org_ids))
+    |> Ash.Query.sort(title: :asc)
+    |> Ash.Query.load([:section, :industries, :classes])
+    |> Ash.read!(authorize?: false)
+  end
 end

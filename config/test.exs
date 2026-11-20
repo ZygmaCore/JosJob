@@ -18,6 +18,16 @@ config :josjob, Josjob.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+# RAG tests must be hermetic: use the deterministic local embeddings and never
+# call Gemini. Unit tests that exercise the Gemini client inject a fake HTTP
+# client and an explicit `api_key`, so they do not need runtime credentials.
+config :josjob_rag, :embeddings,
+  provider: :local,
+  model: "gemini-embedding-2",
+  dimensions: 1536,
+  api_key: nil,
+  base_url: "https://generativelanguage.googleapis.com"
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :josjob_web, JosjobWeb.Endpoint,

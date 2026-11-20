@@ -183,6 +183,23 @@ defmodule JosjobWeb.Router do
       get "/courses/:id", CatalogController, :show
     end
 
+    # RAG: CV extraction (proxied to josjob_ragpdf) → ranking + course hook.
+    scope "/rag" do
+      pipe_through :api_auth
+
+      post "/cv/extractions", RagController, :create_extraction
+      get "/cv/extractions/:id", RagController, :show_extraction
+      post "/analyses", RagController, :analyze
+      get "/analyses/:cv_id", RagController, :show
+    end
+
+    # Re-embed all jobs/courses. Superuser only: it touches every tenant.
+    scope "/rag" do
+      pipe_through [:api_auth, :require_superuser_api]
+
+      post "/reindex", RagController, :reindex
+    end
+
     # VOD sebagai dokumen (Bearer) — upload video via Cloudflare Stream lalu
     # simpan sebagai JosjobDoc.Document (bukan lecture).
     scope "/vod" do
