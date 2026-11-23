@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:file_picker/file_picker.dart';
+import '../services/job_rankings_api.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +31,7 @@ import '../services/ui_preferences.dart';
 part 'widgets/search_field.dart';
 part 'widgets/job_card.dart';
 part 'screens/job_board.dart';
+part 'screens/cv_job_rankings.dart';
 part 'screens/job_detail.dart';
 part 'screens/job_editor.dart';
 

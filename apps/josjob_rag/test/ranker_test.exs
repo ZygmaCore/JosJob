@@ -117,6 +117,20 @@ defmodule JosjobRag.RankerTest do
   end
 
   describe "rank/3" do
+    test "personalizes the best job to each CV rather than listing order" do
+      jobs = [
+        job("elixir-role", requirements: ["Elixir", "SQL"]),
+        job("python-role", requirements: ["Python", "SQL"])
+      ]
+
+      [elixir_best | _] = Ranker.rank(%{skills: ["Elixir", "SQL"]}, jobs, now: @now)
+      [python_best | _] = Ranker.rank(%{skills: ["Python", "SQL"]}, jobs, now: @now)
+      assert elixir_best.job_id == "elixir-role"
+      assert python_best.job_id == "python-role"
+      assert elixir_best.missing_skills == []
+      assert python_best.missing_skills == []
+    end
+
     test "sorts by match score then recency and applies the limit" do
       jobs = [
         job("weak", requirements: ["Go", "Rust"]),

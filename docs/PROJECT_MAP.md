@@ -49,6 +49,14 @@ Slot and Booking resources live in `JosjobLrn.Coaching`, alongside the existing
 Learning domain. Ordered reading/video/quiz course curriculum remains planned.
 See [the redesign proposal](../PRD/LEARNING_AND_COACHING_REDESIGN.md).
 
+CV relevance update, 2026-11-23 (D23): analyze/extract each CV version once,
+reuse saved role categories and skills, and sort the regular job listing by
+category relevance, skill overlap and recency. Normal ranking makes no AI or
+embedding calls. Identical owned PDFs reuse saved extraction; saved facts remain
+usable after the PDF service expires. Related and less relevant jobs remain in
+the list. See [CV relevance](api/cv-job-rankings.md) for APIs, privacy, taxonomy
+coverage, deployment and in-memory sorting limits. Graphify predates this work.
+
 ## Read this first
 
 UI consistency audit, 2026-11-18: a browser/source review of the Flutter app
@@ -82,6 +90,14 @@ Manual vacancy/hiring data can be explicitly added with
 `apps/josjob/priv/repo/manual_job_seeds.exs`: a separate demo organization,
 candidate/employer accounts, 12 vacancies and five staged applications with chat.
 It is never seeded on startup. See [the local manual-testing guide](manual-job-testing.md).
+
+A separate explicit CV relevance seed creates six candidates with distinct PDF
+CVs and saved category profiles, an employer, and 22 marked jobs (20 active).
+It is additive, preserves existing demo edits and passwords, and uses no AI.
+See [the multi-account CV demo](cv-relevance-demo.md) for credentials, repeatable
+seed commands and per-account expected ordering. The local database has been
+seeded. Local frontend/backend images were refreshed on 2026-11-23 and the
+landing page and all six account-specific job orders were verified live.
 
 Vacancy/hiring verification, 2026-11-17: deletion and application submission now
 serialize on the same job row to prevent a concurrent foreign-key failure.

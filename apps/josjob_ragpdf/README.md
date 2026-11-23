@@ -34,9 +34,15 @@ curl -s -H "x-goog-api-key: $GEMINI_API_KEY" \
   | jq -r '.models[] | select(.supportedGenerationMethods | index("generateContent")) | .name'
 ```
 
-Not wired yet: the JosJob backend does not call this service, the 9Router
-fallback has never run against a real instance, and the queue does not survive
-a restart.
+Integration update, 2026-11-23: the JosJob backend proxies consented uploads
+and verifies the response's `user_id` before exposing extraction data or ranking
+it. The Flutter jobs board now offers upload, extracted-skill review and CV relevance
+inside the regular job listing. Saved identical PDFs reuse extraction; subsequent
+matching uses categories/skills locally without embedding requests. Deploy both services together so ownership metadata is available.
+See [the CV ranking flow](../../docs/api/cv-job-rankings.md). The keyword fallback
+receives known skills from listing requirements and the project taxonomy.
+The 9Router fallback still has not been verified against a real instance, and
+the queue still does not survive a restart.
 
 ---
 

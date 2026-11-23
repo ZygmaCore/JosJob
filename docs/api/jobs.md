@@ -99,3 +99,18 @@ project dependency locks and SDK requirements were preserved.
 
 Publication policy and final retention/removal of legacy fixtures remain subject
 to the open PRD questions presented to the user during this work.
+
+## CV relevance sorting (2026-11-23, D23)
+
+Signed-in candidates can request `GET /api/jobs?sort=relevance`. This reuses the
+latest saved extracted CV; optional `cv_id` must belong to the caller. It makes
+no AI/embedding requests. Existing browse filters apply and all filtered jobs
+are ordered by same/related category, required-skill coverage and recency before
+pagination. Less relevant jobs remain visible below.
+
+Each listing may include `relevance` (label, categories, matched/missing skills,
+skill score and explanation). Metadata includes `relevance_status`, selected CV
+and categories. A candidate without a saved CV gets newest jobs with
+`relevance_status: "cv_required"`. Guests can still browse newest/salary listings;
+relevance sorting requires authentication. Employer management uses its existing
+sorts. See [CV relevance](cv-job-rankings.md) for extraction reuse and limitations.

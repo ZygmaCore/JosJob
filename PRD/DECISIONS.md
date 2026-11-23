@@ -34,6 +34,7 @@
 | D20 | Hiring memakai urutan **Applied → Reviewing → Interview → Offer → Hired**. Menggantikan rekomendasi status pada O4/Q4. | 2026-11-17 | User |
 | D21 | Tambahkan chat untuk proses lamaran dan coaching; semua chat memakai tema visual bersama. | 2026-11-17 | User |
 | D22 | Lowongan aktif dapat dilihat publik tanpa login, membership organisasi, atau provisioning setelah registrasi. Login diperlukan untuk melamar; manajemen lowongan dan data hiring tetap memakai izin organisasi. | 2026-11-18 | User |
+| D23 | CV diproses sekali per versi PDF, lalu kategori dan skill tersimpan dipakai untuk mengurutkan listing biasa: kategori relevan/terkait, overlap skill, lalu recency. Tidak ada panggilan AI/embedding untuk membandingkan lowongan. Lowongan kurang relevan tetap terlihat di bawah. Menggantikan matching semantik pada alur discovery; Gemini/9Router tetap untuk ekstraksi CV. | 2026-11-23 | User |
 
 ## 2. Keputusan yang masih terbuka (level tim)
 

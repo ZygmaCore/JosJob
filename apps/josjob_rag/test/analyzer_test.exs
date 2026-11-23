@@ -102,25 +102,26 @@ defmodule JosjobRag.AnalyzerTest do
     assert {:ok, result} = analyze([])
 
     assert result.cv_id == "cv-live-1"
-    assert result.semantic == true
+    assert result.semantic == false
     assert result.provider == "local"
-    assert result.model == "hashed-bow-v1"
-    assert result.dimensions == 1536
-    assert result.scoring.semantic == 0.6
+    assert result.model == "category-skill-v1"
+    assert result.dimensions == nil
+    assert result.scoring.external_ai_calls == 0
+    assert result.profile["categories"] == ["backend"]
 
     assert [best, other] = result.jobs
     assert best.job_id == "job-1"
     assert other.job_id == "job-2"
-    assert best.semantic_score != nil
+    assert best.semantic_score == nil
     assert best.missing_skills == ["Kubernetes"]
     assert best.course.course_id == "course-1"
     assert best.course.class_id == "class-1"
 
-    assert other.missing_skills == ["Graphic Design", "Photoshop"]
-    assert other.course.course_id == "course-2"
-    assert other.course.class_id == "class-2"
+    assert other.missing_skills == []
+    assert other.skill_score == nil
+    assert other.course == nil
 
-    assert Enum.map(result.courses, & &1.course_id) |> Enum.sort() == ["course-1", "course-2"]
+    assert Enum.map(result.courses, & &1.course_id) == ["course-1"]
     assert Enum.all?(result.courses, &(&1.jobs_covered == 1))
   end
 
@@ -128,12 +129,23 @@ defmodule JosjobRag.AnalyzerTest do
     assert {:ok, result} = analyze(vector_store: BrokenStore)
 
     assert result.semantic == false
-    assert result.provider == nil
-    assert result.model == nil
+    assert result.provider == "local"
+    assert result.model == "category-skill-v1"
     assert Enum.all?(result.jobs, &is_nil(&1.semantic_score))
 
     assert Enum.map(result.jobs, & &1.job_id) |> Enum.sort() == ["job-1", "job-2"]
-    assert Enum.all?(result.jobs, &(&1.match_score > 0.0))
+    assert hd(result.jobs).job_id == "job-1"
+  end
+
+  test "repeated ranking never calls AI, embedding or vector-store providers" do
+    assert {:ok, first} =
+             analyze(embeddings: :must_not_be_called, vector_store: :must_not_be_called)
+
+    assert {:ok, second} =
+             analyze(embeddings: :must_not_be_called, vector_store: :must_not_be_called)
+
+    assert first.jobs == second.jobs
+    assert first.scoring.external_ai_calls == 0
   end
 
   test "respects the limit and the injected clock" do

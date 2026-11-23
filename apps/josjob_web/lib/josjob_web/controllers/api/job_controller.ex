@@ -4,10 +4,14 @@ defmodule JosjobWeb.Api.JobController do
   alias JosjobWeb.Api.JobJSON
 
   def index(conn, params) do
-    case Listings.list(conn.assigns.current_user, params) do
+    case listing_page(conn.assigns.current_user, params) do
       {:ok, page} ->
         json(conn, %{
-          data: Enum.map(page.jobs, &JobJSON.listing(&1, page.organizations)),
+          data:
+            Enum.map(page.jobs, fn job ->
+              JobJSON.listing(job, page.organizations)
+              |> Map.put(:relevance, Map.get(Map.get(page, :relevance, %{}), job.id))
+            end),
           meta: page.meta,
           organizations: page.organizations
         })
@@ -16,6 +20,25 @@ defmodule JosjobWeb.Api.JobController do
         respond_error(conn, error)
     end
   end
+
+  defp listing_page(nil, %{"sort" => "relevance"}), do: {:error, :unauthorized}
+
+  defp listing_page(user, %{"sort" => "relevance"} = params) do
+    case JosjobRag.Analyses.cv(user, params["cv_id"]) do
+      {:ok, cv} ->
+        JosjobRag.CategoryRanking.list(user, cv, params)
+
+      {:error, :not_found} when not is_map_key(params, "cv_id") ->
+        with {:ok, page} <- Listings.list(user, Map.put(params, "sort", "newest")) do
+          {:ok, put_in(page, [:meta, :relevance_status], "cv_required")}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp listing_page(user, params), do: Listings.list(user, params)
 
   def show(conn, %{"id" => id}) do
     user = conn.assigns.current_user
@@ -31,8 +54,6 @@ defmodule JosjobWeb.Api.JobController do
 
     case Listings.create(user, params["organization_id"], params) do
       {:ok, job} ->
-        _ = JosjobRag.Workers.IndexJob.enqueue(job.id)
-
         conn
         |> put_status(:created)
         |> json(%{data: JobJSON.listing(job, Listings.organizations(user))})
@@ -47,7 +68,6 @@ defmodule JosjobWeb.Api.JobController do
 
     case Listings.update(user, id, params) do
       {:ok, job} ->
-        _ = JosjobRag.Workers.IndexJob.enqueue(job.id)
         json(conn, %{data: JobJSON.listing(job, Listings.organizations(user))})
 
       error ->
@@ -65,6 +85,9 @@ defmodule JosjobWeb.Api.JobController do
         respond_error(conn, error)
     end
   end
+
+  defp respond_error(conn, {:error, :not_migrated}),
+    do: conn |> put_status(:service_unavailable) |> json(%{error: "cv_storage_unavailable"})
 
   defp respond_error(conn, {:error, :not_found}),
     do: conn |> put_status(:not_found) |> json(%{error: "not_found"})

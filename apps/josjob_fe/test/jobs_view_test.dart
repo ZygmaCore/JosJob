@@ -331,6 +331,84 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'saved CV relevance orders the existing list and keeps less relevant jobs',
+    (tester) async {
+      tester.view.physicalSize = const Size(700, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final requests = <http.Request>[];
+      final best = jobJson()
+        ..addAll({
+          'id': 'best',
+          'title': 'Backend Developer',
+          'relevance': {
+            'relevance_label': 'Relevant category',
+            'matched_skills': ['Elixir'],
+            'missing_skills': ['SQL'],
+          },
+        });
+      final other = jobJson()
+        ..addAll({
+          'id': 'other',
+          'title': 'Accountant',
+          'relevance': {
+            'relevance_label': 'Less relevant',
+            'matched_skills': [],
+            'missing_skills': ['Accounting'],
+          },
+        });
+      final api = JobsApi(
+        client: MockClient((request) async {
+          requests.add(request);
+          return http.Response(
+            jsonEncode({
+              'data': [best, other],
+              'organizations': [],
+              'meta': {
+                'page': 1,
+                'total': 2,
+                'total_pages': 1,
+                if (request.url.queryParameters['sort'] == 'relevance') ...{
+                  'relevance_status': 'ready',
+                  'cv_id': 'saved-backend',
+                  'cv_categories': ['backend'],
+                },
+              },
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(api.close);
+      await showBoard(tester, api);
+      expect(requests.single.url.queryParameters['sort'], 'relevance');
+      expect(find.byKey(const ValueKey('job-best')), findsOneWidget);
+      expect(find.byKey(const ValueKey('job-other')), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('job-best'))).dy,
+        lessThan(tester.getTopLeft(find.byKey(const ValueKey('job-other'))).dy),
+      );
+      expect(find.text('CV overlap: Elixir'), findsOneWidget);
+      expect(find.text('Your CV is ready'), findsOneWidget);
+      expect(find.byKey(const ValueKey('upload-ranking-cv')), findsNothing);
+      expect(find.byKey(const ValueKey('cv-processing-consent')), findsNothing);
+      expect(find.text('Less relevant'), findsOneWidget);
+      expect(find.byKey(const ValueKey('ranked-job-best')), findsNothing);
+      final sort = find.byKey(const ValueKey('Sort by:relevance'));
+      await tester.ensureVisible(sort);
+      await tester.tap(sort);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Newest first').last);
+      await tester.pumpAndSettle();
+      expect(requests.last.url.queryParameters['sort'], 'newest');
+      expect(find.text('Your CV is ready'), findsOneWidget);
+      expect(find.byKey(const ValueKey('cv-processing-consent')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('desktop advanced filters share one aligned row', (tester) async {
     tester.view.physicalSize = const Size(1200, 1000);
     tester.view.devicePixelRatio = 1;

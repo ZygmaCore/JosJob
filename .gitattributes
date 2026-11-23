@@ -9,3 +9,6 @@
 *.heex          text eol=lf
 docker-entrypoint.sh text eol=lf
 rel/overlays/bin/* text eol=lf
+
+# Preserve PDF bytes across Windows and Linux checkouts.
+*.pdf binary
