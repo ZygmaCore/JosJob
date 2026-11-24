@@ -16,6 +16,21 @@
 # docker compose up -d --build josjob_fe`.
 
 services:
+  josjob_ragpdf:
+    build:
+      context: ./apps/josjob_ragpdf
+    image: josjob-ragpdf:local
+    env_file:
+      - path: envs/.env
+        required: false
+    environment:
+      RAGPDF_PORT: "4010"
+      RAGPDF_API_TOKEN: ${RAGPDF_API_TOKEN:-local-cv-extraction-only}
+      RAGPDF_PROVIDER_ORDER: ${RAGPDF_PROVIDER_ORDER:-gemini,nine_router,keyword}
+    ports:
+      - "127.0.0.1:4010:4010"
+    restart: unless-stopped
+
   paradedb:
     image: paradedb/paradedb:latest
     container_name: paradedb
@@ -58,6 +73,8 @@ services:
     depends_on:
       paradedb:
         condition: service_healthy
+      josjob_ragpdf:
+        condition: service_healthy
     env_file:
       - path: envs/.env
         required: false
@@ -66,6 +83,8 @@ services:
       PORT: "4000"
       PHX_HOST: localhost
       PHX_SERVER: "true"
+      RAGPDF_BASE_URL: ${RAGPDF_BASE_URL:-http://josjob_ragpdf:4010}
+      RAGPDF_API_TOKEN: ${RAGPDF_API_TOKEN:-local-cv-extraction-only}
       # DB — reach paradedb over the compose network on 5432 (the 5438 mapping is
       # host-only). Creds mirror the paradedb service defaults above.
       POSTGRES_HOST: paradedb

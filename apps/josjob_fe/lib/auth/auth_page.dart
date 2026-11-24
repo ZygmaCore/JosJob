@@ -10,7 +10,8 @@ import '../services/session.dart';
 import '../services/ui_preferences.dart';
 import '../shared/app_ui.dart';
 import 'org_pending_page.dart' show OrgPendingPage;
-import 'widgets/google_auth.dart';
+import 'widgets/google_auth_stub.dart'
+    if (dart.library.js_interop) 'widgets/google_auth.dart';
 
 // =========================================================================
 // JosJob — Authentication (Log in / Create account)

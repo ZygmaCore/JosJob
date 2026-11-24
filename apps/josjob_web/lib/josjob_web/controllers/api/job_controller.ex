@@ -24,7 +24,7 @@ defmodule JosjobWeb.Api.JobController do
   defp listing_page(nil, %{"sort" => "relevance"}), do: {:error, :unauthorized}
 
   defp listing_page(user, %{"sort" => "relevance"} = params) do
-    case JosjobRag.Analyses.cv(user, params["cv_id"]) do
+    case JosjobRag.CandidateProfile.cv(user, params["cv_id"]) do
       {:ok, cv} ->
         JosjobRag.CategoryRanking.list(user, cv, params)
 
@@ -44,8 +44,41 @@ defmodule JosjobWeb.Api.JobController do
     user = conn.assigns.current_user
 
     case Listings.get(user, id) do
-      {:ok, job} -> json(conn, %{data: JobJSON.listing(job, Listings.organizations(user))})
-      error -> respond_error(conn, error)
+      {:ok, job} ->
+        data =
+          JobJSON.listing(job, Listings.organizations(user))
+          |> Map.put(:my_application, JosjobJob.Applications.own_for(user, job.id))
+          |> Map.put(:relevance, skill_fit(user, job))
+
+        json(conn, %{data: data})
+
+      error ->
+        respond_error(conn, error)
+    end
+  end
+
+  defp skill_fit(nil, _job), do: nil
+
+  defp skill_fit(user, job) do
+    profile = JosjobJob.CurriculumVitae.get_for(user)
+
+    skills =
+      case JosjobRag.CandidateProfile.cv(user) do
+        {:ok, cv} -> cv["skills"] || []
+        _ -> profile.skills
+      end
+
+    if skills == [] or job.requirements == [] do
+      nil
+    else
+      {matched, missing} = JosjobRag.Text.split_skills(job.requirements, skills)
+
+      %{
+        relevance_label:
+          "#{length(matched)} of #{length(matched) + length(missing)} required skills found",
+        matched_skills: matched,
+        missing_skills: missing
+      }
     end
   end
 

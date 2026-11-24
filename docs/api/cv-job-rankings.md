@@ -9,13 +9,33 @@ candidate's saved CV. There is no separate ranked-results list.
 2. The backend fingerprints the bytes and scopes the version to the account.
    If those bytes were previously extracted and saved, reuse the structured CV.
    Otherwise the PDF service extracts skills, experience and education once.
-3. Review the skills and select **Use this CV for job listings**. The backend
+3. Review and correct the comma-separated skills, then select **Use this CV for job listings**. The backend
    derives role categories locally and saves the facts, classifier version and
    content hash in the existing `rag_cv_analyses.payload` column.
 4. The regular jobs list switches to **Most relevant to my CV**. It uses the
    saved CV on future visits, including after the PDF service restarts/expires.
 5. A changed PDF gets a new version. The most recently saved CV is used by
    default. Changing extracted facts invalidates its cached category profile.
+
+Journey update, 2026-11-24: accepting an owned analysis also updates the private
+candidate CV facts in the same transaction. `/api/me/cv` and future application
+snapshots therefore use the reviewed skills/experience/education. Candidates may
+later correct `skills` through the CV editor; listing relevance, saved-CV rematch
+and Apply suggestions all honor the corrections without re-extracting the PDF.
+An explicit historical CV lookup only receives the current override if its CV ID
+matches. Existing sent applications retain their original snapshot.
+
+The upload panel remembers the current extraction ID per account on the device,
+resumes status polling after navigation/reload, and offers a new upload when the
+temporary extraction expires. Review edits are submitted as optional
+`reviewed_skills` with `extraction_id` to `POST /api/rag/analyses` (at most 100
+strings, each at most 100 characters). The backend checks extraction ownership
+before applying corrections. Keyword fallback is labeled as basic text extraction.
+
+The fullstack Compose starts `josjob_ragpdf`, including qpdf/pdftotext, and points
+the backend at `http://josjob_ragpdf:4010` using the shared local API token.
+Provider order remains configurable through `RAGPDF_PROVIDER_ORDER`; automated
+local verification explicitly uses `keyword` without sending CVs to a live AI API.
 
 ## No AI calls while browsing or comparing jobs
 

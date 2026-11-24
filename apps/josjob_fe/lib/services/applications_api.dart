@@ -1,4 +1,31 @@
 import 'workflow_client.dart';
+import 'courses_api.dart';
+
+class ApplicationCourseSuggestion {
+  final CourseSummary course;
+  final List<String> matchedSkills;
+  ApplicationCourseSuggestion.fromJson(Map<String, dynamic> json)
+    : course = CourseSummary.fromJson(json),
+      matchedSkills = List<String>.from(json['matched_skills'] as List);
+}
+
+class ApplicationSuggestions {
+  final String status, source;
+  final List<String> matchedSkills, missingSkills, uncoveredSkills;
+  final List<ApplicationCourseSuggestion> courses;
+  ApplicationSuggestions.fromJson(Map<String, dynamic> json)
+    : status = json['status'] as String,
+      source = json['source'] as String,
+      matchedSkills = List<String>.from(json['matched_skills'] as List),
+      missingSkills = List<String>.from(json['missing_skills'] as List),
+      uncoveredSkills = List<String>.from(json['uncovered_skills'] as List),
+      courses = (json['courses'] as List)
+          .map(
+            (c) =>
+                ApplicationCourseSuggestion.fromJson(c as Map<String, dynamic>),
+          )
+          .toList();
+}
 
 const hiringStages = ['applied', 'reviewing', 'interview', 'offer', 'hired'];
 String stageLabel(String stage) => stage.isEmpty
@@ -53,6 +80,17 @@ class ApplicationResults {
 
 class ApplicationsApi extends WorkflowClient {
   ApplicationsApi({super.client, super.baseUrl});
+  Future<ApplicationSuggestions> suggestions(
+    String token,
+    String jobId,
+  ) async => ApplicationSuggestions.fromJson(
+    (await request(
+          'GET',
+          '/api/jobs/${Uri.encodeComponent(jobId)}/application-suggestions',
+          token,
+        ))['data']
+        as Map<String, dynamic>,
+  );
   Future<ApplicationResults> list(
     String token, {
     String scope = 'mine',

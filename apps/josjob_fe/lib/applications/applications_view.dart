@@ -11,6 +11,9 @@ import '../shared/app_form_field.dart';
 import '../theme/app_theme.dart';
 import '../shared/app_ui.dart';
 import '../shared/app_formats.dart';
+import '../services/ui_preferences.dart';
+import '../dashboard/screens/curriculum_vitae_view.dart';
+import 'application_suggestions.dart';
 
 TextStyle _style(
   double size, {
@@ -700,6 +703,30 @@ class _ApplicationDetailPageState extends State<ApplicationDetailPage> {
                                 ),
                             ],
                           ),
+                          if (!_data!.canManage) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              switch (_data!.status) {
+                                'applied' =>
+                                  'Your application has been sent. The hiring team will review it; you can follow updates here.',
+                                'reviewing' =>
+                                  'The hiring team is reviewing your profile. Keep an eye on this page and your conversation.',
+                                'interview' =>
+                                  'You have reached the interview stage. Confirm the details with the hiring team in chat.',
+                                'offer' =>
+                                  'The hiring team has made an offer. Use chat to discuss the next steps.',
+                                'hired' =>
+                                  'Congratulations on your new role. Your application history remains available here.',
+                                'rejected' =>
+                                  'This application was not selected. You can continue exploring other roles.',
+                                'withdrawn' =>
+                                  'You withdrew this application. Its history and conversation remain available.',
+                                _ => 'Follow your application updates here.',
+                              },
+                              key: const ValueKey('application-next-step'),
+                              style: _style(13, color: AppColors.body),
+                            ),
+                          ],
                           if (_data!.interviewAt != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 12),
@@ -901,12 +928,98 @@ class _ApplyPageState extends State<ApplyPage> {
   Map<String, dynamic>? _profile;
   bool _consent = false, _sending = false;
   String? _error;
+  Timer? _draftTimer;
+  bool _submitted = false;
+  int _profileRevision = 0;
+  late final String? _draftAccount = Session.instance.user?.id;
   Future<T> _auth<T>(Future<T> Function(String) call) =>
       (widget.authorize ?? Session.instance.runAuthed)(call);
   @override
   void initState() {
     super.initState();
+    _cover.addListener(_queueDraft);
+    _restoreDraft();
     _load();
+  }
+
+  Future<void> _restoreDraft() async {
+    if (_draftAccount == null) return;
+    try {
+      final draft = await const UiPreferences().applicationDraft(
+        _draftAccount,
+        widget.job.id,
+      );
+      if (mounted && _cover.text.isEmpty && !_submitted) _cover.text = draft;
+    } catch (_) {}
+  }
+
+  void _queueDraft() {
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 350), _saveDraft);
+  }
+
+  void _saveDraft() {
+    if (_draftAccount == null || _submitted) return;
+    unawaited(
+      const UiPreferences()
+          .saveApplicationDraft(_draftAccount, widget.job.id, _cover.text)
+          .catchError((_) {}),
+    );
+  }
+
+  Future<void> _editProfile() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Review your CV profile')),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: CurriculumVitaeView(authorize: widget.authorize),
+          ),
+        ),
+      ),
+    );
+    if (mounted) {
+      setState(() {
+        _consent = false;
+        _profileRevision++;
+      });
+      await _load();
+    }
+  }
+
+  Future<void> _openSubmitted(String id, {bool existing = false}) async {
+    _submitted = true;
+    _draftTimer?.cancel();
+    if (_draftAccount != null) {
+      try {
+        await const UiPreferences().saveApplicationDraft(
+          _draftAccount,
+          widget.job.id,
+          '',
+        );
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          existing
+              ? 'You have already applied. Here is your application.'
+              : 'Application sent. Follow its progress here.',
+        ),
+      ),
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: '/applications/$id'),
+        builder: (_) => ApplicationDetailPage(
+          applicationId: id,
+          authorize: widget.authorize,
+          api: widget.api,
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -925,6 +1038,9 @@ class _ApplyPageState extends State<ApplyPage> {
 
   @override
   void dispose() {
+    _draftTimer?.cancel();
+    _saveDraft();
+    _cover.removeListener(_queueDraft);
     _cover.dispose();
     if (widget.api == null) _api.close();
     super.dispose();
@@ -945,18 +1061,22 @@ class _ApplyPageState extends State<ApplyPage> {
           consent: _consent,
         ),
       );
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          settings: RouteSettings(name: '/applications/${result.id}'),
-          builder: (_) => ApplicationDetailPage(
-            applicationId: result.id,
-            authorize: widget.authorize,
-            api: widget.api,
-          ),
-        ),
-      );
+      await _openSubmitted(result.id);
     } catch (e) {
+      if (e is WorkflowException && e.statusCode == 409) {
+        try {
+          final existing = await _auth(
+            (token) => _api.list(token, jobId: widget.job.id),
+          );
+          if (existing.applications.isNotEmpty) {
+            await _openSubmitted(
+              existing.applications.first.id,
+              existing: true,
+            );
+            return;
+          }
+        } catch (_) {}
+      }
       if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -1002,10 +1122,41 @@ class _ApplyPageState extends State<ApplyPage> {
                       )
               else ...[
                 _card(
-                  _SubmittedProfile(
-                    profile: _profile!,
-                    heading: 'Profile to share',
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ExpansionTile(
+                        key: const ValueKey('application-profile-preview'),
+                        tilePadding: EdgeInsets.zero,
+                        title: const Text('Profile to share'),
+                        subtitle: Text(
+                          '${(_profile!['identity'] as Map?)?['full_name'] ?? ''}\nTap to review your details and attached PDF.',
+                        ),
+                        children: [
+                          _SubmittedProfile(
+                            profile: _profile!,
+                            heading: 'Profile details',
+                          ),
+                        ],
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          key: const ValueKey('edit-application-profile'),
+                          onPressed: _sending ? null : _editProfile,
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Edit CV profile & skills'),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(height: 18),
+                ApplicationSuggestionsCard(
+                  key: ValueKey('application-suggestions-$_profileRevision'),
+                  jobId: widget.job.id,
+                  api: _api,
+                  authorize: widget.authorize ?? Session.instance.runAuthed,
                 ),
                 const SizedBox(height: 18),
                 _card(
@@ -1030,7 +1181,7 @@ class _ApplyPageState extends State<ApplyPage> {
                             ? null
                             : (v) => setState(() => _consent = v ?? false),
                         title: Text(
-                          'Share this saved profile and selected CV PDF with ${widget.job.company} for this application.',
+                          'Share this profile${_profile!['resume_document'] == null ? '' : ' and attached CV PDF'} with ${widget.job.company} for this application.',
                           style: _style(13),
                         ),
                       ),
@@ -1039,6 +1190,11 @@ class _ApplyPageState extends State<ApplyPage> {
                         'A copy is saved when you submit. Later profile edits will not change this application.',
                         style: _style(12, color: AppColors.body),
                       ),
+                      if (_profile!['resume_document'] == null)
+                        Text(
+                          'No PDF is attached. You can apply with your saved profile, or attach an owned PDF from Edit CV profile & skills.',
+                          style: _style(12, color: AppColors.body),
+                        ),
                       const SizedBox(height: 18),
                       FilledButton.icon(
                         key: const ValueKey('submit-application'),

@@ -1,5 +1,15 @@
 # Applications, hiring and shared chat
 
+Journey update (2026-11-24): Apply previews the same reviewed CV facts used by
+matching, offers Edit CV profile & skills, and refreshes suggestions on return.
+The cover letter is saved locally by account and job; consent is requested again
+after profile editing and is never persisted. Course suggestions open a sheet
+with Back to application, enrollment feedback and authorized learning materials.
+Successful submissions clear the draft and open status/next-step details;
+duplicate submissions open the candidate's existing application. Job detail
+returns only the current candidate's `my_application` reference and offers View
+my application. Existing application snapshots remain immutable when the CV changes.
+
 The Applications destination now reads persisted records, not the former sample
 application history. Any signed-in candidate can submit to a public active listing
 without organization membership (D22, 2026-11-18). Browsing listings and details
@@ -38,6 +48,44 @@ returns `409 already_submitted`; users open the existing application rather than
 creating another. Row locks serialize submissions against listing closure and stage
 changes against other stage changes. Stale `expected_status` returns `409`.
 Listings with applications must be expired instead of deleted, preserving history.
+
+## Learning suggestions when applying
+
+`GET /api/jobs/:job_id/application-suggestions` requires Bearer authentication
+and a visible active listing. It is a read-only check; it never creates an
+application, enrolls the candidate, or invokes an AI/PDF provider.
+
+`JosjobRag.ApplicationSuggestions` compares every requirement of this specific
+job with the candidate's latest saved analyzed CV (`source: analyzed_cv`). If
+there is no saved analysis with skills, it uses skills from their CV profile
+(`source: saved_profile`). The UI names the source; the analyzed CV can differ
+from the PDF selected for sharing in the application. Existing canonical skill
+aliases apply, including JS/JavaScript and Postgres/PostgreSQL. Unlike discovery
+ranking, comparison also runs for jobs outside the candidate's role category.
+
+The response's `data` contains `status` (`gap`, `matched`, `cv_required`, or
+`no_requirements`), `source`, `matched_skills`, `missing_skills`, `courses`, and
+`uncovered_skills`. Empty CV skills return `cv_required`, never a claim that the
+candidate lacks every skill. Recommended courses cover at least one missing
+skill and come from the active catalog visible to this candidate. Each entry
+contains catalog summary fields, `matched_skills`, and a nullable `class_id`.
+Class IDs/counts obey the same organization/public visibility as catalog details.
+Prices are shown, and courses without accessible scheduled classes say so.
+
+The Apply page shows these suggestions before submission. Course buttons open
+the existing catalog detail/enrollment sheet and preserve the application draft.
+Skills with no matching visible course have an explicit empty message. Loading,
+missing CV skills, gaps, and recommendation errors never prevent submission;
+errors offer retry independently of the saved-profile preview and sharing consent.
+
+Coverage: `application_suggestions_controller_test.exs` (source/owner scoping,
+course/class visibility, aliases and application independence) and
+`application_suggestions_test.dart` (mobile UI, course navigation, empty states,
+loading, retry and submission despite a skill gap).
+The opt-in `e2e/tests/application-suggestions.spec.ts` exercises the running local
+API with the CV demo dataset and a temporary SQL course/class fixture. All eight
+controller tests, ten live HTTP tests, and the umbrella precommit checks passed
+in Docker on 2026-11-24; see [verification and repeat commands](../verification/application-suggestions-2026-11-24.md).
 
 ## Shared chat
 

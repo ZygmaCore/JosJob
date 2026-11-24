@@ -85,7 +85,7 @@ class _BrandPanel extends StatelessWidget {
                 ),
               const Spacer(),
               Text(
-                'Various sectors · Live coaching · Recognised certifications',
+                'Practical courses · Free coaching · Job applications',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,

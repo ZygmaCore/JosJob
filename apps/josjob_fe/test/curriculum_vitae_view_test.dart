@@ -148,6 +148,7 @@ void main() {
         find.byType(TextFormField).at(1),
         'Updated summary',
       );
+      await tester.ensureVisible(key('cv-document-select'));
       await tester.tap(key('cv-document-select'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Actual resume.pdf').last);
@@ -157,6 +158,7 @@ void main() {
       expect(find.text('Updated headline'), findsOneWidget);
       expect(find.text('Updated summary'), findsOneWidget);
       expect(writes.single['resume_document_id'], 'pdf-1');
+      expect(writes.single['skills'], cvJson()['skills']);
       await tester.ensureVisible(key('open-cv-pdf'));
       await tester.tap(key('open-cv-pdf'));
       expect(opened, 'https://example.com/resume.pdf');

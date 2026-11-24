@@ -10,10 +10,12 @@ class _CoursePreviewSheet extends StatefulWidget {
   final _Course course;
   final bool initialSaved;
   final ValueChanged<String> onToggleSaved;
+  final String? returnLabel;
   const _CoursePreviewSheet({
     required this.course,
     required this.initialSaved,
     required this.onToggleSaved,
+    this.returnLabel,
   });
 
   @override
@@ -31,6 +33,7 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
 
   final Set<String> _enrolledClassIds = {};
   String? _busyClassId; // the class currently enrolling / leaving
+  bool _enrollmentConfirmed = false;
 
   @override
   void initState() {
@@ -98,7 +101,10 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
 
       // FREE course: the server already enrolled us.
       if (start.free) {
-        setState(() => _enrolledClassIds.add(c.id));
+        setState(() {
+          _enrolledClassIds.add(c.id);
+          _enrollmentConfirmed = true;
+        });
         _soon(context, "You're enrolled in this session.");
         _loadDetail();
         return;
@@ -113,7 +119,10 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
         (t) => _api.confirmEnroll(t, c.id, start.paymentIntentId!),
       );
       if (!mounted) return;
-      setState(() => _enrolledClassIds.add(c.id));
+      setState(() {
+        _enrolledClassIds.add(c.id);
+        _enrollmentConfirmed = true;
+      });
       _soon(context, "Payment received — you're enrolled!");
       _loadDetail();
     } on CourseApiException catch (e) {
@@ -160,7 +169,10 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
     try {
       await Session.instance.runAuthed((t) => _api.unenroll(t, c.id));
       if (!mounted) return;
-      setState(() => _enrolledClassIds.remove(c.id));
+      setState(() {
+        _enrolledClassIds.remove(c.id);
+        if (_enrolledClassIds.isEmpty) _enrollmentConfirmed = false;
+      });
       _soon(context, 'You left this session.');
       _loadDetail();
     } on CourseApiException catch (e) {
@@ -170,6 +182,29 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
     } finally {
       if (mounted) setState(() => _busyClassId = null);
     }
+  }
+
+  Future<void> _confirmLeave(CourseClass c) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave this class?'),
+        content: const Text(
+          'Your enrollment will be removed. A paid enrollment is not automatically refunded.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep enrollment'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Leave class'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) await _leave(c);
   }
 
   @override
@@ -243,6 +278,25 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
                           _section('Sessions'),
                           const SizedBox(height: 12),
                           _sessions(),
+                          if (_enrollmentConfirmed ||
+                              _enrolledClassIds.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            _infoBox(
+                              Icons.check_circle_outline,
+                              'You are enrolled. This class is also available in My Courses.',
+                            ),
+                            const SizedBox(height: 16),
+                            _learningMaterials(),
+                          ],
+                          if (widget.returnLabel != null) ...[
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              key: const ValueKey('return-from-course'),
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              label: Text(widget.returnLabel!),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -296,6 +350,32 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
       );
     }
     return Column(children: [for (final c in classes) _classRow(c)]);
+  }
+
+  Widget _learningMaterials() {
+    final all = [
+      ...?_detail?.materials,
+      for (final c in _detail?.classes ?? <CourseClass>[]) ...c.materials,
+    ];
+    final unique = {for (final material in all) material.id: material}.values;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _section('Learning materials'),
+        const SizedBox(height: 10),
+        if (unique.isEmpty)
+          const Text(
+            'Your instructor has not published materials yet. Check back here for updates.',
+          ),
+        for (final material in unique)
+          TextButton.icon(
+            key: ValueKey('course-material-${material.id}'),
+            onPressed: () => openLink(material.url),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: Text(material.title),
+          ),
+      ],
+    );
   }
 
   Widget _classRow(CourseClass c) {
@@ -409,19 +489,9 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
               ),
             ],
           ),
-          GestureDetector(
-            onTap: () => _leave(c),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                'Leave',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.body,
-                ),
-              ),
-            ),
+          TextButton(
+            onPressed: () => _confirmLeave(c),
+            child: const Text('Leave class'),
           ),
         ],
       );

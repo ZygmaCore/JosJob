@@ -25,19 +25,35 @@ class _JobDetailPageState extends State<_JobDetailPage> {
       widget.authorize((token) => widget.api.get(token, widget.jobId));
 
   void _apply(JobListing job) {
+    if (job.applicationId != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          settings: RouteSettings(name: '/applications/${job.applicationId}'),
+          builder: (_) => ApplicationDetailPage(
+            applicationId: job.applicationId!,
+            authorize: widget.authorize,
+          ),
+        ),
+      );
+      return;
+    }
     if (!Session.instance.isSignedIn) {
       AuthContinuation.remember('/jobs/${Uri.encodeComponent(job.id)}?apply=1');
       Navigator.of(context).pushNamed('/login');
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        settings: RouteSettings(
-          name: '/jobs/${Uri.encodeComponent(job.id)}?apply=1',
-        ),
-        builder: (_) => ApplyPage(job: job, authorize: widget.authorize),
-      ),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            settings: RouteSettings(
+              name: '/jobs/${Uri.encodeComponent(job.id)}?apply=1',
+            ),
+            builder: (_) => ApplyPage(job: job, authorize: widget.authorize),
+          ),
+        )
+        .then((_) {
+          if (mounted) setState(() => _job = _fetch());
+        });
   }
 
   Future<void> _edit(JobListing job) async {
@@ -172,6 +188,31 @@ class _JobDetailPageState extends State<_JobDetailPage> {
                           child: _BulletList(job.requirements),
                         ),
                       ],
+                      if (!job.canManage && job.relevanceLabel != null) ...[
+                        const SizedBox(height: 24),
+                        _DetailSection(
+                          'Your skill fit',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                job.relevanceLabel!,
+                                key: const ValueKey('job-skill-fit'),
+                              ),
+                              if (job.matchedSkills.isNotEmpty)
+                                Text(
+                                  'Found in your CV: ${job.matchedSkills.join(', ')}',
+                                ),
+                              const SizedBox(height: 8),
+                              Text(
+                                job.missingSkills.isEmpty
+                                    ? 'All listed skills were found in your saved CV profile.'
+                                    : 'Skills to build: ${job.missingSkills.join(', ')}. You can still apply and explore relevant courses on the next step.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       if (job.canManage)
                         Wrap(
@@ -213,12 +254,16 @@ class _JobDetailPageState extends State<_JobDetailPage> {
                       else
                         FilledButton.icon(
                           key: const ValueKey('apply-for-job'),
-                          onPressed: job.status == 'active'
+                          onPressed:
+                              job.status == 'active' ||
+                                  job.applicationId != null
                               ? () => _apply(job)
                               : null,
                           icon: const Icon(Icons.send_outlined),
                           label: Text(
-                            Session.instance.isSignedIn
+                            job.applicationId != null
+                                ? 'View my application'
+                                : Session.instance.isSignedIn
                                 ? 'Apply for this role'
                                 : 'Sign in to apply',
                           ),

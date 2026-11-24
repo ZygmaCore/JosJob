@@ -90,7 +90,11 @@ defmodule JosjobWeb.Api.CatalogController do
       price_cents: course.price_cents,
       currency: course.currency,
       is_free: free?(course),
-      materials: course.id |> course_materials() |> Enum.map(&material_json/1),
+      materials:
+        if(Enum.any?(classes, &material_access?(&1, user)),
+          do: course.id |> course_materials() |> Enum.map(&material_json/1),
+          else: []
+        ),
       classes: Enum.map(classes, &class_json(&1, user))
     }
   end
@@ -111,7 +115,11 @@ defmodule JosjobWeb.Api.CatalogController do
       instructor:
         class.instructor && %{id: class.instructor.id, full_name: class.instructor.full_name},
       enrolled: enrolled?(class.id, user.id),
-      materials: class |> Learning.materials_for_class() |> Enum.map(&material_json/1)
+      materials:
+        if(material_access?(class, user),
+          do: class |> Learning.materials_for_class() |> Enum.map(&material_json/1),
+          else: []
+        )
     }
   end
 
@@ -137,4 +145,9 @@ defmodule JosjobWeb.Api.CatalogController do
     |> Ash.read!(authorize?: false)
     |> Enum.any?()
   end
+
+  defp material_access?(class, user),
+    do:
+      class.instructor_id == user.id or enrolled?(class.id, user.id) or
+        Josjob.Authz.can?(user, class.organization_id, "courses:manage")
 end
