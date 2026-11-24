@@ -115,6 +115,16 @@ defmodule JosjobWeb.Router do
     auth_routes(AuthController, Josjob.Accounts.User, path: "/auth")
   end
 
+  # Lab RAG (uji live pipeline CV → ranking). Cukup login, tanpa syarat member,
+  # supaya akun Google mana pun bisa mencoba.
+  scope "/", JosjobWeb do
+    pipe_through :browser
+
+    ash_authentication_live_session :rag_lab_live do
+      live "/rag/lab", RagLabLive, :index
+    end
+  end
+
   # API JSON untuk klien mobile (Flutter) — login FULL Google OAuth + refresh.
   scope "/api", JosjobWeb.Api do
     pipe_through :api
