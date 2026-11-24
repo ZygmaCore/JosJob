@@ -24,6 +24,21 @@ void main() {
       final api = ApplicationsApi(
         baseUrl: 'http://test',
         client: MockClient((request) async {
+          if (request.url.path.endsWith('/application-suggestions')) {
+            return http.Response(
+              jsonEncode({
+                'data': {
+                  'status': 'matched',
+                  'source': 'saved_profile',
+                  'matched_skills': ['Elixir'],
+                  'missing_skills': [],
+                  'uncovered_skills': [],
+                  'courses': [],
+                },
+              }),
+              200,
+            );
+          }
           if (request.url.path == '/api/me/cv') {
             return http.Response(
               jsonEncode({'data': applicationJson()['profile']}),

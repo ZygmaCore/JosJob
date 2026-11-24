@@ -3,6 +3,19 @@ defmodule JosjobWeb.Api.ApplicationController do
   alias JosjobJob.Applications
   alias JosjobWeb.Api.WorkflowError
 
+  def suggestions(conn, %{"job_id" => id}) do
+    case JosjobRag.ApplicationSuggestions.get(conn.assigns.current_user, id) do
+      {:ok, suggestions} ->
+        json(conn, %{data: suggestions})
+
+      {:error, reason} = error when reason in [:not_found, :job_closed] ->
+        WorkflowError.respond(conn, error)
+
+      {:error, _reason} ->
+        conn |> put_status(:service_unavailable) |> json(%{error: "suggestions_unavailable"})
+    end
+  end
+
   def index(conn, params) do
     user = conn.assigns.current_user
 

@@ -8,7 +8,8 @@ import 'auth_api.dart' show AuthException;
 
 class RankingException implements Exception {
   final String message;
-  const RankingException(this.message);
+  final int? statusCode;
+  const RankingException(this.message, {this.statusCode});
   @override
   String toString() => message;
 }
@@ -58,13 +59,21 @@ class JobRankingsApi {
     )..headers['Authorization'] = 'Bearer $token',
   );
 
-  Future<Map<String, dynamic>> rank(String token, String extractionId) => _send(
+  Future<Map<String, dynamic>> rank(
+    String token,
+    String extractionId, {
+    List<String>? reviewedSkills,
+  }) => _send(
     http.Request('POST', Uri.parse('$_base/api/rag/analyses'))
       ..headers.addAll({
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       })
-      ..body = jsonEncode({'extraction_id': extractionId, 'limit': 50}),
+      ..body = jsonEncode({
+        'extraction_id': extractionId,
+        'limit': 50,
+        'reviewed_skills': ?reviewedSkills,
+      }),
   );
 
   Future<Map<String, dynamic>> rankSaved(String token, String cvId) => _send(
@@ -87,6 +96,7 @@ class JobRankingsApi {
       }
       if (response.statusCode >= 400) {
         throw RankingException(switch (response.statusCode) {
+          400 => 'Check your CV skills and try again.',
           404 => 'This extraction has expired. Upload your CV again.',
           413 => 'Choose a PDF up to 10 MB.',
           415 => 'Choose a valid PDF file.',
@@ -94,7 +104,7 @@ class JobRankingsApi {
             'Your CV could not be read. Try a clearer PDF with selectable text.',
           429 => 'The analysis queue is full. Please try again shortly.',
           _ => 'CV matching is unavailable. Please try again.',
-        });
+        }, statusCode: response.statusCode);
       }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       return body['data'] as Map<String, dynamic>;

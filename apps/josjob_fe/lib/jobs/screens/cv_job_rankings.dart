@@ -34,12 +34,58 @@ class _CvJobRankingsState extends State<CvJobRankings> {
   Map<String, dynamic>? _extraction, _ranking;
   Timer? _poll;
   DateTime? _started;
+  final _reviewSkills = TextEditingController();
+  String? _reviewedExtraction;
   Future<T> _auth<T>(Future<T> Function(String) call) =>
       (widget.authorize ?? Session.instance.runAuthed)(call);
 
   @override
+  void initState() {
+    super.initState();
+    _restorePending();
+  }
+
+  Future<void> _restorePending() async {
+    final account = Session.instance.user?.id;
+    if (account == null) return;
+    try {
+      final pending = await const UiPreferences().pendingCv(account);
+      if (!mounted ||
+          pending == null ||
+          pending['id'] is! String ||
+          _busy ||
+          _replacing) {
+        return;
+      }
+      setState(() {
+        _id = pending['id'] as String;
+        _filename = pending['filename'] as String?;
+        _started =
+            DateTime.tryParse(pending['started_at']?.toString() ?? '') ??
+            DateTime.now();
+        _replacing = true;
+      });
+      await _refresh();
+    } catch (_) {
+      /* Existing CV and job browsing remain available. */
+    }
+  }
+
+  Future<void> _rememberPending(
+    Map<String, dynamic>? data, {
+    String? accountId,
+  }) async {
+    final account = accountId ?? Session.instance.user?.id;
+    if (account == null) return;
+    try {
+      await const UiPreferences().savePendingCv(account, data);
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
     _poll?.cancel();
+    _reviewSkills.dispose();
     if (widget.api == null) _api.close();
     super.dispose();
   }
@@ -66,13 +112,23 @@ class _CvJobRankingsState extends State<CvJobRankings> {
         _id = null;
         _filename = file.name;
       });
+      final account = Session.instance.user?.id;
       final data = await _auth(
         (t) => _api.upload(t, file.bytes!, file.name, consent: _consent),
       );
+      final id = data['id'] as String;
+      final started = DateTime.now();
+      await _rememberPending({
+        'id': id,
+        'filename': file.name,
+        'started_at': started.toIso8601String(),
+      }, accountId: account);
       if (!mounted) return;
-      _id = data['id'] as String;
-      _started = DateTime.now();
-      setState(() => _extraction = data);
+      setState(() {
+        _id = id;
+        _started = started;
+        _extraction = data;
+      });
       await _refresh();
     } catch (e) {
       _fail(e);
@@ -99,6 +155,14 @@ class _CvJobRankingsState extends State<CvJobRankings> {
       setState(() => _extraction = data);
       final status = data['status'];
       if (status == 'done' || status == 'partial') {
+        if (_reviewedExtraction != _id) {
+          final skills = (data['result']?['skills'] as List? ?? []).map(
+            (skill) =>
+                skill is Map ? skill['name'].toString() : skill.toString(),
+          );
+          _reviewSkills.text = skills.join(', ');
+          _reviewedExtraction = _id;
+        }
         setState(() => _busy = false);
       } else if (status == 'queued' || status == 'processing') {
         if (DateTime.now().difference(_started!) >
@@ -109,16 +173,35 @@ class _CvJobRankingsState extends State<CvJobRankings> {
         }
         _poll = Timer(const Duration(seconds: 2), _refresh);
       } else {
+        await _rememberPending(null);
         throw const RankingException(
           'Your CV could not be read. Upload a clearer PDF with selectable text.',
         );
       }
     } catch (e) {
+      if (e is RankingException && e.statusCode == 404) {
+        await _rememberPending(null);
+        if (mounted) setState(() => _id = null);
+      }
       _fail(e);
     }
   }
 
   Future<void> _rank() async {
+    final reviewed = _reviewSkills.text
+        .split(RegExp(r'[,;\n]'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    if (reviewed.length > 100 || reviewed.any((s) => s.length > 100)) {
+      _fail(
+        const RankingException(
+          'Use up to 100 skills, each at most 100 characters.',
+        ),
+      );
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -128,7 +211,7 @@ class _CvJobRankingsState extends State<CvJobRankings> {
       final result = await _auth(
         (t) => cvId != null && _ranking?['persisted'] == true
             ? _api.rankSaved(t, cvId)
-            : _api.rank(t, _id!),
+            : _api.rank(t, _id!, reviewedSkills: reviewed),
       );
       if (mounted) {
         setState(() {
@@ -144,6 +227,7 @@ class _CvJobRankingsState extends State<CvJobRankings> {
         });
         if (result['persisted'] == true) widget.onProfileReady?.call(result);
       }
+      if (result['persisted'] == true) await _rememberPending(null);
     } catch (e) {
       _fail(e);
     }
@@ -255,14 +339,17 @@ class _CvJobRankingsState extends State<CvJobRankings> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   key: const ValueKey('cancel-cv-replacement'),
-                  onPressed: () => setState(() {
-                    _replacing = false;
-                    _error = null;
-                    _extraction = null;
-                    _id = null;
-                    _filename = null;
-                    _consent = false;
-                  }),
+                  onPressed: () {
+                    unawaited(_rememberPending(null));
+                    setState(() {
+                      _replacing = false;
+                      _error = null;
+                      _extraction = null;
+                      _id = null;
+                      _filename = null;
+                      _consent = false;
+                    });
+                  },
                   child: const Text('Keep current CV'),
                 ),
               ),
@@ -349,14 +436,22 @@ class _CvJobRankingsState extends State<CvJobRankings> {
               const Text(
                 'No skills were extracted. Matches will rely on the available experience and education.',
               ),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: skills.map((s) => Chip(label: Text(s))).toList(),
+            AppFormField(
+              key: const ValueKey('review-cv-skills'),
+              label: 'Review your skills',
+              hint: 'For example: SQL, JavaScript, Communication',
+              controller: _reviewSkills,
+              maxLines: 3,
+              maxLength: 10000,
+              enabled: !_busy,
             ),
-            Text(
-              'Extraction: ${_extraction?['provider'] ?? 'unknown'} / ${_extraction?['model'] ?? 'unknown'}',
+            const Text(
+              'Add or remove skills, separated by commas. These skills will be used for matching and your application profile.',
             ),
+            if (_extraction?['provider'] == 'keyword')
+              const Text(
+                'Basic text extraction was used. Check your skills carefully; some background details may be incomplete.',
+              ),
             if ((_extraction?['warnings'] as List? ?? []).isNotEmpty)
               Text((_extraction!['warnings'] as List).join(' | ')),
           ],

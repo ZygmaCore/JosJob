@@ -111,7 +111,7 @@ defmodule JosjobWeb.Api.CurriculumVitaeControllerTest do
     assert cv(conn, user)["headline"] == "Software developer"
     answers!(user, Map.put(answers, "skills", ["Updated skill"]))
     assert cv(conn, user)["summary"] == "My real summary"
-    assert cv(conn, user)["skills"] == ["Updated skill"]
+    assert cv(conn, user)["skills"] == ["Injected"]
     assert cv(conn, user!())["headline"] == nil
   end
 

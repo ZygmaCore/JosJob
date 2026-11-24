@@ -16,6 +16,7 @@ defmodule JosjobJob.CvProfile do
     uuid_primary_key(:id)
     attribute(:headline, :string, public?: true, constraints: [max_length: 200])
     attribute(:summary, :string, public?: true, constraints: [max_length: 4000])
+    attribute(:cv_facts, :map)
     create_timestamp(:created_at)
     update_timestamp(:updated_at)
   end

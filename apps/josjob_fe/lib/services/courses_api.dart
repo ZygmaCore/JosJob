@@ -101,6 +101,24 @@ class CourseSummary {
 }
 
 /// One class (session offering) of a course — what a student actually enrols in.
+class CourseMaterial {
+  final String id, title, url;
+  CourseMaterial.fromJson(Map<String, dynamic> json)
+    : id = json['id'] as String,
+      title = json['title'] as String,
+      url = json['url'] as String;
+  static List<CourseMaterial> parse(dynamic json) => (json as List? ?? [])
+      .whereType<Map>()
+      .map((item) => CourseMaterial.fromJson(Map<String, dynamic>.from(item)))
+      .where((item) {
+        final uri = Uri.tryParse(item.url);
+        return uri != null &&
+            ['http', 'https'].contains(uri.scheme) &&
+            uri.host.isNotEmpty;
+      })
+      .toList();
+}
+
 class CourseClass {
   final String id;
   final String title; // '' when the class is untitled
@@ -109,6 +127,7 @@ class CourseClass {
   final bool enrolled; // is the caller already enrolled?
   final String scheduleLabel; // human-readable first-session summary
   final int sessionCount;
+  final List<CourseMaterial> materials;
 
   const CourseClass({
     required this.id,
@@ -118,6 +137,7 @@ class CourseClass {
     required this.sessionCount,
     this.seatsLeft,
     this.instructorName,
+    this.materials = const [],
   });
 
   bool get isFull => seatsLeft != null && seatsLeft! <= 0;
@@ -135,6 +155,7 @@ class CourseClass {
       enrolled: j['enrolled'] == true,
       scheduleLabel: _scheduleLabel(sessions),
       sessionCount: sessions.length,
+      materials: CourseMaterial.parse(j['materials']),
     );
   }
 
@@ -195,6 +216,7 @@ class CourseDetail {
   final List<CourseClass> classes;
   final int? priceCents;
   final String currency;
+  final List<CourseMaterial> materials;
 
   const CourseDetail({
     required this.id,
@@ -205,6 +227,7 @@ class CourseDetail {
     required this.currency,
     this.sectionName,
     this.priceCents,
+    this.materials = const [],
   });
 
   bool get isFree => priceCents == null || priceCents! <= 0;
@@ -217,6 +240,7 @@ class CourseDetail {
     sectionName: CourseSummary._sectionName(j['section']),
     industries: CourseSummary._industries(j['industries']),
     classes: _classes(j['classes']),
+    materials: CourseMaterial.parse(j['materials']),
     priceCents: _asIntOrNull(j['price_cents']),
     currency: (j['currency'] ?? 'usd').toString(),
   );

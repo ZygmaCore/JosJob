@@ -155,6 +155,42 @@ class _EnrolledCourseCard extends StatelessWidget {
   final EnrolledCourse course;
   const _EnrolledCourseCard(this.course);
 
+  Future<void> _open(BuildContext context) async {
+    if (course.courseId == null) return;
+    final api = CoursesApi();
+    try {
+      final detail = await Session.instance.runAuthed(
+        (token) => api.getCourse(token, course.courseId!),
+      );
+      if (!context.mounted) return;
+      await showCatalogCourse(
+        context,
+        CourseSummary(
+          id: detail.id,
+          title: detail.title,
+          description: detail.description,
+          industries: detail.industries,
+          classCount: detail.classes.length,
+          currency: detail.currency,
+          priceCents: detail.priceCents,
+          sectionName: detail.sectionName,
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Course details could not be loaded. Please try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      api.close();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final subtitle = [
@@ -210,6 +246,15 @@ class _EnrolledCourseCard extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           _enrolPill(course.completed),
+          if (course.courseId != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              key: ValueKey('open-enrolled-course-${course.enrollmentId}'),
+              tooltip: 'Open course and classes',
+              onPressed: () => _open(context),
+              icon: const Icon(Icons.arrow_forward_rounded),
+            ),
+          ],
         ],
       ),
     );

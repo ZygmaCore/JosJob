@@ -753,11 +753,11 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'A smarter path, on the horizon',
+                          'Your CV. Your next step.',
                           style: _text(14, weight: FontWeight.w500),
                         ),
                         _badge(
-                          'PLANNED',
+                          'CV MATCHING',
                           tint: AppColors.paper2,
                           foreground: AppColors.body,
                         ),
@@ -765,7 +765,7 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
                     ),
                     const SizedBox(height: 8),
                     _body(
-                      'AI role matching, skill-gap explanations and connected learning paths are on our roadmap. Today, start with jobs, learning and coaching.',
+                      'Upload your CV, review your skills, and find relevant jobs. See skills to build and explore matching courses before you apply.',
                       size: 12,
                     ),
                   ],
@@ -863,8 +863,8 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
                 'Job access is free for graduates, and coaching appointments are currently free. Courses and classes may have separate fees; check the price before enrolling.',
               ),
               (
-                'Can I use AI CV matching now?',
-                'AI CV extraction, ranked match scores and skill-gap explanations are planned. You can explore jobs, build a profile, apply, learn and book coaching today.',
+                'How does CV matching work?',
+                'Sign in and upload a PDF CV from Jobs. Review the extracted skills before saving. Jobs are ordered by category, skill overlap and recency; you can explore learning suggestions when you apply.',
               ),
               (
                 'Does JosJob guarantee a job?',

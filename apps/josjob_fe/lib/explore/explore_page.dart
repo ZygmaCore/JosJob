@@ -17,6 +17,7 @@ import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
 import '../services/session.dart';
 import '../services/courses_api.dart';
 import '../services/ui_preferences.dart';
+import '../services/open_link.dart';
 import '../shared/app_ui.dart';
 
 // =========================================================================
@@ -91,14 +92,18 @@ class ExploreCoursesView extends StatelessWidget {
 }
 
 /// Open the existing catalog detail and enrollment flow from other surfaces.
-Future<void> showCatalogCourse(BuildContext context, CourseSummary course) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CoursePreviewSheet(
-        course: _Course.fromApi(course),
-        initialSaved: false,
-        onToggleSaved: (_) {},
-      ),
-    );
+Future<void> showCatalogCourse(
+  BuildContext context,
+  CourseSummary course, {
+  String? returnLabel,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: Colors.transparent,
+  builder: (_) => _CoursePreviewSheet(
+    course: _Course.fromApi(course),
+    initialSaved: false,
+    onToggleSaved: (_) {},
+    returnLabel: returnLabel,
+  ),
+);

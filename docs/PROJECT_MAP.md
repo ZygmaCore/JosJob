@@ -12,6 +12,19 @@ the checkout at the time of the original analysis only.
 This is a source-based orientation map, not a runtime certification. Recheck
 the current files when code changes.
 
+User journey update, 2026-11-24 (working tree based on
+`fa8be2cfafa2a37eeeff05bd34dda199dc4c282b`): reviewed CV facts now populate
+the candidate profile and future application snapshots. Candidates can correct
+skills before accepting extraction or through Edit CV details; job relevance and
+Apply suggestions use those corrections. See [the CV API](api/curriculum-vitae.md).
+The fullstack Compose includes the standalone PDF service and connects it to
+the backend over Docker DNS. Apply preserves account/job-specific drafts,
+offers profile editing, returns from course enrollment and opens existing
+applications. My Courses opens enrolled course materials; catalog material URLs
+require enrollment, instruction or management permission. These updates supersede
+older implementation-gap descriptions below; curriculum/quiz completion and legal
+publication remain separate work.
+
 Working-tree update on branch `feat/job-listings`: the PRD's listing slice is
 implemented in `JosjobJob.Job` / `JosjobJob.Listings`, the `/api/jobs` CRUD
 controller, and the Flutter jobs board/editor plus dashboard vacancies view.
@@ -56,6 +69,14 @@ embedding calls. Identical owned PDFs reuse saved extraction; saved facts remain
 usable after the PDF service expires. Related and less relevant jobs remain in
 the list. See [CV relevance](api/cv-job-rankings.md) for APIs, privacy, taxonomy
 coverage, deployment and in-memory sorting limits. Graphify predates this work.
+
+Application learning suggestions update, 2026-11-24: the Apply page now reads
+`GET /api/jobs/:job_id/application-suggestions`. `JosjobRag.ApplicationSuggestions`
+compares the specific job with the latest owned analyzed CV, falling back to saved
+CV-profile skills when no analyzed skills exist, and recommends accessible catalog
+courses/classes. Missing skills and learning suggestions are advisory; submission
+remains available. See [applications and chat](api/applications-and-chat.md).
+This supersedes the older planned-only descriptions of skill-gap/course hooks below.
 
 ## Read this first
 

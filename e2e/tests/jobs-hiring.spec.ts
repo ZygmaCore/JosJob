@@ -361,10 +361,10 @@ test('guest application returns to the selected job after signing in and reloadi
   const apply = page.getByRole('button', {name: /Sign in to apply/});
   await reveal(page, apply); await apply.click();
   await page.reload(); await semantics(page);
-  await fill(page, page.getByRole('textbox').nth(0), fixture.candidate.email);
-  await fill(page, page.getByRole('textbox').nth(1), fixture.candidate.password);
+  await fill(page, page.getByRole('textbox').nth(0), fixture.newcomer.email);
+  await fill(page, page.getByRole('textbox').nth(1), fixture.newcomer.password);
   await page.getByRole('button', {name: /^Log in/}).first().click();
-  await expect(page.getByText('Profile to share', {exact: true})).toBeVisible();
+  await expect(page.getByText(/^Profile to share/)).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/jobs/${fixture.published_job_id}\\?apply=1$`));
   // Viewing the form is read-only; no duplicate application is submitted.
 });

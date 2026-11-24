@@ -170,6 +170,7 @@ defmodule JosjobWeb.Router do
     scope "/jobs" do
       pipe_through :api_auth
 
+      get "/:job_id/application-suggestions", ApplicationController, :suggestions
       post "/:job_id/applications", ApplicationController, :create
       post "/", JobController, :create
       patch "/:id", JobController, :update

@@ -23,7 +23,7 @@ defmodule JosjobJob.CurriculumVitae do
     resume = profile && Enum.find(documents, &(&1.id == profile.resume_document_id))
 
     skills =
-      list(answers, "skills")
+      fact_list(profile, "skills", list(answers, "skills"))
       |> Enum.filter(&is_binary/1)
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
@@ -40,19 +40,51 @@ defmodule JosjobJob.CurriculumVitae do
       summary: profile && profile.summary,
       skills: skills,
       experience:
-        entries(
-          answers,
-          "employments",
-          ~w(name position),
-          ~w(name position country industry internship)
+        if(has_fact?(profile, "experience"),
+          do:
+            profile.cv_facts["experience"]
+            |> Enum.filter(&is_map/1)
+            |> Enum.map(&experience_entry/1),
+          else:
+            entries(
+              answers,
+              "employments",
+              ~w(name position),
+              ~w(name position country industry internship)
+            )
         ),
-      education: entries(answers, "educations", ~w(name), ~w(name degree major country type)),
+      education:
+        if(has_fact?(profile, "education"),
+          do:
+            profile.cv_facts["education"]
+            |> Enum.filter(&is_map/1)
+            |> Enum.map(&education_entry/1),
+          else: entries(answers, "educations", ~w(name), ~w(name degree major country type))
+        ),
+      matching_cv_id: profile && profile.cv_facts && profile.cv_facts["cv_id"],
       resume_document: resume && document_json(resume),
       pdf_documents: Enum.map(documents, &document_json/1)
     }
   end
 
-  def save_for(user, params) do
+  def matching_facts(user) do
+    case metadata(user) do
+      nil -> nil
+      profile -> profile.cv_facts
+    end
+  end
+
+  def use_analyzed_cv(user, cv), do: save_for(user, %{}, analyzed_cv: cv)
+
+  def save_for(user, params, opts \\ []) do
+    if Map.has_key?(params, "skills") and not valid_skills?(params["skills"]) do
+      {:error, :invalid_skills}
+    else
+      do_save(user, params, opts)
+    end
+  end
+
+  defp do_save(user, params, opts) do
     result =
       Repo.transaction(fn ->
         Repo.query!("SELECT id FROM users WHERE id::text = $1 FOR UPDATE", [user.id])
@@ -98,6 +130,30 @@ defmodule JosjobJob.CurriculumVitae do
             changeset
           end
 
+        facts =
+          if opts[:analyzed_cv],
+            do: Map.take(opts[:analyzed_cv], ~w(cv_id skills experience education extraction)),
+            else: profile && profile.cv_facts
+
+        facts =
+          if Map.has_key?(params, "skills") do
+            Map.merge(facts || %{}, %{
+              "skills" =>
+                params["skills"]
+                |> Enum.map(&String.trim/1)
+                |> Enum.reject(&(&1 == ""))
+                |> Enum.uniq_by(&String.downcase/1),
+              "skills_edited" => true
+            })
+          else
+            facts
+          end
+
+        changeset =
+          if facts,
+            do: Ash.Changeset.force_change_attribute(changeset, :cv_facts, facts),
+            else: changeset
+
         if profile,
           do: Ash.update!(changeset, authorize?: false, return_notifications?: true),
           else: Ash.create!(changeset, authorize?: false, return_notifications?: true)
@@ -112,6 +168,38 @@ defmodule JosjobJob.CurriculumVitae do
         error
     end
   end
+
+  defp valid_skills?(values) when is_list(values),
+    do: length(values) <= 100 and Enum.all?(values, &(is_binary(&1) and String.length(&1) <= 100))
+
+  defp valid_skills?(_), do: false
+
+  defp has_fact?(profile, key),
+    do: profile != nil and is_map(profile.cv_facts) and is_list(profile.cv_facts[key])
+
+  defp fact_list(profile, key, fallback),
+    do: if(has_fact?(profile, key), do: profile.cv_facts[key], else: fallback)
+
+  defp experience_entry(entry),
+    do: %{
+      "name" => text(entry["company"] || entry["name"]),
+      "position" => text(entry["title"] || entry["position"]),
+      "country" => text(entry["country"]),
+      "industry" => text(entry["industry"]),
+      "from" => text(entry["start_date"] || entry["from"]),
+      "to" => text(entry["end_date"] || entry["to"]),
+      "internship" => entry["internship"] == true
+    }
+
+  defp education_entry(entry),
+    do: %{
+      "name" => text(entry["institution"] || entry["name"]),
+      "degree" => text(entry["degree"]),
+      "major" => text(entry["field"] || entry["major"]),
+      "country" => text(entry["country"]),
+      "from" => text(entry["start_date"] || entry["from"]),
+      "to" => text(entry["end_date"] || entry["to"])
+    }
 
   defp metadata(user),
     do: CvProfile |> Ash.Query.filter(user_id == ^user.id) |> Ash.read_one!(authorize?: false)

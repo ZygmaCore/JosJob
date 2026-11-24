@@ -44,6 +44,21 @@ class _JobsViewState extends State<JobsView> {
       _sort = 'relevance';
     }
     _load();
+    _restoreLocation();
+  }
+
+  Future<void> _restoreLocation() async {
+    try {
+      final location = await const UiPreferences().preferredJobLocation(
+        Session.instance.user?.id ?? 'guest',
+      );
+      if (mounted && _location.text.isEmpty && location.isNotEmpty) {
+        _location.text = location;
+        _load();
+      }
+    } catch (_) {
+      /* Browsing remains available without local storage. */
+    }
   }
 
   Future<void> _load() async {
@@ -104,6 +119,11 @@ class _JobsViewState extends State<JobsView> {
   }
 
   void _filter({bool debounce = false}) {
+    unawaited(
+      const UiPreferences()
+          .saveJobLocation(Session.instance.user?.id ?? 'guest', _location.text)
+          .catchError((_) {}),
+    );
     _debounce?.cancel();
     ++_request;
     _page = 1;

@@ -14,6 +14,7 @@ class JobListing {
   final DateTime? postedAt;
   final bool synthetic, canManage;
   final String? relevanceLabel;
+  final String? applicationId, applicationStatus;
   final List<String> matchedSkills, missingSkills;
 
   const JobListing({
@@ -36,6 +37,8 @@ class JobListing {
     this.synthetic = false,
     this.canManage = false,
     this.relevanceLabel,
+    this.applicationId,
+    this.applicationStatus,
     this.matchedSkills = const [],
     this.missingSkills = const [],
   });
@@ -60,6 +63,8 @@ class JobListing {
     synthetic: j['synthetic'] == true,
     canManage: j['can_manage'] == true,
     relevanceLabel: (j['relevance'] as Map?)?['relevance_label'] as String?,
+    applicationId: (j['my_application'] as Map?)?['id'] as String?,
+    applicationStatus: (j['my_application'] as Map?)?['status'] as String?,
     matchedSkills: List<String>.from(
       (j['relevance'] as Map?)?['matched_skills'] as List? ?? [],
     ),

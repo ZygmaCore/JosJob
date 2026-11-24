@@ -157,6 +157,10 @@ void main() {
               'warnings': [],
             };
           } else {
+            expect((jsonDecode(request.body) as Map)['reviewed_skills'], [
+              'Elixir',
+              'SQL',
+            ]);
             data = {
               'provider': 'local',
               'semantic': false,
@@ -213,6 +217,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Elixir'), findsOneWidget);
       expect(find.textContaining('Part of your CV was read'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey('review-cv-skills')),
+        'Elixir, SQL',
+      );
       final rank = find.byKey(const ValueKey('rank-cv-jobs'));
       await tester.ensureVisible(rank);
       await tester.tap(rank);

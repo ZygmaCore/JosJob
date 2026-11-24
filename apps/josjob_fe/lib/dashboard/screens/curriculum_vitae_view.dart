@@ -83,6 +83,11 @@ class _CurriculumVitaeViewState extends State<CurriculumVitaeView> {
     if (saved == true && mounted) await _load();
   }
 
+  Future<void> _matchingCv() async {
+    await Navigator.of(context).pushNamed('/jobs');
+    if (mounted) await _load();
+  }
+
   Future<void> _certificates() async {
     if (widget.onManageCertificates != null) {
       await widget.onManageCertificates!();
@@ -201,9 +206,9 @@ class _CurriculumVitaeViewState extends State<CurriculumVitaeView> {
         alignment: Alignment.centerLeft,
         child: OutlinedButton.icon(
           key: const ValueKey('cv-find-job-matches'),
-          onPressed: () => Navigator.of(context).pushNamed('/jobs'),
+          onPressed: _matchingCv,
           icon: const Icon(Icons.auto_awesome),
-          label: const Text('Find jobs that fit my CV'),
+          label: const Text('Upload or update matching CV'),
         ),
       ),
       const SizedBox(height: 24),
@@ -329,7 +334,7 @@ class _CurriculumVitaeViewState extends State<CurriculumVitaeView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Work history, education and skills come from your saved onboarding details.',
+            'Your saved CV details are shared when you apply. Review your skills with Edit CV details.',
             style: _style(13, color: AppColors.body),
           ),
           const SizedBox(height: 16),
@@ -495,7 +500,8 @@ class _CvEditor extends StatefulWidget {
 
 class _CvEditorState extends State<_CvEditor> {
   late final _headline = TextEditingController(text: widget.data.headline),
-      _summary = TextEditingController(text: widget.data.summary);
+      _summary = TextEditingController(text: widget.data.summary),
+      _skills = TextEditingController(text: widget.data.skills.join(', '));
   late String _document = widget.data.resumeDocument?.id ?? '';
   bool _saving = false;
   String? _error;
@@ -503,11 +509,24 @@ class _CvEditorState extends State<_CvEditor> {
   void dispose() {
     _headline.dispose();
     _summary.dispose();
+    _skills.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (_saving) return;
+    final skills = _skills.text
+        .split(RegExp(r'[,;\n]'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    if (skills.length > 100 || skills.any((s) => s.length > 100)) {
+      setState(
+        () => _error = 'Use up to 100 skills, each at most 100 characters.',
+      );
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -516,6 +535,7 @@ class _CvEditorState extends State<_CvEditor> {
       await widget.save({
         'headline': _headline.text.trim(),
         'summary': _summary.text.trim(),
+        'skills': skills,
         'resume_document_id': _document.isEmpty ? null : _document,
       });
       if (mounted) Navigator.pop(context, true);
@@ -559,6 +579,19 @@ class _CvEditorState extends State<_CvEditor> {
                   maxLength: 4000,
                   maxLines: 5,
                   enabled: !_saving,
+                ),
+                const SizedBox(height: 18),
+                AppFormField(
+                  key: const ValueKey('cv-edit-skills'),
+                  label: 'Skills',
+                  hint: 'For example: SQL, JavaScript, Communication',
+                  controller: _skills,
+                  maxLines: 3,
+                  maxLength: 10000,
+                  enabled: !_saving,
+                ),
+                const Text(
+                  'Separate skills with commas. Changes update job matching and future applications.',
                 ),
                 const SizedBox(height: 18),
                 Text(
@@ -605,7 +638,7 @@ class _CvEditorState extends State<_CvEditor> {
                   ),
                 const SizedBox(height: 14),
                 const Text(
-                  'Work history, education and skills are shown from your saved onboarding details.',
+                  'Work history and education are imported from your matching CV or saved onboarding details.',
                 ),
                 if (_error != null)
                   Padding(

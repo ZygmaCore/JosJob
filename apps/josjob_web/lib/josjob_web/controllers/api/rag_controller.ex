@@ -19,14 +19,15 @@ defmodule JosjobWeb.Api.RagController do
 
   require Logger
 
-  alias JosjobRag.{Analyses, Analyzer, PdfClient}
+  alias JosjobRag.{Analyses, Analyzer, CandidateProfile, PdfClient}
 
   @max_limit 50
 
   def analyze(conn, params) do
     user = conn.assigns.current_user
 
-    with {:ok, cv} <- load_cv(params, user),
+    with :ok <- validate_review(params),
+         {:ok, cv} <- load_cv(params, user),
          {:ok, result} <- Analyzer.analyze(user, cv, limit: limit(params)) do
       data = analysis_json(result) |> persist(user, cv, result)
       json(conn, %{data: data})
@@ -88,7 +89,7 @@ defmodule JosjobWeb.Api.RagController do
     case params["file"] do
       %Plug.Upload{} = upload ->
         with {:ok, cv_id} <- PdfClient.version(upload) do
-          case Analyses.cv(user, cv_id) do
+          case CandidateProfile.cv(user, cv_id) do
             {:ok, cv} ->
               conn |> put_status(:accepted) |> json(cached_extraction(cv, user))
 
@@ -183,7 +184,7 @@ defmodule JosjobWeb.Api.RagController do
   defp owned_extraction(id, user) do
     result =
       if String.starts_with?(id, "cv_pdf_") do
-        with {:ok, cv} <- Analyses.cv(user, id), do: {:ok, cached_extraction(cv, user)}
+        with {:ok, cv} <- CandidateProfile.cv(user, id), do: {:ok, cached_extraction(cv, user)}
       else
         PdfClient.get(id)
       end
@@ -209,7 +210,7 @@ defmodule JosjobWeb.Api.RagController do
 
       is_binary(params["cv_id"]) and not Map.has_key?(params, "cv") and
           not Enum.any?(["skills", "experience", "education"], &Map.has_key?(params, &1)) ->
-        Analyses.cv(user, params["cv_id"])
+        CandidateProfile.cv(user, params["cv_id"])
 
       is_map(params["cv"]) ->
         cv_from_map(params["cv"], params)
@@ -229,7 +230,7 @@ defmodule JosjobWeb.Api.RagController do
 
         cv = %{
           "cv_id" => params["cv_id"] || data["cv_id"] || id,
-          "skills" => list(result["skills"]),
+          "skills" => reviewed_skills(params, result),
           "experience" => list(result["experience"]),
           "education" => list(result["education"]),
           "extraction" => Map.take(data, ["status", "provider", "model", "warnings"])
@@ -284,6 +285,24 @@ defmodule JosjobWeb.Api.RagController do
   defp list(value) when is_list(value), do: value
   defp list(_value), do: []
 
+  defp validate_review(%{"reviewed_skills" => skills}) do
+    if is_list(skills) and length(skills) <= 100 and
+         Enum.all?(skills, &(is_binary(&1) and String.length(&1) <= 100)),
+       do: :ok,
+       else:
+         {:error,
+          {:invalid_params,
+           %{"skills" => "Use up to 100 skill names, each at most 100 characters"}}}
+  end
+
+  defp validate_review(_), do: :ok
+
+  defp reviewed_skills(params, result) do
+    if Map.has_key?(params, "reviewed_skills"),
+      do: JosjobRag.Text.requirement_list(params["reviewed_skills"]),
+      else: list(result["skills"])
+  end
+
   defp limit(params) do
     case params["limit"] do
       value when is_integer(value) ->
@@ -319,7 +338,7 @@ defmodule JosjobWeb.Api.RagController do
   end
 
   defp persist(data, user, cv, result) do
-    case Analyses.save(user, cv, result) do
+    case CandidateProfile.save(user, cv, result) do
       {:ok, analysis_id} ->
         data
         |> Map.put(:analysis_id, analysis_id)

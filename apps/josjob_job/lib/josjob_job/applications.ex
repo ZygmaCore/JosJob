@@ -21,6 +21,17 @@ defmodule JosjobJob.Applications do
   def allowed?(user, application),
     do: user.id == application.candidate_id or manager?(user, application)
 
+  def own_for(nil, _job_id), do: nil
+
+  def own_for(user, job_id) do
+    Repo.one(
+      from(a in Application,
+        where: a.job_id == ^job_id and a.candidate_id == ^user.id,
+        select: %{id: a.id, status: a.status}
+      )
+    )
+  end
+
   def get(user, id) do
     with {:ok, id} <- Ecto.UUID.cast(id),
          %Application{} = application <- Repo.one(from(a in joined(), where: a.id == ^id)),

@@ -169,9 +169,9 @@ class _RegisterPageState extends State<RegisterPage> {
           'Create your free account and begin building real, job-ready skills '
           '— right where you work.',
       brandPoints: const [
-        'Self-paced modules with quizzes & assessments',
-        'Live coaching, anywhere, via live streaming',
-        'Earn recognised industry certifications',
+        'Explore courses and class materials',
+        'Book free one-to-one coaching',
+        'Match your CV and find skill gaps',
       ],
       child: _AuthFormBody(
         title: 'Create your account',
