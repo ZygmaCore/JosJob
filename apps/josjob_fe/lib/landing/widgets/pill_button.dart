@@ -21,6 +21,7 @@ class _PillButton extends StatefulWidget {
 class _PillButtonState extends State<_PillButton> {
   bool _hovered = false;
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
@@ -46,20 +47,22 @@ class _PillButtonState extends State<_PillButton> {
         side = BorderSide(color: AppColors.boardText.withValues(alpha: .5));
         break;
     }
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       button: true,
-      child: AnimatedContainer(
-        duration: _anim(context, 140),
-        transform: Matrix4.translationValues(
-          0,
-          _pressed ? 1 : (_hovered ? -1 : 0),
-          0,
-        ),
+      child: AnimatedScale(
+        scale: _pressed && !reduceMotion ? 0.975 : 1,
+        duration: _anim(context, 180),
+        curve: Curves.easeOutCubic,
         child: Material(
-          color: bg,
+          color: _hovered && widget.kind == _BtnKind.filled
+              ? Color.lerp(bg, AppColors.primaryDeep, 0.07)
+              : bg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: side,
+            side: _focused
+                ? const BorderSide(color: AppColors.primary, width: 2)
+                : side,
           ),
           elevation: _hovered ? 2 : 1,
           shadowColor: AppColors.landingInk.withValues(alpha: .14),
@@ -67,8 +70,10 @@ class _PillButtonState extends State<_PillButton> {
             onTap: widget.onPressed,
             onHover: (value) => setState(() => _hovered = value),
             onHighlightChanged: (value) => setState(() => _pressed = value),
+            onFocusChange: (value) => setState(() => _focused = value),
             borderRadius: BorderRadius.circular(14),
             focusColor: AppColors.primaryDeep.withValues(alpha: .18),
+            mouseCursor: SystemMouseCursors.click,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(
