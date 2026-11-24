@@ -133,6 +133,7 @@ defmodule JosjobWeb.Router do
     post "/auth/login", AuthController, :login
     post "/auth/google", AuthController, :google
     post "/auth/refresh", AuthController, :refresh
+    post "/assistant/chat", AssistantController, :chat
 
     # Undangan teacher — PUBLIK (token-gated, tanpa login): halaman accept Flutter.
     get "/invitations/:token", InvitationController, :show

@@ -15,6 +15,7 @@ defmodule JosjobWeb.Application do
       # {JosjobWeb.Worker, arg},
       # Start to serve requests, typically the last entry
       JosjobWeb.Telemetry,
+      JosjobWeb.AssistantRateLimiter,
       JosjobWeb.Endpoint
     ]
 
