@@ -48,8 +48,8 @@ config :josjob,
 # By default it uses the "Local" adapter which stores the emails
 # locally. You can see the emails in your browser, at "/dev/mailbox".
 #
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
+# Set `RESEND_API_KEY` to send real email via the Resend API instead
+# (Swoosh.Adapters.Resend, configured in `config/runtime.exs`).
 config :josjob, Josjob.Mailer, adapter: Swoosh.Adapters.Local
 
 # Alamat pengirim email (undangan teacher, dll). Override di runtime.exs bila perlu.

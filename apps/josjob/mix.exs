@@ -41,9 +41,9 @@ defmodule Josjob.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:jason, "~> 1.2"},
-      {:swoosh, "~> 1.16"},
-      # SMTP transport for Swoosh.Adapters.SMTP (mailer via Zoho, see runtime.exs).
-      {:gen_smtp, "~> 1.2"},
+      # Swoosh.Adapters.Resend (email undangan, lihat runtime.exs) butuh
+      # Swoosh >= 1.20; lock kita 1.29.3. Tanpa dep SMTP (gen_smtp) lagi.
+      {:swoosh, "~> 1.20"},
       {:req, "~> 0.5"},
       {:ash, "~> 3.0"},
       {:ash_postgres, "~> 2.0"},

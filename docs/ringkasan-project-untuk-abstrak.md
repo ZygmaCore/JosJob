@@ -84,7 +84,7 @@ Berikut alur berdasarkan code yang terverifikasi. Alur yang hanya ada di dokumen
 ### 4.5 Real-time Socket & Notifikasi — terverifikasi sebagian
 
 - **Socket terautentikasi JWT:** `ws://host/socket/websocket?token=<jwt>` (`josjob_web` endpoint `/socket` → `UserSocket`). Channel yang terpasang di code saat ini: `user:notifications:*` (`NotificationChannel`) dan `live_room:*` (`LiveRoomChannel`). Komentar code menegaskan channel lain (progress/chat/quiz/ai_assistant) **menyusul** — jangan diklaim sebagai sudah ada.
-- **Notifikasi:** Pengiriman in-app lewat `user:notifications:<user_id>` (hanya pemilik topik yang boleh join; verifikasi token JWT saat handshake). Mailer Swoosh via SMTP Zoho dipakai untuk email undangan teacher. **Desain** `docs/06` (FCM + Oban push background) belum terverifikasi di code (tidak ada `firebase_messaging` di `pubspec.yaml`) — perlakukan sebagai rencana.
+- **Notifikasi:** Pengiriman in-app lewat `user:notifications:<user_id>` (hanya pemilik topik yang boleh join; verifikasi token JWT saat handshake). Mailer Swoosh via Resend API dipakai untuk email undangan teacher. **Desain** `docs/06` (FCM + Oban push background) belum terverifikasi di code (tidak ada `firebase_messaging` di `pubspec.yaml`) — perlakukan sebagai rencana.
 
 ### 4.6 Quiz / Asesmen / Sertifikat — DESAIN (belum terverifikasi di backend)
 
@@ -98,7 +98,7 @@ Berikut alur berdasarkan code yang terverifikasi. Alur yang hanya ada di dokumen
 
 ### 4.8 Undangan Teacher & Admin CMS — terverifikasi
 
-- Superuser membuat undangan email → gabung organisasi dengan role sistem (default `teacher`): token acak URL-safe unik, status `pending → accepted/revoked`, kedaluwarsa default 7 hari, `resend` memperpanjang TTL + bump counter, email via SMTP Zoho (Swoosh). Accept dilakukan lewat halaman Flutter `/invite?token=...` (publik, token-gated: `GET|POST /api/invitations/:token[/accept]`).
+- Superuser membuat undangan email → gabung organisasi dengan role sistem (default `teacher`): token acak URL-safe unik, status `pending → accepted/revoked`, kedaluwarsa default 7 hari, `resend` memperpanjang TTL + bump counter, email via Resend API (Swoosh). Accept dilakukan lewat halaman Flutter `/invite?token=...` (publik, token-gated: `GET|POST /api/invitations/:token[/accept]`).
 - **CMS admin:** LiveView + AshAdmin: `is_superuser` membuka menu global (users, industries, skills, roles, permissions, sections, documents); org-scoped LiveView per permission untuk organizations, memberships, membership_roles, courses, classes, enrollments, documents, teachers (`router.ex` + `josjob_web/live/admin/*`). Halaman web CMS memakai **session cookie + Google OAuth redirect** (Ash `register_with_google`), berbeda dari API Flutter yang memakai JWT Bearer.
 
 ---
@@ -143,7 +143,7 @@ Domain layer (Ash resources + domains, AshPostgres)
         ▼
 Data & infra: ParadeDB (PostgreSQL + pgvector-capable image) :5438
   + Cloudflare Stream/Realtime, S3-compatible (R2/S3/MinIO), Stripe,
-    Google OAuth2, SMTP Zoho (Swoosh), Oban (Postgres-backed queue)
+    Google OAuth2, Resend API (Swoosh), Oban (Postgres-backed queue)
 ```
 
 Penjelasan per lapisan (semua terverifikasi di file konfigurasi & code):
@@ -162,7 +162,7 @@ Penjelasan per lapisan (semua terverifikasi di file konfigurasi & code):
 
 - Elixir `~> 1.15–1.19` (`.tool-versions`: Elixir 1.19.5 / Erlang 27.3.4.3), Phoenix `~> 1.8.9`, `phoenix_live_view ~> 1.1.0`, `phoenix_live_dashboard`, Bandit.
 - Ash Framework `~> 3.0` + `ash_postgres ~> 2.0` + `ash_authentication ~> 4.0` (+ `ash_authentication_phoenix ~> 2.0`) untuk user & Google OAuth; `ash_oban ~> 0.8.10` + `oban ~> 2.20` untuk queue job Postgres-backed; `ash_rbac ~> 0.6` terdaftar di `mix.exs` (desain RBAC aktual data-driven — lihat `docs/specs/2026-07-21-rbac-enforcement-design.md`).
-- `ecto_sql ~> 3.13` + `postgrex` (PostgreSQL/ParadeDB), `jason`, `swoosh ~> 1.16` + `gen_smtp` (SMTP Zoho untuk email undangan), `req ~> 0.5` (HTTP client — tanpa httpoison/tesla/httpc), `cors_plug`, `dotenvy`, `picosat_elixir`, `phoenix_pubsub`, `dns_cluster`, `telemetry_metrics/poller`, `esbuild` + `tailwind 4.1.12` untuk asset web.
+- `ecto_sql ~> 3.13` + `postgrex` (PostgreSQL/ParadeDB), `jason`, `swoosh ~> 1.20` (Resend API untuk email undangan; adapter bawaan `Swoosh.Adapters.Resend`), `req ~> 0.5` (HTTP client — tanpa httpoison/tesla/httpc), `cors_plug`, `dotenvy`, `picosat_elixir`, `phoenix_pubsub`, `dns_cluster`, `telemetry_metrics/poller`, `esbuild` + `tailwind 4.1.12` untuk asset web.
 - Media: `josjob_ms` hanya `req` + `plug_crypto` (leaf). **AI/RAG:** `josjob_ai`: `jido_ai ~> 2.1` + `jido_chat ~> 1.0`; `josjob_rag`: `rustler` + `xberg ~> 1.0.0-rc.14` (`force_build: true`, HEIF/HEIC image support, butuh Rust toolchain + `libheif1`).
 
 ### Frontend (Flutter)
@@ -180,7 +180,7 @@ Penjelasan per lapisan (semua terverifikasi di file konfigurasi & code):
 - **Cloudflare Stream** (VOD: direct upload, transcode, HLS/DASH, webhook HMAC-SHA256) dan **Cloudflare Realtime** (SFU + TURN untuk live WebRTC; secret tetap di server).
 - **S3-compatible storage** (Cloudflare R2 / AWS S3 / MinIO) via presigned upload untuk dokumen non-video.
 - **Stripe** (PaymentIntent/Checkout/Subscription/webhook; test keys via env, publishable key dibake ke FE).
-- **Google OAuth2**, **SMTP Zoho** (Swoosh), **Atomic Server** (RAG vector library, `josjob-rag.onprem.vip`, token via `ATOMIC_API_TOKEN`).
+- **Google OAuth2**, **Resend API** (Swoosh), **Atomic Server** (RAG vector library, `josjob-rag.onprem.vip`, token via `ATOMIC_API_TOKEN`).
 - Docker multi-stage + docker-compose; nginx untuk FE web; CI/CD beku `API_BASE_URL` & `GOOGLE_CLIENT_ID` sebagai Dart define saat build.
 
 ### Hal yang tampaknya dipakai tapi tidak terverifikasi di dependensi aktual

@@ -150,77 +150,48 @@ config :josjob_ms, JosjobMs.S3Storage,
   # dipakai `<endpoint>/<bucket>` (cocok untuk MinIO / bucket publik).
   public_base_url: env!("S3_PUBLIC_BASE_URL", :string, nil)
 
-# SMTP mailer (Zoho Mail) — mengirim email undangan teacher (satu-satunya email
-# yang dikirim app, via Josjob.Mailer.deliver/1). Aktif HANYA bila SMTP_RELAY +
-# SMTP_USERNAME di-set; kosong → tetap adapter default (Local di dev/config.exs)
+# Email pengiriman (Resend API) — mengirim email undangan teacher (satu-satunya
+# email yang dikirim app, via Josjob.Mailer.deliver/1). Aktif HANYA bila
+# RESEND_API_KEY di-set; kosong → tetap adapter default (Local di dev/config.exs)
 # sehingga email hanya muncul di /dev/mailbox.
 #
-# Zoho: relay `smtp.zoho.com` (region lain: smtp.zoho.eu / smtp.zoho.in /
-# smtp.zoho.com.au — sesuaikan data center akun; akun bisnis custom-domain bisa
-# pakai smtppro.zoho.com). Port 465 = SSL implisit, 587 = STARTTLS. Jika 2FA
-# aktif WAJIB App Password (Zoho > Security > App Passwords), bukan password akun.
+# Kenapa Resend, bukan SMTP: tim tidak punya server SMTP. Resend adalah HTTP API
+# (POST https://api.resend.com/emails) — tanpa server mail sendiri.
+# Adapter: Swoosh.Adapters.Resend (bawaan Swoosh >= 1.20; lock kita 1.29.3),
+# tanpa dep baru. Adapter API butuh HTTP client: prod.exs sudah memakai
+# Swoosh.ApiClient.Req; di sini di-set juga supaya dev yang mengisi key tetap
+# jalan walau config/dev.exs mematikan api_client (false).
+#
+# Batasan Resend: tanpa domain terverifikasi, pengiriman hanya dari
+# `onboarding@resend.dev` dan hanya ke alamat email pemilik akun Resend.
+# Untuk produksi: verifikasi domain di dashboard Resend (Domains → Add Domain,
+# pasang record DNS yang diminta), lalu set MAIL_FROM_ADDRESS ke alamat di
+# domain itu. Lihat README ("Email undangan").
 # `env!` dotenvy mengembalikan "" untuk key yang ADA tapi kosong (envs/.env
 # mengirim kredensial kosong sebagai placeholder) — `present` memperlakukan "" =
 # tak-diisi agar guard & fallback `||` bekerja benar (bukan "" yang truthy).
 present = fn v -> if v in [nil, ""], do: nil, else: v end
 
-smtp_relay = present.(env!("SMTP_RELAY", :string, nil))
-smtp_username = present.(env!("SMTP_USERNAME", :string, nil))
+resend_api_key = present.(env!("RESEND_API_KEY", :string, nil))
 
-if smtp_relay && smtp_username do
-  smtp_port = String.to_integer(present.(env!("SMTP_PORT", :string, nil)) || "465")
+if resend_api_key && config_env() != :test do
+  config :josjob, Josjob.Mailer,
+    adapter: Swoosh.Adapters.Resend,
+    api_key: resend_api_key
 
-  # 465 → SSL implisit; selain itu STARTTLS. Paksa via SMTP_SSL=true/false.
-  smtp_ssl =
-    case present.(env!("SMTP_SSL", :string, nil)) do
-      nil -> smtp_port == 465
-      v -> v in ~w(true 1)
-    end
-
-  # TLS: gen_smtp mewarisi default OTP `verify_peer` tapi TIDAK mengisi CA store,
-  # jadi handshake gagal ({:options, :incompatible, [verify: :verify_peer,
-  # cacerts: :undefined]}). Sediakan CA bundle sistem + match_fun wildcard ala
-  # HTTPS (sertifikat Zoho = *.zoho.com). CA default = path image Debian; override
-  # via SMTP_CACERTFILE.
-  cacertfile =
-    present.(env!("SMTP_CACERTFILE", :string, nil)) ||
-      "/etc/ssl/certs/ca-certificates.crt"
-
-  tls_opts = [
-    verify: :verify_peer,
-    cacertfile: cacertfile,
-    depth: 9,
-    server_name_indication: String.to_charlist(smtp_relay),
-    customize_hostname_check: [
-      match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-    ]
-  ]
-
-  # 465 (ssl implisit) memakai opsi TLS via `sockopts` (saat connect); STARTTLS
-  # (587) via `tls_options` (saat upgrade). Dipisah agar opsi ssl tak bocor ke
-  # koneksi TCP polos 587 (gen_tcp menolak opsi ssl).
-  transport = if smtp_ssl, do: [sockopts: tls_opts], else: [tls_options: tls_opts]
-
-  mailer_opts =
-    [
-      adapter: Swoosh.Adapters.SMTP,
-      relay: smtp_relay,
-      username: smtp_username,
-      password: present.(env!("SMTP_PASSWORD", :string, nil)),
-      port: smtp_port,
-      ssl: smtp_ssl,
-      tls: if(smtp_ssl, do: :never, else: :always),
-      auth: :always,
-      retries: 2,
-      no_mx_lookups: true
-    ] ++ transport
-
-  config :josjob, Josjob.Mailer, mailer_opts
+  # Adapter API butuh client HTTP; dev.exs mematikannya (false) karena adapter
+  # default Local tidak butuh. Nyalakan Req di sini supaya key yang di-set di
+  # dev langsung bisa kirim (runtime.exs dievaluasi setelah dev/prod.exs).
+  config :swoosh, :api_client, Swoosh.ApiClient.Req
 end
 
-# Alamat pengirim (From). Zoho MENOLAK from yang bukan alamat akun / alias
-# terverifikasi → default ke SMTP_USERNAME. Override nama/alamat via MAIL_FROM_*.
-mail_from_address = present.(env!("MAIL_FROM_ADDRESS", :string, nil)) || smtp_username
+# Alamat pengirim (From). Resend MENOLAK from yang domain-nya belum terverifikasi
+# (kecuali `onboarding@resend.dev`). Default: MAIL_FROM_ADDRESS; bila kosong dan
+# Resend aktif (bukan :test) → `onboarding@resend.dev` — hanya bisa kirim ke
+# pemilik akun, cukup untuk tes awal. Override nama via MAIL_FROM_NAME.
+mail_from_address =
+  present.(env!("MAIL_FROM_ADDRESS", :string, nil)) ||
+    if(resend_api_key && config_env() != :test, do: "onboarding@resend.dev")
 
 if mail_from_address do
   mail_from_name = present.(env!("MAIL_FROM_NAME", :string, nil)) || "JosJob"
@@ -322,13 +293,11 @@ if config_env() == :prod do
 
   # ## Configuring the mailer
   #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
+  # The mailer is configured in this file (above) from `RESEND_API_KEY`:
   #
   #     config :josjob, Josjob.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
+  #       adapter: Swoosh.Adapters.Resend,
+  #       api_key: System.get_env("RESEND_API_KEY")
   #
   # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
   # and Finch out-of-the-box. This configuration is typically done at
