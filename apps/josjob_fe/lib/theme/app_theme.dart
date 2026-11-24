@@ -18,6 +18,34 @@ ThemeData appTheme() {
     fontSize: 14,
     fontWeight: FontWeight.w600,
   );
+  final buttonFeedback = ButtonStyle(
+    animationDuration: const Duration(milliseconds: 180),
+    overlayColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) return null;
+      if (states.contains(WidgetState.focused)) {
+        return AppColors.brandBlue.withValues(alpha: 0.13);
+      }
+      if (states.contains(WidgetState.pressed)) {
+        return AppColors.brandBlue.withValues(alpha: 0.1);
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return AppColors.brandBlue.withValues(alpha: 0.055);
+      }
+      return null;
+    }),
+    backgroundBuilder: (context, states, child) {
+      final reduceMotion = MediaQuery.disableAnimationsOf(context);
+      final pressed = states.contains(WidgetState.pressed) && !reduceMotion;
+      return AnimatedScale(
+        scale: pressed ? 0.975 : 1,
+        duration: reduceMotion
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: child,
+      );
+    },
+  );
   return base.copyWith(
     scaffoldBackgroundColor: AppColors.bg,
     colorScheme: base.colorScheme.copyWith(
@@ -45,29 +73,63 @@ ThemeData appTheme() {
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: shape,
-        textStyle: buttonText,
-      ),
+      style:
+          FilledButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: shape,
+                textStyle: buttonText,
+              )
+              .merge(buttonFeedback)
+              .copyWith(
+                side: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.focused)
+                      ? const BorderSide(color: AppColors.brandBlue, width: 2)
+                      : BorderSide.none,
+                ),
+              ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: shape,
-        side: const BorderSide(color: AppColors.border),
-        textStyle: buttonText,
-      ),
+      style:
+          OutlinedButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: shape,
+                side: const BorderSide(color: AppColors.border),
+                textStyle: buttonText,
+              )
+              .merge(buttonFeedback)
+              .copyWith(
+                side: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.focused)
+                      ? const BorderSide(color: AppColors.brandBlue, width: 2)
+                      : const BorderSide(color: AppColors.border),
+                ),
+              ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        minimumSize: const Size(44, 44),
-        shape: shape,
-        textStyle: buttonText,
-      ),
+      style:
+          TextButton.styleFrom(
+                minimumSize: const Size(44, 44),
+                shape: shape,
+                textStyle: buttonText,
+              )
+              .merge(buttonFeedback)
+              .copyWith(
+                side: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.focused)
+                      ? const BorderSide(color: AppColors.brandBlue, width: 1.5)
+                      : BorderSide.none,
+                ),
+              ),
     ),
+    iconButtonTheme: IconButtonThemeData(style: buttonFeedback),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,

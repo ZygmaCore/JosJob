@@ -33,10 +33,7 @@ class _Sidebar extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: _BrandMark(),
-              ),
+              const _BrandMark(),
               const SizedBox(height: 28),
               for (var i = 0; i < dests.length; i++) ...[
                 if (i > 0) const SizedBox(height: 4),
@@ -61,8 +58,32 @@ class _Sidebar extends StatelessWidget {
 // Brand lockup reused by the sidebar and mobile top bar.
 class _BrandMark extends StatelessWidget {
   const _BrandMark();
+
+  void _goHome(BuildContext context) =>
+      Navigator.of(context).pushNamed('/welcome');
+
   @override
-  Widget build(BuildContext context) => const AppBrand();
+  Widget build(BuildContext context) => Semantics(
+    link: true,
+    label: 'JosJob home',
+    excludeSemantics: true,
+    onTap: () => _goHome(context),
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => _goHome(context),
+        mouseCursor: SystemMouseCursors.click,
+        borderRadius: BorderRadius.circular(12),
+        focusColor: AppColors.focus,
+        hoverColor: AppColors.tintBlue.withValues(alpha: 0.45),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: AppBrand(),
+        ),
+      ),
+    ),
+  );
 }
 
 class _UserCard extends StatelessWidget {
