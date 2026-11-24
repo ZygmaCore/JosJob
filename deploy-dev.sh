@@ -61,6 +61,7 @@ SEED_DEMO="${SEED_DEMO:-0}"
 SEED_LIVE_TEST="${SEED_LIVE_TEST:-0}"
 SEED_ONLY="${SEED_ONLY:-0}"
 MIX_IMAGE="${MIX_IMAGE:-hexpm/elixir:1.19.5-erlang-27.3.4.14-ubuntu-noble-20260610}"
+MIX_RUNNER_IMAGE="${MIX_RUNNER_IMAGE:-josjob-mix-runner:local}"
 DEPLOY_BE="${DEPLOY_BE:-1}"
 DEPLOY_FE="${DEPLOY_FE:-1}"
 DEPLOY_MODE="${DEPLOY_MODE:-auto}" # auto | full
@@ -502,19 +503,49 @@ wait_http() {
 # /etc/ssl/certs/ca-certificates.crt yang pertama untuk Ubuntu — serta
 # TIDAK menghormati SSL_CERT_FILE. Tanpa bundle itu, `mix local.hex`
 # crash dengan `:no_cacerts_found` (OTP 27.3.4 tidak punya clause untuk
-# atom itu di conv_error_reason/1). Build Dockerfile.dev lolos karena
-# apt install git lebih dulu menarik ca-certificates (Recommends), jadi
-# builder sudah punya bundle saat `mix local.hex` jalan — container
-# sekali pakai ini tidak. Karena itu bundle host di-mount read-only ke
-# path standar yang sama di container (kalau host punya; kalau tidak,
-# jalan tanpa mount seperti sebelumnya dan biarkan errornya terlihat).
+# atom itu di conv_error_reason/1). Runner di bawah sudah memasang
+# ca-certificates, tapi bundle host tetap di-mount read-only ke path
+# standar yang sama (kalau host punya) supaya container memakai CA yang
+# sama dengan host; kalau host tidak punya, mount dilewati.
 # SSL_CERT_FILE di-set ke path yang sama untuk tool berbasis curl/git
 # (mis. fetch git dep saat `mix deps.get`); OTP sendiri mengabaikannya.
-# Hex/rebar hanya di-install kalau belum ada (`mix hex.info` gagal =
-# hex belum terpasang; rebar dicek dari escript-nya), supaya tidak
-# download ulang tiap run kalau suatu saat sudah terpasang. Sengaja tidak
-# persist MIX_HOME di volume: volume baru milik root sehingga tidak bisa
-# ditulis dengan --user, dan download ulang per run hanya ~1 MB.
+#
+# Git: image hexpm/elixir mentah juga TIDAK membawa git. Mix tetap butuh
+# binary git walau dep sudah ada di deps/ — `Mix.Dep.check_lock/1` memanggil
+# `git --git-dir=.git config remote.origin.url` untuk tiap dep SCM git
+# (mis. heroicons dari GitHub), dan tanpa git hasilnya `ErlangError :enoent`.
+# Toolchain C juga tidak ada, padahal bcrypt_elixir / picosat_elixir /
+# lazy_html (lexbor) dikompilasi dari source (butuh make, gcc/g++, cmake).
+# Karena itu runner adalah image turunan kecil (MIX_RUNNER_IMAGE) berisi
+# MIX_IMAGE + paket di MIX_RUNNER_RECIPE, di-cache dan hanya di-build ulang
+# kalau image dasar atau daftar paketnya berubah (label josjob.mix.base /
+# josjob.mix.recipe). Ini sekali ~1 menit; seed berikutnya tidak install apa-apa.
+MIX_RUNNER_RECIPE="git ca-certificates build-essential cmake pkg-config"
+
+ensure_mix_runner_image() {
+  local base_id label_base label_recipe
+  base_id="$("${DOCKER[@]}" image inspect -f '{{.Id}}' "$MIX_IMAGE" 2>/dev/null || true)"
+  if [ -z "$base_id" ]; then
+    log "Pull image builder mix ($MIX_IMAGE)"
+    "${DOCKER[@]}" pull "$MIX_IMAGE"
+    base_id="$("${DOCKER[@]}" image inspect -f '{{.Id}}' "$MIX_IMAGE")"
+  fi
+  label_base="$("${DOCKER[@]}" image inspect -f '{{index .Config.Labels "josjob.mix.base"}}' "$MIX_RUNNER_IMAGE" 2>/dev/null || true)"
+  label_recipe="$("${DOCKER[@]}" image inspect -f '{{index .Config.Labels "josjob.mix.recipe"}}' "$MIX_RUNNER_IMAGE" 2>/dev/null || true)"
+  if [ "$label_base" = "$base_id" ] && [ "$label_recipe" = "$MIX_RUNNER_RECIPE" ]; then
+    return 0
+  fi
+  log "Siapkan image runner mix ($MIX_RUNNER_IMAGE): $MIX_RUNNER_RECIPE di atas $MIX_IMAGE"
+  "${DOCKER[@]}" build -t "$MIX_RUNNER_IMAGE" \
+    --label "josjob.mix.base=$base_id" \
+    --label "josjob.mix.recipe=$MIX_RUNNER_RECIPE" - <<EOF
+FROM $MIX_IMAGE
+RUN apt-get update \\
+ && apt-get install -y --no-install-recommends $MIX_RUNNER_RECIPE \\
+ && rm -rf /var/lib/apt/lists/*
+EOF
+}
+
 mix_docker() { # <script .exs relatif repo>
   local script="$1"
   local db_host net_args=() ca_args=()
@@ -536,6 +567,8 @@ mix_docker() { # <script .exs relatif repo>
     )
   fi
 
+  ensure_mix_runner_image
+
   "${DOCKER[@]}" run --rm \
     -v "$REPO_DIR:/app" -w /app \
     --env-file "$REPO_DIR/$ENV_FILE" \
@@ -543,7 +576,7 @@ mix_docker() { # <script .exs relatif repo>
     --user "$(id -u):$(id -g)" \
     -e HOME=/tmp \
     "${ca_args[@]}" \
-    "$MIX_IMAGE" \
+    "$MIX_RUNNER_IMAGE" \
     bash -c "(mix hex.info >/dev/null 2>&1 || mix local.hex --force) && (ls \"\$HOME\"/.mix/elixir/*/rebar3 >/dev/null 2>&1 || mix local.rebar --force) && mix deps.get && mix run $script"
 }
 
