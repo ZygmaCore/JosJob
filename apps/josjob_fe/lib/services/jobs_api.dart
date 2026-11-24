@@ -13,6 +13,8 @@ class JobListing {
   final int? salaryMin, salaryMax;
   final DateTime? postedAt;
   final bool synthetic, canManage;
+  final String? relevanceLabel;
+  final List<String> matchedSkills, missingSkills;
 
   const JobListing({
     required this.id,
@@ -33,6 +35,9 @@ class JobListing {
     this.postedAt,
     this.synthetic = false,
     this.canManage = false,
+    this.relevanceLabel,
+    this.matchedSkills = const [],
+    this.missingSkills = const [],
   });
 
   factory JobListing.fromJson(Map<String, dynamic> j) => JobListing(
@@ -54,6 +59,13 @@ class JobListing {
     postedAt: DateTime.tryParse(j['posted_at']?.toString() ?? ''),
     synthetic: j['synthetic'] == true,
     canManage: j['can_manage'] == true,
+    relevanceLabel: (j['relevance'] as Map?)?['relevance_label'] as String?,
+    matchedSkills: List<String>.from(
+      (j['relevance'] as Map?)?['matched_skills'] as List? ?? [],
+    ),
+    missingSkills: List<String>.from(
+      (j['relevance'] as Map?)?['missing_skills'] as List? ?? [],
+    ),
   );
 
   String get salaryLabel {
@@ -92,12 +104,17 @@ class JobsPageResult {
   final List<JobListing> jobs;
   final List<JobOrganization> organizations;
   final int page, total, totalPages;
+  final String? relevanceStatus, cvId;
+  final List<String> cvCategories;
   const JobsPageResult({
     required this.jobs,
     required this.organizations,
     required this.page,
     required this.total,
     required this.totalPages,
+    this.relevanceStatus,
+    this.cvId,
+    this.cvCategories = const [],
   });
 }
 
@@ -144,6 +161,9 @@ class JobsApi {
       page: meta['page'] as int,
       total: meta['total'] as int,
       totalPages: meta['total_pages'] as int,
+      relevanceStatus: meta['relevance_status'] as String?,
+      cvId: meta['cv_id'] as String?,
+      cvCategories: List<String>.from(meta['cv_categories'] as List? ?? []),
     );
   }
 

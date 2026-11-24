@@ -76,6 +76,26 @@ class _JobCard extends StatelessWidget {
                     if (job.status != 'active') _JobBadge(job.status),
                   ],
                 ),
+                if (job.relevanceLabel != null) ...[
+                  const SizedBox(height: 14),
+                  _JobBadge(job.relevanceLabel!),
+                  if (job.matchedSkills.isNotEmpty)
+                    Text(
+                      'CV overlap: ${job.matchedSkills.join(', ')}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.body,
+                      ),
+                    ),
+                  if (job.missingSkills.isNotEmpty)
+                    Text(
+                      'Skills to build: ${job.missingSkills.take(3).join(', ')}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.body,
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 16),
                 Text(
                   job.description,

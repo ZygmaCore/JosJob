@@ -196,6 +196,16 @@ class _CurriculumVitaeViewState extends State<CurriculumVitaeView> {
         'Your saved profile, experience, qualifications and resume PDF.',
         style: _style(13, color: AppColors.body),
       ),
+      const SizedBox(height: 12),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          key: const ValueKey('cv-find-job-matches'),
+          onPressed: () => Navigator.of(context).pushNamed('/jobs'),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('Find jobs that fit my CV'),
+        ),
+      ),
       const SizedBox(height: 24),
       if (_loading)
         _card(

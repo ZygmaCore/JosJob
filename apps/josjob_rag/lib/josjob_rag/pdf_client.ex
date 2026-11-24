@@ -12,6 +12,19 @@ defmodule JosjobRag.PdfClient do
 
   @default_base_url "http://localhost:4010"
   @default_timeout 120_000
+  @max_pdf_bytes 10_000_000
+
+  @doc "Stable CV version for deduplicating an unchanged owned PDF."
+  def version(%{path: path}) do
+    with {:ok, stat} <- File.stat(path),
+         true <- stat.size <= @max_pdf_bytes,
+         {:ok, bytes} <- File.read(path) do
+      {:ok, "cv_pdf_" <> Base.encode16(:crypto.hash(:sha256, bytes), case: :lower)}
+    else
+      false -> {:error, :pdf_too_large}
+      {:error, reason} -> {:error, {:file_error, reason}}
+    end
+  end
 
   @doc "Submit an uploaded PDF for extraction."
   @spec submit_upload(map(), String.t(), String.t() | nil, keyword()) ::
@@ -26,19 +39,24 @@ defmodule JosjobRag.PdfClient do
     # those with "Body read timeout" before the parser finishes. Uploads are
     # capped at `max_pdf_bytes` (10 MB), so a binary body is safe and lets Req
     # send a `content-length` header.
-    case File.read(path) do
-      {:ok, data} ->
-        form =
-          [
-            user_id: to_string(user_id),
-            cv_id: cv_id,
-            filename: filename,
-            idempotency_key: opts[:idempotency_key],
-            file: {data, filename: filename || "cv.pdf", content_type: content_type}
-          ]
-          |> Enum.reject(fn {_key, value} -> is_nil(value) or value == "" end)
+    with {:ok, stat} <- File.stat(path),
+         true <- stat.size <= @max_pdf_bytes,
+         {:ok, data} <- File.read(path) do
+      form =
+        [
+          user_id: to_string(user_id),
+          cv_id: cv_id,
+          filename: filename,
+          idempotency_key: opts[:idempotency_key],
+          known_skills: Jason.encode!(opts[:known_skills] || []),
+          file: {data, filename: filename || "cv.pdf", content_type: content_type}
+        ]
+        |> Enum.reject(fn {_key, value} -> is_nil(value) or value == "" end)
 
-        post("/v1/cv/analyses", [form_multipart: form], opts)
+      post("/v1/cv/analyses", [form_multipart: form], opts)
+    else
+      false ->
+        {:error, :pdf_too_large}
 
       {:error, reason} ->
         {:error, {:file_error, reason}}
@@ -83,7 +101,7 @@ defmodule JosjobRag.PdfClient do
   end
 
   defp request(method, path, req_options, opts) do
-    http = Keyword.get(opts, :http_client, &Req.request/1)
+    http = Keyword.get(opts, :http_client, config()[:http_client] || (&Req.request/1))
 
     request =
       ([

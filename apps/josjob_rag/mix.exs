@@ -29,6 +29,7 @@ defmodule JosjobRag.MixProject do
       {:xberg, "~> 1.0.0-rc.14"},
       {:josjob, in_umbrella: true},
       {:josjob_job, in_umbrella: true},
+      {:josjob_doc, in_umbrella: true},
       {:josjob_lrn, in_umbrella: true},
       {:ash, "~> 3.0"},
       {:oban, "~> 2.20"},

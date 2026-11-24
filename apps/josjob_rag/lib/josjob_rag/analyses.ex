@@ -50,7 +50,7 @@ defmodule JosjobRag.Analyses do
     with {:ok, [analysis]} <-
            query(
              """
-             select id, cv_id, provider, model, semantic, analyzed_at, updated_at
+             select id, cv_id, provider, model, semantic, analyzed_at, updated_at, payload
              from rag_cv_analyses
              where user_id = $1 and cv_id = $2
              limit 1
@@ -65,6 +65,8 @@ defmodule JosjobRag.Analyses do
       {:ok,
        %{
          cv_id: analysis["cv_id"],
+         profile: analysis["payload"]["matching_profile"],
+         method: analysis["payload"]["matching_profile"] && "category_skill",
          provider: analysis["provider"],
          model: analysis["model"],
          semantic: analysis["semantic"],
@@ -80,6 +82,27 @@ defmodule JosjobRag.Analyses do
   end
 
   def get(_user, _cv_id), do: {:error, :not_found}
+
+  @doc "Load reusable extracted CV facts, scoped to the owner; nil selects the latest saved CV."
+  def cv(user, cv_id \\ nil)
+  def cv(nil, _cv_id), do: {:error, :unauthorized}
+
+  def cv(user, cv_id) do
+    with {:ok, rows} <-
+           query(
+             """
+             select cv_id, payload from rag_cv_analyses
+             where user_id = $1 and ($2::text is null or cv_id = $2)
+             order by updated_at desc, id desc limit 1
+             """,
+             [dump_uuid!(user.id), cv_id]
+           ) do
+      case rows do
+        [row] -> {:ok, Map.put(row["payload"], "cv_id", row["cv_id"])}
+        [] -> {:error, :not_found}
+      end
+    end
+  end
 
   @doc "Delete a persisted analysis (matches cascade)."
   def delete(user, cv_id) when is_binary(cv_id) do
@@ -125,7 +148,8 @@ defmodule JosjobRag.Analyses do
   # --- writes -------------------------------------------------------------
 
   defp upsert_analysis(user, cv, result, cv_id, skills) do
-    payload = json_safe(cv)
+    payload =
+      cv |> json_safe() |> Map.put("matching_profile", JosjobRag.CategoryRanking.profile(cv))
 
     [row] =
       query!(

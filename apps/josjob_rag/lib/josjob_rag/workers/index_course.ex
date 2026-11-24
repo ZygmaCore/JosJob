@@ -1,10 +1,5 @@
 defmodule JosjobRag.Workers.IndexCourse do
-  @moduledoc """
-  Re-embeds a course after it is created or updated.
-
-  Courses are also indexed lazily on the first ranking request, so this worker is
-  an optimization for course-admin writes rather than a correctness requirement.
-  """
+  @moduledoc "Legacy indexing worker using local vectors by default; CV relevance does not require embeddings."
 
   use Oban.Worker, queue: :default, max_attempts: 3, unique: [period: 60]
 

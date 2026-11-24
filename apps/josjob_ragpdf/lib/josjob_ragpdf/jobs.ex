@@ -117,6 +117,7 @@ defmodule JosjobRagpdf.Jobs do
   def public(%Job{} = job) do
     %{
       id: job.id,
+      user_id: job.user_id,
       cv_id: job.cv_id,
       filename: job.filename,
       status: Job.status_string(job),

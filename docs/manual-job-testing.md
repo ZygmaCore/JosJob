@@ -1,5 +1,9 @@
 # Manual vacancy and hiring demo
 
+For six accounts with different CVs and a separate relevance-testing catalog,
+see [the multi-account CV demo](cv-relevance-demo.md). The seed below remains
+separate and focuses on applications and chat.
+
 Open <http://localhost:8081>. These local accounts share a fictional organization,
 **JosJob Demo Company [Demo]**. Both use password `JosJobDemo123!`.
 

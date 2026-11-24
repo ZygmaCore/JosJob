@@ -1,33 +1,16 @@
 defmodule JosjobRag.Analyzer do
   @moduledoc """
-  End-to-end RAG analysis: embeddings → pgvector → ranking → course hook.
-
-  Pipeline:
-
-      1. Load the jobs and courses visible to the user (or use injected lists).
-      2. Resolve the active embedding space from the vector store.
-      3. Embed new/changed jobs and courses; unchanged rows are skipped by hash.
-      4. Embed the CV text in the same space.
-      5. Rank jobs (semantic + skill + recency) and attach real courses for gaps.
-
-  Every database call degrades gracefully: if PostgreSQL/pgvector is not
-  available, the pipeline still returns a deterministic skill-only ranking with
-  `semantic: false`, so the API and UI keep working.
-
-  Options (mainly for tests):
-
-    * `:jobs`, `:courses` — preloaded lists
-    * `:space` — force an embedding space
-    * `:vector_store` — module implementing the `JosjobRag.VectorStore` API
-    * `:embeddings` — module implementing `embed_many/2`
-    * `:limit`, `:max_candidates`, `:now`, `:cv_id`
+  Rank an extracted CV using saved role categories and local skill overlap.
+  Normal analysis never calls embedding or AI providers. The PDF service owns
+  the one-time extraction; this module reuses the resulting structured facts.
+  Explicit legacy indexing utilities remain separate from job discovery.
   """
 
   require Logger
   require Ash.Query
 
   alias JosjobLrn.Learning
-  alias JosjobRag.{Embeddings, Ranker, Text, VectorStore}
+  alias JosjobRag.{CategoryRanking, Embeddings, Ranker, Text, VectorStore}
   alias JosjobJob.Listings
 
   @job_page_size 50
@@ -45,60 +28,32 @@ defmodule JosjobRag.Analyzer do
   def analyze(user, cv, opts \\ []) do
     cv = cv || %{}
     now = opts[:now] || DateTime.utc_now()
-    store = Keyword.get(opts, :vector_store, VectorStore)
-    embedder = Keyword.get(opts, :embeddings, Embeddings)
     jobs = Keyword.get_lazy(opts, :jobs, fn -> load_jobs(user, opts) end)
     courses = Keyword.get_lazy(opts, :courses, fn -> load_courses(user, opts) end)
-    space = resolve_space(store, :job, opts)
+    profile = CategoryRanking.profile(cv)
+    ranked = CategoryRanking.rank(profile, jobs, limit: opts[:limit] || @default_limit, now: now)
+    missing_skills = ranked |> Enum.flat_map(& &1.missing_skills) |> Enum.uniq()
+    recommendations = Ranker.recommend_courses(missing_skills, courses)
+    {ranked, recommended_courses} = Ranker.attach_courses(ranked, recommendations)
 
-    with {:ok, space, job_vectors} <- ensure_vectors(store, embedder, :job, jobs, space, opts),
-         {:ok, cv_vector, cv_space} <- embed_cv(embedder, cv, space, opts),
-         {:ok, course_space, course_vectors} <-
-           ensure_vectors(store, embedder, :course, courses, space, opts) do
-      # Never compare vectors from different providers: a local CV vector
-      # against Gemini job vectors is noise, not signal.
-      cv_vector = if same_space?(cv_space, space), do: cv_vector, else: nil
-
-      ranked =
-        Ranker.rank(cv, jobs,
-          query_vector: cv_vector,
-          vectors: job_vectors,
-          limit: opts[:limit] || @default_limit,
-          now: now
-        )
-
-      missing_skills =
-        ranked
-        |> Enum.flat_map(& &1.missing_skills)
-        |> Enum.uniq()
-
-      # Course vectors are only useful when they live in the same space as the
-      # CV vector (for example, Gemini courses + local CV would be noise).
-      course_vectors = if same_space?(course_space, cv_space), do: course_vectors, else: %{}
-
-      course_recommendations =
-        Ranker.recommend_courses(missing_skills, courses,
-          query_vector: cv_vector,
-          vectors: course_vectors
-        )
-
-      {ranked, recommended_courses} = Ranker.attach_courses(ranked, course_recommendations)
-
-      semantic? = not is_nil(cv_vector) and job_vectors != %{}
-
-      {:ok,
-       %{
-         cv_id: cv_id(cv, opts),
-         provider: space && space.provider,
-         model: space && space.model,
-         dimensions: space && space.dimensions,
-         semantic: semantic?,
-         analyzed_at: now,
-         scoring: Ranker.weights(),
-         jobs: ranked,
-         courses: recommended_courses
-       }}
-    end
+    {:ok,
+     %{
+       cv_id: cv_id(cv, opts),
+       provider: "local",
+       model: "category-skill-v1",
+       dimensions: nil,
+       semantic: false,
+       method: "category_skill",
+       profile: profile,
+       analyzed_at: now,
+       scoring: %{
+         method: "category_skill",
+         order: ["category", "skill_overlap", "recency"],
+         external_ai_calls: 0
+       },
+       jobs: ranked,
+       courses: recommended_courses
+     }}
   end
 
   @doc "Embed and store one job (no-op when its text is unchanged)."
@@ -126,7 +81,7 @@ defmodule JosjobRag.Analyzer do
     else
       store = Keyword.get(opts, :vector_store, VectorStore)
       embedder = Keyword.get(opts, :embeddings, Embeddings)
-      space = resolve_space(store, :cv, opts)
+      space = Keyword.get(opts, :space, local_space())
       cv = Map.put(cv, :cv_id, id)
 
       with {:ok, _space, _vectors} <- ensure_vectors(store, embedder, :cv, [cv], space, opts) do
@@ -143,7 +98,7 @@ defmodule JosjobRag.Analyzer do
   """
   def reindex_all(opts \\ []) do
     store = Keyword.get(opts, :vector_store, VectorStore)
-    space = Keyword.get(opts, :space, Embeddings.configured_space())
+    space = Keyword.get(opts, :space, local_space())
 
     if opts[:force] do
       _ = store.delete_space(:job, space.provider, space.model)
@@ -204,7 +159,7 @@ defmodule JosjobRag.Analyzer do
         acc = acc ++ jobs
         total_pages = meta[:total_pages] || 1
 
-        if jobs == [] or length(acc) >= remaining or page >= total_pages do
+        if jobs == [] or length(jobs) >= remaining or page >= total_pages do
           acc
         else
           do_load_jobs(user, page + 1, remaining - length(jobs), acc)
@@ -270,7 +225,8 @@ defmodule JosjobRag.Analyzer do
   defp index_items(owner_type, items, opts) do
     store = Keyword.get(opts, :vector_store, VectorStore)
     embedder = Keyword.get(opts, :embeddings, Embeddings)
-    space = resolve_space(store, owner_type, opts)
+
+    space = Keyword.get(opts, :space, local_space())
 
     with {:ok, _space, vectors} <-
            ensure_vectors(store, embedder, owner_type, items, space, opts) do
@@ -364,66 +320,8 @@ defmodule JosjobRag.Analyzer do
     end
   end
 
-  defp embed_cv(_embedder, _cv, nil, _opts), do: {:ok, nil, nil}
-
-  defp embed_cv(embedder, cv, space, _opts) do
-    text = Text.cv_text(cv)
-
-    if String.trim(text) == "" do
-      {:ok, nil, space}
-    else
-      provider = Embeddings.module_for(space.provider)
-
-      case embedder.embed_many([text], provider: provider, dimensions: space.dimensions) do
-        {:ok, [vector], actual_space} ->
-          {:ok, vector, actual_space}
-
-        {:ok, _vectors, actual_space} ->
-          {:ok, nil, actual_space}
-
-        {:error, reason} ->
-          Logger.warning("Could not embed CV text: #{inspect(reason)}")
-          {:ok, nil, nil}
-      end
-    end
-  end
-
-  defp resolve_space(store, owner_type, opts) do
-    dimensions = store.dimensions()
-
-    case opts[:space] || dominant_space(store, owner_type) do
-      nil ->
-        Embeddings.configured_space()
-
-      space ->
-        space = Map.put_new(space, :dimensions, dimensions)
-
-        if space.dimensions == dimensions do
-          space
-        else
-          Logger.warning(
-            "Ignoring embedding space #{space.provider}/#{space.model}: dimensions #{space.dimensions} != #{dimensions}. Reindex with `mix josjob_rag.reindex --force`."
-          )
-
-          nil
-        end
-    end
-  end
-
-  defp dominant_space(store, owner_type) do
-    case store.dominant_space(owner_type) do
-      {:ok, nil} -> nil
-      {:ok, space} -> space
-      {:error, _reason} -> nil
-    end
-  end
-
-  defp same_space?(nil, _space), do: false
-  defp same_space?(_space, nil), do: false
-
-  defp same_space?(left, right) do
-    left.provider == right.provider and left.model == right.model
-  end
+  defp local_space,
+    do: %{provider: "local", model: "hashed-bow-v1", dimensions: Embeddings.dimensions()}
 
   defp text_for(:job, item), do: Text.job_text(item)
   defp text_for(:course, item), do: Text.course_text(item)

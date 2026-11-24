@@ -26,11 +26,14 @@ defmodule JosjobWeb.Api.RagController do
   def analyze(conn, params) do
     user = conn.assigns.current_user
 
-    with {:ok, cv} <- load_cv(params),
+    with {:ok, cv} <- load_cv(params, user),
          {:ok, result} <- Analyzer.analyze(user, cv, limit: limit(params)) do
       data = analysis_json(result) |> persist(user, cv, result)
       json(conn, %{data: data})
     else
+      {:error, :not_found} ->
+        not_found(conn)
+
       {:error, :missing_cv_id} ->
         bad_request(conn, %{"cv_id" => "cv_id is required"})
 
@@ -74,20 +77,33 @@ defmodule JosjobWeb.Api.RagController do
   def create_extraction(conn, params) do
     user = conn.assigns.current_user
 
+    if params["consent"] in [true, "true"] do
+      submit_extraction(conn, params, user)
+    else
+      bad_request(conn, %{"consent" => "Explicit consent is required before processing your CV"})
+    end
+  end
+
+  defp submit_extraction(conn, params, user) do
     case params["file"] do
       %Plug.Upload{} = upload ->
-        opts = [idempotency_key: params["idempotency_key"]]
+        with {:ok, cv_id} <- PdfClient.version(upload) do
+          case Analyses.cv(user, cv_id) do
+            {:ok, cv} ->
+              conn |> put_status(:accepted) |> json(cached_extraction(cv, user))
 
-        case PdfClient.submit_upload(upload, user.id, params["cv_id"], opts) do
-          {:ok, body} ->
-            conn |> put_status(:accepted) |> json(body)
+            {:error, :not_found} ->
+              forward_upload(conn, params, user, upload, cv_id)
 
-          {:error, {:ragpdf, status, body}} ->
-            forward_pdf_error(conn, status, body)
+            {:error, _reason} ->
+              service_unavailable(conn, "cv_storage_unavailable")
+          end
+        else
+          {:error, :pdf_too_large} ->
+            conn |> put_status(:request_entity_too_large) |> json(%{error: "payload_too_large"})
 
-          {:error, reason} ->
-            Logger.warning("CV extraction submit failed: #{inspect(reason)}")
-            service_unavailable(conn, "extraction_service_unavailable")
+          {:error, _reason} ->
+            bad_request(conn, %{"file" => "The PDF could not be read"})
         end
 
       _other ->
@@ -95,10 +111,47 @@ defmodule JosjobWeb.Api.RagController do
     end
   end
 
+  defp forward_upload(conn, params, user, upload, cv_id) do
+    known_skills =
+      (Enum.flat_map(Analyzer.load_jobs(user, []), &(&1.requirements || [])) ++
+         Josjob.Orgs.SkillData.all())
+      |> Enum.uniq()
+      |> Enum.take(200)
+
+    opts = [idempotency_key: params["idempotency_key"] || cv_id, known_skills: known_skills]
+
+    case PdfClient.submit_upload(upload, user.id, cv_id, opts) do
+      {:ok, body} -> conn |> put_status(:accepted) |> json(body)
+      {:error, {:ragpdf, status, body}} -> forward_pdf_error(conn, status, body)
+      {:error, _reason} -> service_unavailable(conn, "extraction_service_unavailable")
+    end
+  end
+
+  defp cached_extraction(cv, user) do
+    origin = cv["extraction"] || %{}
+
+    %{
+      "data" => %{
+        "id" => cv["cv_id"],
+        "cv_id" => cv["cv_id"],
+        "user_id" => user.id,
+        "status" => origin["status"] || "done",
+        "cached" => true,
+        "provider" => origin["provider"],
+        "model" => origin["model"],
+        "warnings" => origin["warnings"] || [],
+        "result" => Map.take(cv, ["skills", "experience", "education"])
+      }
+    }
+  end
+
   def show_extraction(conn, %{"id" => id}) do
-    case PdfClient.get(id) do
+    case owned_extraction(id, conn.assigns.current_user) do
       {:ok, body} ->
         json(conn, body)
+
+      {:error, :not_found} ->
+        not_found(conn)
 
       {:error, {:ragpdf, 404, _body}} ->
         not_found(conn)
@@ -125,12 +178,38 @@ defmodule JosjobWeb.Api.RagController do
     end
   end
 
+  # The extraction service uses a shared backend token. Check ownership before
+  # exposing private CV data or accepting an extraction for ranking.
+  defp owned_extraction(id, user) do
+    result =
+      if String.starts_with?(id, "cv_pdf_") do
+        with {:ok, cv} <- Analyses.cv(user, id), do: {:ok, cached_extraction(cv, user)}
+      else
+        PdfClient.get(id)
+      end
+
+    case result do
+      {:ok, %{"data" => %{"user_id" => owner}} = body} when owner == user.id ->
+        {:ok, body}
+
+      {:ok, _body} ->
+        {:error, :not_found}
+
+      error ->
+        error
+    end
+  end
+
   # --- CV input -----------------------------------------------------------
 
-  defp load_cv(params) do
+  defp load_cv(params, user) do
     cond do
       is_binary(params["extraction_id"]) and params["extraction_id"] != "" ->
-        cv_from_extraction(params)
+        cv_from_extraction(params, user)
+
+      is_binary(params["cv_id"]) and not Map.has_key?(params, "cv") and
+          not Enum.any?(["skills", "experience", "education"], &Map.has_key?(params, &1)) ->
+        Analyses.cv(user, params["cv_id"])
 
       is_map(params["cv"]) ->
         cv_from_map(params["cv"], params)
@@ -140,10 +219,10 @@ defmodule JosjobWeb.Api.RagController do
     end
   end
 
-  defp cv_from_extraction(params) do
+  defp cv_from_extraction(params, user) do
     id = params["extraction_id"]
 
-    case PdfClient.get(id) do
+    case owned_extraction(id, user) do
       {:ok, %{"data" => %{"status" => status, "result" => result} = data}}
       when status in ["done", "partial"] ->
         result = result || %{}
@@ -152,10 +231,15 @@ defmodule JosjobWeb.Api.RagController do
           "cv_id" => params["cv_id"] || data["cv_id"] || id,
           "skills" => list(result["skills"]),
           "experience" => list(result["experience"]),
-          "education" => list(result["education"])
+          "education" => list(result["education"]),
+          "extraction" => Map.take(data, ["status", "provider", "model", "warnings"])
         }
 
         validate_cv(cv)
+
+      {:ok, %{"data" => %{"status" => status} = data}}
+      when status in ["failed", "unreadable", "cancelled"] ->
+        {:error, {:extraction_failed, data["error"] || status}}
 
       {:ok, %{"data" => %{"status" => status}}} ->
         {:error, {:extraction_pending, status}}
@@ -227,6 +311,8 @@ defmodule JosjobWeb.Api.RagController do
       semantic: result.semantic,
       analyzed_at: result.analyzed_at,
       scoring: result.scoring,
+      method: result.method,
+      profile: result.profile,
       jobs: Enum.map(result.jobs, &job_json/1),
       courses: Enum.map(result.courses, &course_json/1)
     }
@@ -256,6 +342,8 @@ defmodule JosjobWeb.Api.RagController do
 
     %{
       job_id: item.job_id,
+      relevance_label: item.relevance_label,
+      categories: item.categories,
       match_score: item.match_score,
       match: item.match,
       semantic_score: item.semantic_score,
@@ -281,6 +369,7 @@ defmodule JosjobWeb.Api.RagController do
         salary_max: Map.get(job, :salary_max),
         currency: Map.get(job, :currency),
         status: Map.get(job, :status),
+        synthetic: Map.get(job, :synthetic) || false,
         posted_at: Map.get(job, :posted_at),
         created_at: Map.get(job, :created_at)
       }

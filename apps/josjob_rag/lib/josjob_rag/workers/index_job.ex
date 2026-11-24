@@ -1,11 +1,5 @@
 defmodule JosjobRag.Workers.IndexJob do
-  @moduledoc """
-  Re-embeds a job after it is created or updated.
-
-  Only the job id is queued; the worker reloads the row so it always indexes the
-  committed content. The vector store skips the Gemini call when the content hash
-  is unchanged, so enqueueing on every update is cheap.
-  """
+  @moduledoc "Legacy indexing worker using local vectors by default; CV relevance does not require embeddings."
 
   use Oban.Worker, queue: :default, max_attempts: 3, unique: [period: 60]
 

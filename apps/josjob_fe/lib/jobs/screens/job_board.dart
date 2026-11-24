@@ -29,7 +29,9 @@ class _JobsViewState extends State<JobsView> {
   final _salary = TextEditingController();
   Timer? _debounce;
   JobsPageResult? _result;
-  String? _error;
+  String? _error, _savedCvId;
+  List<String> _savedCvCategories = const [];
+  bool _cvStateKnown = false, _cvLookupFailed = false;
   String _type = '', _mode = '', _currency = '', _sort = 'newest';
   bool _manage = false, _loading = true, _showFilters = false;
   int _page = 1, _request = 0;
@@ -38,6 +40,9 @@ class _JobsViewState extends State<JobsView> {
   void initState() {
     super.initState();
     _query.text = widget.initialQuery;
+    if (widget.authorize != null || Session.instance.isSignedIn) {
+      _sort = 'relevance';
+    }
     _load();
   }
 
@@ -46,6 +51,10 @@ class _JobsViewState extends State<JobsView> {
     setState(() {
       _loading = true;
       _error = null;
+      if (_cvLookupFailed) {
+        _cvStateKnown = false;
+        _cvLookupFailed = false;
+      }
     });
     final filters = <String, String>{
       'q': _query.text.trim(),
@@ -66,12 +75,30 @@ class _JobsViewState extends State<JobsView> {
       setState(() {
         _result = result;
         _loading = false;
+        if (filters['scope'] == 'browse' && filters['sort'] == 'relevance') {
+          if (result.relevanceStatus == 'ready' && result.cvId != null) {
+            _savedCvId = result.cvId;
+            _savedCvCategories = result.cvCategories;
+            _cvLookupFailed = false;
+          } else if (result.relevanceStatus == 'cv_required') {
+            _savedCvId = null;
+            _savedCvCategories = const [];
+            _cvLookupFailed = false;
+          } else if (!_cvStateKnown) {
+            _cvLookupFailed = true;
+          }
+          _cvStateKnown = true;
+        }
       });
     } catch (e) {
       if (!mounted || request != _request) return;
       setState(() {
         _error = e.toString();
         _loading = false;
+        if (!_cvStateKnown) {
+          _cvStateKnown = true;
+          _cvLookupFailed = true;
+        }
       });
     }
   }
@@ -96,7 +123,9 @@ class _JobsViewState extends State<JobsView> {
       _type = '';
       _mode = '';
       _currency = '';
-      _sort = 'newest';
+      _sort = widget.authorize != null || Session.instance.isSignedIn
+          ? 'relevance'
+          : 'newest';
     });
     _filter();
   }
@@ -125,7 +154,10 @@ class _JobsViewState extends State<JobsView> {
       ),
     );
     if (saved == true && mounted) {
-      setState(() => _manage = true);
+      setState(() {
+        _manage = true;
+        _sort = 'newest';
+      });
       _filter();
     }
   }
@@ -216,7 +248,10 @@ class _JobsViewState extends State<JobsView> {
                             label: const Text('Browse jobs'),
                             selected: !_manage,
                             onSelected: (_) {
-                              setState(() => _manage = false);
+                              setState(() {
+                                _manage = false;
+                                _sort = 'relevance';
+                              });
                               _filter();
                             },
                           ),
@@ -225,7 +260,10 @@ class _JobsViewState extends State<JobsView> {
                             label: const Text('Manage listings'),
                             selected: _manage,
                             onSelected: (_) {
-                              setState(() => _manage = true);
+                              setState(() {
+                                _manage = true;
+                                _sort = 'newest';
+                              });
                               _filter();
                             },
                           ),
@@ -243,6 +281,33 @@ class _JobsViewState extends State<JobsView> {
                 ),
               ),
               const SizedBox(height: 24),
+              if (!_manage) ...[
+                CvJobRankings(
+                  key: ValueKey(
+                    'cv-state-${Session.instance.user?.id ?? 'guest'}',
+                  ),
+                  authorize: widget.authorize,
+                  savedCvId: _savedCvId,
+                  savedCategories: _savedCvCategories,
+                  checkingSavedCv: _loading && !_cvStateKnown,
+                  savedCvUnavailable: _cvLookupFailed,
+                  onRetrySavedCv: _error == null ? _load : null,
+                  onProfileReady: (result) {
+                    setState(() {
+                      _sort = 'relevance';
+                      _savedCvId = result['cv_id'] as String?;
+                      _savedCvCategories = List<String>.from(
+                        (result['profile'] as Map?)?['categories'] as List? ??
+                            [],
+                      );
+                      _cvStateKnown = true;
+                      _cvLookupFailed = false;
+                    });
+                    _filter();
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
               _filterPanel(),
               const SizedBox(height: 20),
               Wrap(
@@ -273,7 +338,11 @@ class _JobsViewState extends State<JobsView> {
                       _select(
                         'Sort by',
                         _sort,
-                        const {
+                        {
+                          if (!_manage &&
+                              (widget.authorize != null ||
+                                  Session.instance.isSignedIn))
+                            'relevance': 'Most relevant to my CV',
                           'newest': 'Newest first',
                           'salary': 'Highest salary',
                         },
@@ -289,6 +358,19 @@ class _JobsViewState extends State<JobsView> {
                 ],
               ),
               const SizedBox(height: 16),
+              if (!_manage &&
+                  _sort == 'relevance' &&
+                  !_loading &&
+                  _error == null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _result?.relevanceStatus == 'cv_required'
+                        ? 'Upload and save your CV above to sort by relevance. Showing newest jobs for now.'
+                        : 'Relevant categories and skills first. Less relevant jobs remain below.',
+                    key: const ValueKey('job-relevance-status'),
+                  ),
+                ),
               if (_activeFilters.isNotEmpty) ...[
                 Wrap(spacing: 8, runSpacing: 8, children: _activeFilters),
                 const SizedBox(height: 16),

@@ -24,6 +24,35 @@ defmodule JosjobRag.PdfClientTest do
     refute Keyword.has_key?(request, :auth)
   end
 
+  test "upload supplies known skills to the offline fallback" do
+    path = Path.join(System.tmp_dir!(), "cv-#{System.unique_integer([:positive])}.pdf")
+    File.write!(path, "%PDF-1.4 synthetic")
+    on_exit(fn -> File.rm(path) end)
+    http = fake_http({:ok, %{status: 202, body: %{"data" => %{"id" => "job_1"}}}})
+
+    assert {:ok, _} =
+             PdfClient.submit_upload(%{path: path, filename: "cv.pdf"}, "owner", nil,
+               http_client: http,
+               known_skills: ["Elixir", "SQL"]
+             )
+
+    assert_received {:request, request}
+    assert Jason.decode!(request[:form_multipart][:known_skills]) == ["Elixir", "SQL"]
+    assert request[:form_multipart][:user_id] == "owner"
+  end
+
+  test "oversized uploads are rejected before forwarding" do
+    path = Path.join(System.tmp_dir!(), "large-cv-#{System.unique_integer([:positive])}.pdf")
+    {:ok, io} = File.open(path, [:write, :binary])
+    :file.position(io, 10 * 1024 * 1024)
+    IO.binwrite(io, "x")
+    File.close(io)
+    on_exit(fn -> File.rm(path) end)
+
+    assert {:error, :pdf_too_large} =
+             PdfClient.submit_upload(%{path: path, filename: "cv.pdf"}, "owner", nil)
+  end
+
   test "get/2 and delete/2 target the analysis path" do
     http = fake_http({:ok, %{status: 200, body: %{"data" => %{"status" => "done"}}}})
 

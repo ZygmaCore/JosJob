@@ -71,6 +71,22 @@ defmodule JosjobJob.Listings do
     end
   end
 
+  @doc "Read all authorized, filtered candidates before relevance ordering and pagination."
+  def candidates(user, params) do
+    orgs = organizations(user)
+
+    with {:ok, filters} <- filters(params),
+         :ok <- authorize_scope(user, filters.scope),
+         {:ok, jobs} <-
+           Enum.map(orgs, & &1.id)
+           |> scoped_query(filters.scope)
+           |> apply_filters(filters)
+           |> Ash.Query.load(:organization)
+           |> Ash.read(authorize?: false) do
+      {:ok, %{jobs: jobs, organizations: orgs, filters: filters}}
+    end
+  end
+
   @doc "Counts and latest public active listings, with caller-specific management capabilities."
   def overview(user) do
     orgs = organizations(user)
