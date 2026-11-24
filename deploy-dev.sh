@@ -269,6 +269,21 @@ service_dockerfile() {
     jq -r --arg svc "$svc" '.services[$svc].build.dockerfile // "Dockerfile"' 2>/dev/null
 }
 
+# Nama network compose ter-resolve (tahan rename project / COMPOSE_PROJECT_NAME),
+# diambil dari `docker compose config` yang sama dengan deploy. Tanpa network
+# kustom di compose file, ini network default proyek (<project>_default).
+# Dipakai seed saat host DB adalah service compose `paradedb`.
+compose_network_name() {
+  local name
+  [ -n "$COMPOSE_JSON" ] || load_compose_contexts
+  name="$(printf '%s' "$COMPOSE_JSON" | jq -r '.networks.default.name // empty' 2>/dev/null || true)"
+  if [ -z "$name" ]; then
+    echo "Tidak bisa menentukan network compose (docker compose config gagal) — seed ke paradedb dibatalkan." >&2
+    return 1
+  fi
+  printf '%s' "$name"
+}
+
 # Path absolut/relatif dari compose -> relatif terhadap root repo ("." = root).
 ctx_rel() {
   local p="${1:-.}"
@@ -418,6 +433,25 @@ env_file_value() {
   printf '%s' "${line#*=}" | sed -e 's/^["'\'']//' -e 's/["'\'']$//'
 }
 
+# Host DB efektif untuk seed, mengikuti precedence runtime.exs: DATABASE_URL
+# (kalau di-set) menang atas POSTGRES_*; kalau tidak, POSTGRES_HOST (default
+# localhost kalau unset). Nilai dibaca dari envs/.env — file yang sama dengan
+# yang di-pass ke container seed via --env-file. Spasi di sekitar nilai
+# dibuang supaya perbandingan host tidak gagal karena whitespace.
+db_effective_host() {
+  local url host
+  url="$(env_file_value DATABASE_URL)"
+  if [ -n "$url" ]; then
+    # postgres://user:pass@host:port/db — ambil host di antara @ dan : atau /.
+    host="$(printf '%s' "$url" | sed -E 's|^[^:]+://([^@]*@)?([^:/?#]+).*|\2|')"
+    host="$(printf '%s' "$host" | tr -d '[:space:]')"
+    [ -n "$host" ] && { printf '%s' "$host"; return 0; }
+    # URL tidak bisa diparse: jatuh ke POSTGRES_HOST di bawah.
+  fi
+  host="$(env_file_value POSTGRES_HOST)"
+  printf '%s' "${host:-localhost}" | tr -d '[:space:]'
+}
+
 # FE dibakar saat build (Dart String.fromEnvironment), jadi kalau build args di
 # envs/.env berubah FE harus di-build ulang walau kodenya sama.
 fe_args_fingerprint() {
@@ -442,22 +476,75 @@ wait_http() {
 # Container josjob_be tidak berisi mix (runner minimal) dan elixir apt terlalu
 # tua — seed demo & live-test dijalankan lewat container sekali pakai dari
 # image builder yang sama dengan CI (hexpm/elixir 1.19.5). Repo di-mount,
-# envs/.env dipakai sebagai env container, --network host supaya container
-# mencapai DB dev lewat Tailscale sama seperti host. Dijalankan sebagai user
-# saat ini (bukan root) supaya _build/deps di repo tetap milik user.
+# envs/.env dipakai sebagai env container. Dijalankan sebagai user saat ini
+# (bukan root) supaya _build/deps di repo tetap milik user.
 # CATATAN: `mix run` di MIX_ENV=dev tidak menyalakan endpoint Phoenix
 # (server hanya nyala kalau PHX_SERVER di-set), jadi tidak bentrok dengan
 # backend yang sedang jalan di port 4000.
+#
+# Jaringan DB: container seed harus mencapai Postgres dengan cara yang sama
+# seperti backend. Kalau host DB efektif adalah `paradedb` (nama service
+# compose), hostname itu hanya resolve di dalam network compose — container
+# dengan --network host akan gagal :nxdomain, persis seperti yang dialami
+# backend saat paradedb down. Karena itu, kalau host efektif `paradedb`,
+# seed jalan di network compose (nama ter-resolve dari `docker compose
+# config`, jadi tahan rename project) dan POSTGRES_PORT dipaksa 5432 — port
+# container, yang selalu 5432 sesuai `ports: "${POSTGRES_PORT:-5438}:5432"`
+# di compose (5438 hanya port publikasi di host). Kalau host berupa
+# IP/hostname lain (mis. Tailscale 100.115.74.9) atau localhost/unset, seed
+# tetap di --network host seperti sebelumnya (host mencapai published port;
+# POSTGRES_PORT dari env adalah published port). Host efektif diambil dari
+# DATABASE_URL kalau di-set (runtime.exs: URL menang atas POSTGRES_*),
+# kalau tidak dari POSTGRES_HOST (default localhost).
+#
+# CA bundle: image hexpm/elixir mentah TIDAK membawa bundle CA OS, dan
+# Erlang/OTP (pubkey_os_cacerts) hanya membaca 5 path distro standar —
+# /etc/ssl/certs/ca-certificates.crt yang pertama untuk Ubuntu — serta
+# TIDAK menghormati SSL_CERT_FILE. Tanpa bundle itu, `mix local.hex`
+# crash dengan `:no_cacerts_found` (OTP 27.3.4 tidak punya clause untuk
+# atom itu di conv_error_reason/1). Build Dockerfile.dev lolos karena
+# apt install git lebih dulu menarik ca-certificates (Recommends), jadi
+# builder sudah punya bundle saat `mix local.hex` jalan — container
+# sekali pakai ini tidak. Karena itu bundle host di-mount read-only ke
+# path standar yang sama di container (kalau host punya; kalau tidak,
+# jalan tanpa mount seperti sebelumnya dan biarkan errornya terlihat).
+# SSL_CERT_FILE di-set ke path yang sama untuk tool berbasis curl/git
+# (mis. fetch git dep saat `mix deps.get`); OTP sendiri mengabaikannya.
+# Hex/rebar hanya di-install kalau belum ada (`mix hex.info` gagal =
+# hex belum terpasang; rebar dicek dari escript-nya), supaya tidak
+# download ulang tiap run kalau suatu saat sudah terpasang. Sengaja tidak
+# persist MIX_HOME di volume: volume baru milik root sehingga tidak bisa
+# ditulis dengan --user, dan download ulang per run hanya ~1 MB.
 mix_docker() { # <script .exs relatif repo>
   local script="$1"
+  local db_host net_args=() ca_args=()
+
+  db_host="$(db_effective_host)"
+  if [ "${db_host,,}" = "paradedb" ]; then
+    local net_name
+    net_name="$(compose_network_name)" || exit 2
+    net_args=(--network "$net_name" -e POSTGRES_PORT=5432)
+    log "Seed via network compose ($net_name): POSTGRES_HOST=paradedb, port dipaksa 5432"
+  else
+    net_args=(--network host)
+  fi
+
+  if [ -f /etc/ssl/certs/ca-certificates.crt ]; then
+    ca_args=(
+      -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      -e SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    )
+  fi
+
   "${DOCKER[@]}" run --rm \
     -v "$REPO_DIR:/app" -w /app \
     --env-file "$REPO_DIR/$ENV_FILE" \
-    --network host \
+    "${net_args[@]}" \
     --user "$(id -u):$(id -g)" \
     -e HOME=/tmp \
+    "${ca_args[@]}" \
     "$MIX_IMAGE" \
-    bash -c "mix local.hex --force && mix local.rebar --force && mix deps.get && mix run $script"
+    bash -c "(mix hex.info >/dev/null 2>&1 || mix local.hex --force) && (ls \"\$HOME\"/.mix/elixir/*/rebar3 >/dev/null 2>&1 || mix local.rebar --force) && mix deps.get && mix run $script"
 }
 
 # --- Notifikasi Discord -----------------------------------------------------
