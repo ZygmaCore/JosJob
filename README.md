@@ -198,7 +198,21 @@ Konfigurasi integrasi ada di [`config/runtime.exs`](config/runtime.exs):
 | Cloudflare Stream VOD | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_TOKEN` |
 | Cloudflare Realtime | `CLOUDFLARE_REALTIME_APP_ID`, `CLOUDFLARE_REALTIME_APP_SECRET`, `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_TOKEN` |
 | Storage dokumen | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`; opsional `S3_REGION`, `S3_PUBLIC_BASE_URL` |
-| Email undangan | `SMTP_RELAY`, `SMTP_USERNAME`, `SMTP_PASSWORD`; opsi TLS/port dan alamat pengirim di runtime config |
+| Email undangan (Resend API) | `RESEND_API_KEY` (wajib untuk kirim); `MAIL_FROM_ADDRESS`, opsional `MAIL_FROM_NAME` |
+
+Email undangan dikirim lewat Resend API (tanpa server SMTP). Aktif bila
+`RESEND_API_KEY` di-set; kosong → email hanya tersimpan lokal (`/dev/mailbox`).
+
+1. Buat akun di [resend.com](https://resend.com), lalu **API Keys → Create API
+   Key** (permission *Sending access*), salin key `re_...` ke `RESEND_API_KEY`
+   di `envs/.env`.
+2. Untuk tes awal cukup set `MAIL_FROM_ADDRESS=onboarding@resend.dev` (alamat
+   pengirim bawaan Resend; tanpa itu pun dipakai sebagai default bila key
+   di-set). Batasannya: email hanya terkirim ke alamat email pemilik akun
+   Resend.
+3. Untuk produksi, verifikasi domain di dashboard Resend (**Domains → Add
+   Domain**, pasang record DNS yang diminta), lalu set `MAIL_FROM_ADDRESS` ke
+   alamat di domain terverifikasi (mis. `noreply@<domain-terverifikasi>`).
 
 RAG memerlukan Atomic Server; URL dan `ATOMIC_API_TOKEN` dikonfigurasi di
 [`config/config.exs`](config/config.exs), termasuk pembacaan environment saat
