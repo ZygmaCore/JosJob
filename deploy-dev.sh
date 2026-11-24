@@ -29,6 +29,10 @@
 #   ./deploy-dev.sh --force-be         # paksa build backend
 #   ./deploy-dev.sh --force-fe         # paksa build frontend
 #   ./deploy-dev.sh --skip-pull --branch=main
+#   ./deploy-dev.sh --seed-demo        # seed demo 1000 baris via mix di Docker
+#   ./deploy-dev.sh --seed-live-test   # seed 5 akun role@dev.test via mix di Docker
+#   ./deploy-dev.sh --seed-all         # kedua seed di atas
+#   ./deploy-dev.sh --seed-only --seed-demo   # hanya seed, tanpa deploy
 #
 # Padanan env var:
 #   DEPLOY_MODE=auto|full  # auto (default) = hanya yang berubah, full = paksa semua
@@ -37,6 +41,8 @@
 #   DEPLOY_FE=0            # = --be     (frontend tidak disentuh)
 #   FORCE_BE=1 / FORCE_FE=1
 #   SKIP_PULL=1 / SKIP_SEED=1
+#   SEED_DEMO=1 / SEED_LIVE_TEST=1 / SEED_ONLY=1
+#   MIX_IMAGE=hexpm/elixir:1.19.5-erlang-27.3.4.14-ubuntu-noble-20260610
 #   BRANCH=main
 #
 # Setiap hasil deploy (sukses, gagal, tidak ada perubahan, dibatalkan) dikirim
@@ -51,6 +57,10 @@ ENV_FILE="envs/.env"
 COMPOSE_ARGS=(-f docker-compose.fullstack.yml -f docker-compose.local.yml)
 SKIP_PULL="${SKIP_PULL:-0}"
 SKIP_SEED="${SKIP_SEED:-0}"
+SEED_DEMO="${SEED_DEMO:-0}"
+SEED_LIVE_TEST="${SEED_LIVE_TEST:-0}"
+SEED_ONLY="${SEED_ONLY:-0}"
+MIX_IMAGE="${MIX_IMAGE:-hexpm/elixir:1.19.5-erlang-27.3.4.14-ubuntu-noble-20260610}"
 DEPLOY_BE="${DEPLOY_BE:-1}"
 DEPLOY_FE="${DEPLOY_FE:-1}"
 DEPLOY_MODE="${DEPLOY_MODE:-auto}" # auto | full
@@ -86,11 +96,17 @@ Pemakaian: ./deploy-dev.sh [flag...]
   --force-fe          paksa build frontend walau tidak ada perubahan
   --skip-pull         jangan git pull (pakai isi repo apa adanya)
   --skip-seed         lewati seed database
+  --seed-demo         jalankan seed demo (1000 baris) via mix di Docker
+  --seed-live-test    jalankan seed 5 akun role@dev.test via mix di Docker
+  --seed-all          jalankan kedua seed di atas
+  --seed-only         hanya jalankan seed yang diminta, tanpa deploy
+  --mix-image=<img>   image builder mix (default: hexpm/elixir:1.19.5-erlang-27.3.4.14-ubuntu-noble-20260610)
   --branch=<nama>     branch yang di-deploy (default: dev)
   -h, --help          tampilkan bantuan ini
 
 Flag menimpa environment variable yang setara (DEPLOY_MODE, PLAN_ONLY,
-DEPLOY_BE, DEPLOY_FE, FORCE_BE, FORCE_FE, SKIP_PULL, SKIP_SEED, BRANCH).
+DEPLOY_BE, DEPLOY_FE, FORCE_BE, FORCE_FE, SKIP_PULL, SKIP_SEED, BRANCH,
+SEED_DEMO, SEED_LIVE_TEST, SEED_ONLY, MIX_IMAGE).
 EOF
 }
 
@@ -109,6 +125,19 @@ while [ "$#" -gt 0 ]; do
     --force-fe) FORCE_FE=1 ;;
     --skip-pull) SKIP_PULL=1 ;;
     --skip-seed) SKIP_SEED=1 ;;
+    --seed-demo) SEED_DEMO=1 ;;
+    --seed-live-test) SEED_LIVE_TEST=1 ;;
+    --seed-all) SEED_DEMO=1; SEED_LIVE_TEST=1 ;;
+    --seed-only) SEED_ONLY=1 ;;
+    --mix-image=*) MIX_IMAGE="${1#*=}" ;;
+    --mix-image)
+      shift
+      [ "$#" -gt 0 ] || {
+        echo "--mix-image butuh nilai, mis. --mix-image=hexpm/elixir:1.19.5-erlang-27.3.4.14-ubuntu-noble-20260610" >&2
+        exit 2
+      }
+      MIX_IMAGE="$1"
+      ;;
     --branch=*) BRANCH="${1#*=}" ;;
     --branch)
       shift
@@ -127,6 +156,17 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
+
+# --seed-only tanpa seed apa pun = tidak ada kerjaan.
+if [ "$SEED_ONLY" = "1" ] && [ "$SEED_DEMO" != "1" ] && [ "$SEED_LIVE_TEST" != "1" ]; then
+  echo "--seed-only butuh --seed-demo dan/atau --seed-live-test" >&2
+  exit 2
+fi
+# --seed-only: lewati build/deploy backend & frontend, hanya seed.
+if [ "$SEED_ONLY" = "1" ]; then
+  DEPLOY_BE=0
+  DEPLOY_FE=0
+fi
 
 if [ "$(id -u)" -eq 0 ]; then
   echo "Jangan jalankan script ini sebagai root. Jalankan sebagai mzkrl; sudo dipakai internal." >&2
@@ -398,6 +438,28 @@ wait_http() {
   return 1
 }
 
+# --- Mix via Docker (seed demo / live-test) ---------------------------------
+# Container josjob_be tidak berisi mix (runner minimal) dan elixir apt terlalu
+# tua — seed demo & live-test dijalankan lewat container sekali pakai dari
+# image builder yang sama dengan CI (hexpm/elixir 1.19.5). Repo di-mount,
+# envs/.env dipakai sebagai env container, --network host supaya container
+# mencapai DB dev lewat Tailscale sama seperti host. Dijalankan sebagai user
+# saat ini (bukan root) supaya _build/deps di repo tetap milik user.
+# CATATAN: `mix run` di MIX_ENV=dev tidak menyalakan endpoint Phoenix
+# (server hanya nyala kalau PHX_SERVER di-set), jadi tidak bentrok dengan
+# backend yang sedang jalan di port 4000.
+mix_docker() { # <script .exs relatif repo>
+  local script="$1"
+  "${DOCKER[@]}" run --rm \
+    -v "$REPO_DIR:/app" -w /app \
+    --env-file "$REPO_DIR/$ENV_FILE" \
+    --network host \
+    --user "$(id -u):$(id -g)" \
+    -e HOME=/tmp \
+    "$MIX_IMAGE" \
+    bash -c "mix local.hex --force && mix local.rebar --force && mix deps.get && mix run $script"
+}
+
 # --- Notifikasi Discord -----------------------------------------------------
 # Marker file dipakai deploy-cron.sh untuk tahu apakah run ini sudah melapor
 # (biar tidak ada notifikasi ganda).
@@ -505,6 +567,18 @@ if [ "$SKIP_PULL" != "1" ]; then
   git pull --ff-only origin "$BRANCH"
 fi
 
+# Validasi awal: file seed harus ada di branch yang di-deploy. Demo seed
+# ada di dev; seed akun live-test hanya ada di RAG-implementation.
+if [ "$SEED_DEMO" = "1" ] && [ ! -f apps/josjob/priv/repo/demo_seeds.exs ]; then
+  echo "Seed demo tidak ada di branch $BRANCH: apps/josjob/priv/repo/demo_seeds.exs" >&2
+  exit 1
+fi
+if [ "$SEED_LIVE_TEST" = "1" ] && [ ! -f apps/josjob/priv/repo/live_test_accounts.exs ]; then
+  echo "Seed live-test tidak ada di branch $BRANCH: apps/josjob/priv/repo/live_test_accounts.exs" >&2
+  echo "File ini hanya ada di branch RAG-implementation — jalankan dengan --branch=RAG-implementation" >&2
+  exit 1
+fi
+
 # Commit yang benar-benar di-deploy (dipakai di notifikasi Discord).
 COMMIT_INFO="$(git log -1 --format='%h %s' 2>/dev/null || echo '-')"
 HEAD_SHA="$(git rev-parse HEAD)"
@@ -596,6 +670,12 @@ else
   fe_plan="reuse ($FE_IMAGE)"
 fi
 PLAN="backend: $be_plan · frontend: $fe_plan"
+if [ "$SEED_DEMO" = "1" ] || [ "$SEED_LIVE_TEST" = "1" ]; then
+  seed_plan=""
+  [ "$SEED_DEMO" = "1" ] && seed_plan="demo"
+  [ "$SEED_LIVE_TEST" = "1" ] && seed_plan="${seed_plan:+$seed_plan+}live-test"
+  PLAN="$PLAN · seeds: $seed_plan (via mix di Docker)"
+fi
 
 log "Rencana deploy (mode $DEPLOY_MODE)"
 echo "  HEAD           : ${COMMIT_INFO}"
@@ -662,6 +742,30 @@ else
   "${COMPOSE[@]}" up -d --wait --wait-timeout 120 josjob_be
   # Isi image sudah sama dengan commit ini untuk backend, jadi state bisa maju.
   state_set BE_SHA "$HEAD_SHA"
+fi
+
+# --- Seed via mix di Docker (demo / live-test) ------------------------------
+# Seed ini TIDAK PERNAH otomatis: tidak masuk Release.seed dan tidak ada di
+# entrypoint. Dijalankan hanya kalau flag --seed-demo / --seed-live-test
+# (atau --seed-all) diminta. Demo seed menulis 1000 baris sintetis — jangan
+# dijalankan ke DB yang sedang dipakai live testing organik tanpa persetujuan
+# tim; seed live-test idempotent (tidak me-reset password kalau diulang).
+if [ "$SEED_DEMO" = "1" ] || [ "$SEED_LIVE_TEST" = "1" ]; then
+  STEP="start database"
+  log "Start database (paradedb) untuk seed"
+  "${COMPOSE[@]}" up -d --wait paradedb
+
+  if [ "$SEED_DEMO" = "1" ]; then
+    STEP="seed-demo"
+    log "Seed demo (1000 baris) via mix di Docker"
+    mix_docker apps/josjob/priv/repo/demo_seeds.exs
+  fi
+
+  if [ "$SEED_LIVE_TEST" = "1" ]; then
+    STEP="seed-live-test"
+    log "Seed akun live-test (5 akun role@dev.test) via mix di Docker"
+    mix_docker apps/josjob/priv/repo/live_test_accounts.exs
+  fi
 fi
 
 # --- Frontend ---------------------------------------------------------------
