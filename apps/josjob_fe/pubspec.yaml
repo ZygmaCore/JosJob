@@ -64,7 +64,7 @@ dependencies:
   # implementation used by the CanvasKit web build.
   flutter_stripe: ^11.5.0
   flutter_stripe_web: ^6.5.0
-
+  flutter_markdown_plus: ^1.0.12
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,12 +1,17 @@
 import 'dart:math' as math;
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui;
+import 'package:http/http.dart' as http;
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../shared/app_ui.dart';
 import '../services/session.dart';
+import '../services/api_config.dart';
 export '../theme/app_theme.dart';
 
 // =========================================================================
@@ -26,6 +31,7 @@ part 'data/helpers.dart';
 part 'data/models.dart';
 part 'data/data.dart';
 part 'shell/josjob_landing_page.dart';
+part 'ask_ai_drawer.dart';
 part 'shell/bounded.dart';
 part 'widgets/pill_button.dart';
 part 'widgets/eyebrow.dart';
