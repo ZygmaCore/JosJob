@@ -141,11 +141,17 @@ void main() {
       await tester.tap(key('edit-cv'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.byType(TextFormField).at(0),
+        find.descendant(
+          of: key('cv-edit-headline'),
+          matching: find.byType(TextFormField),
+        ),
         'Updated headline',
       );
       await tester.enterText(
-        find.byType(TextFormField).at(1),
+        find.descendant(
+          of: key('cv-edit-summary'),
+          matching: find.byType(TextFormField),
+        ),
         'Updated summary',
       );
       await tester.ensureVisible(key('cv-document-select'));

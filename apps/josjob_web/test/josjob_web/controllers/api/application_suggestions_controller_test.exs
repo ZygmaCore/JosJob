@@ -120,6 +120,92 @@ defmodule JosjobWeb.Api.ApplicationSuggestionsControllerTest do
     assert data["uncovered_skills"] == ["SQL"]
   end
 
+  test "shared skill tags connect job gaps to real course details and approved coaches", c do
+    skills!(c.candidate, ["Elixir"])
+
+    {course, _} =
+      course!(c, %{
+        title: "Data foundations",
+        description: "Practical exercises",
+        skill_tags: ["SQL"]
+      })
+
+    coach = user!()
+
+    {:ok, profile} =
+      JosjobLrn.Coaching.save_profile(coach, %{
+        "display_name" => "Data coach",
+        "headline" => "Learn data skills",
+        "bio" => "Practical coaching for data professionals.",
+        "expertise" => ["SQL"]
+      })
+
+    assert suggestions(c)["coaches"] == []
+
+    profile
+    |> Ash.Changeset.for_update(:set_status, %{status: :approved})
+    |> Ash.update!(authorize?: false)
+
+    {:ok, slot} =
+      JosjobLrn.Coaching.create_slot(coach, %{
+        "starts_at" =>
+          DateTime.utc_now() |> DateTime.add(86_400, :second) |> DateTime.to_iso8601()
+      })
+
+    data = suggestions(c)
+    assert [recommended_course] = data["courses"]
+    assert recommended_course["skill_tags"] == ["SQL"]
+    assert recommended_course["matched_skills"] == ["SQL"]
+    assert [recommended_coach] = data["coaches"]
+    assert recommended_coach["id"] == profile.id
+    assert recommended_coach["matched_skills"] == ["SQL"]
+    assert [%{"id" => slot_id}] = recommended_coach["slots"]
+    assert slot_id == slot.id
+    refute Map.has_key?(recommended_coach, "user_id")
+    refute Map.has_key?(recommended_coach, "bookings")
+
+    detail =
+      c.conn
+      |> auth(c.candidate)
+      |> get(~p"/api/catalog/courses/#{course.id}")
+      |> json_response(200)
+
+    assert detail["data"]["skill_tags"] == ["SQL"]
+    assert detail["data"]["id"] == course.id
+
+    assert {:ok, _} = JosjobLrn.Coaching.book(c.candidate, slot.id)
+    assert [%{"slots" => []}] = suggestions(c)["coaches"]
+    skills!(coach, ["Elixir"])
+    assert suggestions(c, coach)["coaches"] == []
+
+    profile
+    |> Ash.Changeset.for_update(:set_status, %{status: :suspended})
+    |> Ash.update!(authorize?: false)
+
+    assert suggestions(c)["coaches"] == []
+  end
+
+  test "coach expertise aliases match job tags without matching Java to JavaScript", c do
+    skills!(c.candidate, ["Elixir"])
+    job = job!(c.org, c.employer, %{"requirements" => ["PostgreSQL", "Java"]})
+    coach = user!()
+
+    {:ok, profile} =
+      JosjobLrn.Coaching.save_profile(coach, %{
+        "display_name" => "Backend coach",
+        "headline" => "Database coaching",
+        "bio" => "Practical database and web development coaching.",
+        "expertise" => ["Postgres", "JavaScript"]
+      })
+
+    profile
+    |> Ash.Changeset.for_update(:set_status, %{status: :approved})
+    |> Ash.update!(authorize?: false)
+
+    assert [%{"matched_skills" => ["PostgreSQL"]}] = suggestions(%{c | job: job})["coaches"]
+    assert suggestions(%{c | job: job})["uncovered_skills"] == ["PostgreSQL", "Java"]
+  end
+
   test "shared private courses expose only classes in the candidate's active organizations", c do
     skills!(c.candidate, ["Elixir"])
     {course, _hidden_class} = course!(c, %{is_public: false})

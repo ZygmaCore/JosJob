@@ -215,11 +215,14 @@ defmodule JosjobRag.Ranker do
     course_id = get(course, :id)
     course_text = Text.course_text(course)
     course_tokens = MapSet.new(Text.tokens(course_text))
+    tags = Text.requirement_list(get(course, :skill_tags))
     declared_skills = Text.requirement_list(get(course, :skills) || get(course, :requirements))
 
     matched =
       Enum.filter(missing, fn skill ->
-        covers_skill?(skill, declared_skills, course_tokens)
+        if tags == [],
+          do: covers_skill?(skill, declared_skills, course_tokens),
+          else: Enum.any?(tags, &Text.same_skill?(&1, skill))
       end)
 
     if course_id && matched != [] do

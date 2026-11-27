@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../chat/chat_page.dart';
@@ -934,6 +935,30 @@ class _ApplyPageState extends State<ApplyPage> {
   late final String? _draftAccount = Session.instance.user?.id;
   Future<T> _auth<T>(Future<T> Function(String) call) =>
       (widget.authorize ?? Session.instance.runAuthed)(call);
+
+  Future<void> _refreshAfterLearning() async {
+    try {
+      final response = await _auth(
+        (token) => _api.request('GET', '/api/me/cv', token),
+      );
+      final profile = response['data'] as Map<String, dynamic>;
+      if (!mounted) return;
+      setState(() {
+        if (jsonEncode(profile) != jsonEncode(_profile)) _consent = false;
+        _profile = profile;
+        _profileRevision++;
+        _error = null;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error.toString();
+          _consent = false;
+        });
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1157,6 +1182,7 @@ class _ApplyPageState extends State<ApplyPage> {
                   jobId: widget.job.id,
                   api: _api,
                   authorize: widget.authorize ?? Session.instance.runAuthed,
+                  onReturnFromLearning: _refreshAfterLearning,
                 ),
                 const SizedBox(height: 18),
                 _card(

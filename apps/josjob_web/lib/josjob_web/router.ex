@@ -248,6 +248,16 @@ defmodule JosjobWeb.Router do
       post "/classes/:id/enroll/confirm", EnrollmentController, :confirm
       delete "/classes/:id/enroll", EnrollmentController, :delete
       get "/me/enrollments", EnrollmentController, :index
+      get "/me/course-studies", CurriculumController, :index
+      get "/me/course-awards/:id", CourseAwardController, :show
+      post "/me/course-awards/:id/confirm", CourseAwardController, :confirm
+      get "/catalog/courses/:id/study", CurriculumController, :show
+      post "/catalog/courses/:id/study/enroll", CurriculumController, :enroll
+
+      post "/catalog/courses/:id/study/lessons/:lesson_id/complete",
+           CurriculumController,
+           :complete
+
       get "/me/learning-overview", LearningOverviewController, :show
       get "/me/jobs-overview", JobsOverviewController, :show
       get "/applications", ApplicationController, :index

@@ -3,7 +3,7 @@ defmodule JosjobRag.ApplicationSuggestions do
 
   alias Josjob.Authz
   alias JosjobJob.{CurriculumVitae, Listings}
-  alias JosjobLrn.Learning
+  alias JosjobLrn.{Coaching, Learning}
   alias JosjobRag.{Analyses, Ranker, Text}
 
   def get(user, job_id) do
@@ -22,6 +22,7 @@ defmodule JosjobRag.ApplicationSuggestions do
         end
 
       courses = if status == "gap", do: recommendations(user, missing), else: []
+      coaches = if status == "gap", do: coach_recommendations(user, missing), else: []
 
       {:ok,
        %{
@@ -30,6 +31,7 @@ defmodule JosjobRag.ApplicationSuggestions do
          matched_skills: if(status == "cv_required", do: [], else: matched),
          missing_skills: if(status == "cv_required", do: [], else: missing),
          courses: courses,
+         coaches: coaches,
          uncovered_skills:
            if(status == "gap",
              do:
@@ -57,7 +59,7 @@ defmodule JosjobRag.ApplicationSuggestions do
           do: "analyzed_cv",
           else: "saved_profile"
 
-      {:ok, Text.requirement_list(facts["skills"]), source}
+      {:ok, JosjobJob.EarnedSkills.merge(user, Text.requirement_list(facts["skills"])), source}
     else
       extracted_skills(user)
     end
@@ -68,7 +70,7 @@ defmodule JosjobRag.ApplicationSuggestions do
       {:ok, cv} ->
         case Text.requirement_list(cv["skills"]) do
           [] -> profile_skills(user)
-          skills -> {:ok, skills, "analyzed_cv"}
+          skills -> {:ok, JosjobJob.EarnedSkills.merge(user, skills), "analyzed_cv"}
         end
 
       {:error, :not_found} ->
@@ -81,6 +83,23 @@ defmodule JosjobRag.ApplicationSuggestions do
 
   defp profile_skills(user),
     do: {:ok, CurriculumVitae.get_for(user).skills, "saved_profile"}
+
+  defp coach_recommendations(user, missing) do
+    own = Coaching.my_profile(user)
+
+    Coaching.available_coaches()
+    |> Enum.reject(&(own && &1.id == own.id))
+    |> Enum.map(fn coach ->
+      matched =
+        Enum.filter(missing, fn skill ->
+          Enum.any?(coach.expertise, &Text.same_skill?(&1, skill))
+        end)
+
+      Map.put(coach, :matched_skills, matched)
+    end)
+    |> Enum.reject(&(&1.matched_skills == []))
+    |> Enum.sort_by(&{-length(&1.matched_skills), &1.slots == [], &1.display_name, &1.id})
+  end
 
   defp recommendations(user, missing) do
     org_ids = user |> Authz.member_orgs() |> Enum.map(& &1.id)
@@ -105,6 +124,8 @@ defmodule JosjobRag.ApplicationSuggestions do
         id: course.id,
         title: course.title,
         description: course.description,
+        skill_tags: course.skill_tags,
+        has_curriculum: JosjobLrn.Curriculum.published?(course.id),
         section: course.section && %{name: course.section.name},
         industries: Enum.map(course.industries, &%{name: &1.name}),
         class_count: length(course.classes),

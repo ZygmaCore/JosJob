@@ -2,6 +2,13 @@
 
 Tanggal: 2026-11-17.
 
+Pembaruan 2026-11-26: alur inti course mandiri sudah diimplementasikan dengan
+modul/lesson bacaan, latihan mandiri, kuis server-side dan progres per akun.
+Course enrollment tidak lagi membutuhkan kelas perantara. My Courses dan
+Overview menyediakan lanjut belajar; data kelas lama tetap dipertahankan.
+Video, submission/reviewer, sertifikat dan authoring curriculum masih pekerjaan
+terpisah. Lihat [kontrak curriculum](../docs/api/course-curriculum.md).
+
 Status: user memilih MVP appointment 1-on-1 gratis (D19). Coaching independen
 diimplementasikan dengan Profile, Slot dan Booking dalam domain JosjobLrn.Coaching.
 Curriculum course di dokumen ini masih proposal. Group/paid coaching ditunda.

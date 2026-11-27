@@ -160,6 +160,21 @@ defmodule JosjobRag.RankerTest do
   end
 
   describe "course recommendations" do
+    test "explicit skill tags use job skill aliases and override incidental description mentions" do
+      course = %{
+        id: "tagged",
+        title: "Data foundations",
+        description: "JavaScript is not covered",
+        skill_tags: ["Postgres", "SQL"]
+      }
+
+      assert [recommendation] =
+               Ranker.recommend_courses(["PostgreSQL", "JavaScript", "Java"], [course])
+
+      assert recommendation.matched_skills == ["PostgreSQL"]
+      assert Ranker.recommend_courses(["JavaScript"], [course]) == []
+    end
+
     setup do
       course = %{
         id: "course-1",

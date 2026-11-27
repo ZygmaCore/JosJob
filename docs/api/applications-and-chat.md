@@ -51,6 +51,38 @@ Listings with applications must be expired instead of deleted, preserving histor
 
 ## Learning suggestions when applying
 
+Skill tags update (2026-11-26): courses have editable `skill_tags` (up to 20,
+60 characters each) in the course management form and catalog summary/detail
+JSON. Coaches use their existing `expertise` tags. Job `requirements` are the
+shared skill labels: the same deterministic aliases compare them with CV skills,
+course tags and coach expertise, without AI calls. Explicit course tags are
+authoritative; untagged legacy courses retain title/description matching.
+The sample catalog seeder supplies curated tags and preserves manually edited
+nonempty tags on repeat runs.
+
+Suggestions also include `coaches`: approved profiles with `matched_skills` and
+available future slots, excluding the candidate's own coach profile. Booked slots
+and private booking/learner data are excluded. Coaches without slots may be shown
+as profiles; booking availability is checked again by the existing booking API.
+`uncovered_skills` continues to mean no matching visible **course**, even when a
+coach matches. Selecting a missing-skill chip filters courses and coaches. Course
+buttons open detail/enrollment; coach buttons open the shared profile/session
+sheet. Closing either returns to the application draft. Suggested coaches are
+advisory and do not change submission eligibility.
+
+Verification on 2026-11-26: `mix precommit` passed (including 121 RAG tests and
+229 web tests); 15 Flutter application-suggestion/coaching tests passed. The
+changed Flutter feature files passed analysis. The full Flutter scan reports ten
+pre-existing unused-element/parameter warnings in landing-page files. Integration
+coverage includes tag-only matches, description override, aliases, course detail
+links, private-course visibility, pending/suspended/own coach exclusion, booked
+slot removal, and returning from coach details without losing the Apply screen.
+The local release images were rebuilt and the migration applied. A live mobile
+check followed the backend demo candidate's Barista job gap to Food Safety &
+Hygiene Essentials, visually verified its three skill tags and enrollment
+controls, and returned to the application. No application, enrollment or booking
+was submitted by this browser check.
+
 `GET /api/jobs/:job_id/application-suggestions` requires Bearer authentication
 and a visible active listing. It is a read-only check; it never creates an
 application, enrolls the candidate, or invokes an AI/PDF provider.

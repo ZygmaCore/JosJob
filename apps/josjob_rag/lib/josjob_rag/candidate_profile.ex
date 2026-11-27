@@ -8,11 +8,14 @@ defmodule JosjobRag.CandidateProfile do
     with {:ok, cv} <- Analyses.cv(user, id) do
       facts = CurriculumVitae.matching_facts(user)
 
-      if is_map(facts) and (is_nil(id) or facts["cv_id"] == cv["cv_id"]) do
-        {:ok, Map.merge(cv, Map.take(facts, ~w(skills experience education)))}
-      else
-        {:ok, cv}
-      end
+      cv =
+        if is_map(facts) and (is_nil(id) or facts["cv_id"] == cv["cv_id"]) do
+          Map.merge(cv, Map.take(facts, ~w(skills experience education)))
+        else
+          cv
+        end
+
+      {:ok, Map.put(cv, "skills", JosjobJob.EarnedSkills.merge(user, cv["skills"]))}
     end
   end
 

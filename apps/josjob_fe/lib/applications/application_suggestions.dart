@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../explore/explore_page.dart' show showCatalogCourse;
 import '../services/applications_api.dart';
+import '../dashboard/screens/live_coaching_view.dart' show showCoachSessions;
 import '../services/workflow_client.dart';
 import '../theme/app_theme.dart';
 
@@ -9,11 +10,13 @@ class ApplicationSuggestionsCard extends StatefulWidget {
   final String jobId;
   final ApplicationsApi api;
   final WorkflowAuthorize authorize;
+  final Future<void> Function()? onReturnFromLearning;
   const ApplicationSuggestionsCard({
     super.key,
     required this.jobId,
     required this.api,
     required this.authorize,
+    this.onReturnFromLearning,
   });
 
   @override
@@ -27,6 +30,8 @@ class _ApplicationSuggestionsCardState
   bool _loading = true;
   bool _failed = false;
   bool _showAllCourses = false;
+  bool _showAllCoaches = false;
+  String? _selectedSkill;
 
   @override
   void initState() {
@@ -54,6 +59,24 @@ class _ApplicationSuggestionsCardState
   @override
   Widget build(BuildContext context) {
     final data = _suggestions;
+    final courses =
+        data?.courses
+            .where(
+              (s) =>
+                  _selectedSkill == null ||
+                  s.matchedSkills.contains(_selectedSkill),
+            )
+            .toList() ??
+        [];
+    final coaches =
+        data?.coaches
+            .where(
+              (s) =>
+                  _selectedSkill == null ||
+                  s.matchedSkills.contains(_selectedSkill),
+            )
+            .toList() ??
+        [];
     final theme = Theme.of(context).textTheme;
     return Container(
       key: const ValueKey('application-suggestions'),
@@ -133,15 +156,23 @@ class _ApplicationSuggestionsCardState
                   runSpacing: 6,
                   children: [
                     for (final skill in data.missingSkills)
-                      Chip(label: Text(skill)),
+                      FilterChip(
+                        key: ValueKey('gap-skill-$skill'),
+                        label: Text(skill),
+                        selected: _selectedSkill == skill,
+                        onSelected: (selected) => setState(
+                          () => _selectedSkill = selected ? skill : null,
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 8),
+                const Text(
+                  'Select a skill to see matching courses and coaches.',
+                ),
                 const Text('You can apply now and learn at your own pace.'),
                 for (final suggestion
-                    in _showAllCourses
-                        ? data.courses
-                        : data.courses.take(2)) ...[
+                    in _showAllCourses ? courses : courses.take(2)) ...[
                   const SizedBox(height: 14),
                   Material(
                     color: AppColors.surface,
@@ -162,7 +193,11 @@ class _ApplicationSuggestionsCardState
                           const SizedBox(height: 4),
                           Text(
                             '${suggestion.course.isFree ? 'Free' : suggestion.course.priceLabel} · '
-                            '${suggestion.course.classCount == 0 ? 'No classes scheduled yet' : '${suggestion.course.classCount} ${suggestion.course.classCount == 1 ? 'class' : 'classes'}'}',
+                            '${suggestion.course.hasCurriculum
+                                ? 'Self-paced / lessons & quiz'
+                                : suggestion.course.classCount == 0
+                                ? 'No classes scheduled yet'
+                                : '${suggestion.course.classCount} ${suggestion.course.classCount == 1 ? 'class' : 'classes'}'}',
                             style: theme.bodySmall,
                           ),
                           const SizedBox(height: 8),
@@ -172,16 +207,28 @@ class _ApplicationSuggestionsCardState
                               key: ValueKey(
                                 'suggested-course-${suggestion.course.id}',
                               ),
-                              onPressed: () => showCatalogCourse(
-                                context,
-                                suggestion.course,
-                                returnLabel: 'Back to application',
-                              ),
+                              onPressed: () async {
+                                await showCatalogCourse(
+                                  context,
+                                  suggestion.course,
+                                  returnLabel: 'Back to application',
+                                );
+                                if (!mounted) return;
+                                if (widget.onReturnFromLearning != null) {
+                                  await widget.onReturnFromLearning!();
+                                } else {
+                                  await _load();
+                                }
+                              },
                               icon: const Icon(
                                 Icons.arrow_forward_rounded,
                                 size: 18,
                               ),
-                              label: const Text('View course & classes'),
+                              label: Text(
+                                suggestion.course.hasCurriculum
+                                    ? 'View course & curriculum'
+                                    : 'View course & classes',
+                              ),
                             ),
                           ),
                         ],
@@ -189,13 +236,88 @@ class _ApplicationSuggestionsCardState
                     ),
                   ),
                 ],
-                if (!_showAllCourses && data.courses.length > 2)
+                if (!_showAllCourses && courses.length > 2)
                   TextButton(
                     onPressed: () => setState(() => _showAllCourses = true),
-                    child: Text(
-                      'Show all ${data.courses.length} suggested courses',
-                    ),
+                    child: Text('Show all ${courses.length} suggested courses'),
                   ),
+                if (_selectedSkill != null && courses.isEmpty)
+                  const Text(
+                    'No matching course is available for this skill yet.',
+                  ),
+                if (coaches.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text('Coaches for these skills', style: theme.titleSmall),
+                  for (final suggestion
+                      in _showAllCoaches ? coaches : coaches.take(2)) ...[
+                    const SizedBox(height: 12),
+                    Material(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              suggestion.coach.name,
+                              style: theme.titleSmall,
+                            ),
+                            Text(suggestion.coach.headline),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Skills covered: ${suggestion.matchedSkills.join(', ')}',
+                            ),
+                            Text(
+                              'Free · ${suggestion.coach.minutes} minutes · 1-on-1',
+                              style: theme.bodySmall,
+                            ),
+                            const SizedBox(height: 8),
+                            OutlinedButton.icon(
+                              key: ValueKey(
+                                'suggested-coach-${suggestion.coach.id}',
+                              ),
+                              icon: const Icon(
+                                Icons.event_available_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                suggestion.coach.slots.isEmpty
+                                    ? 'View coach profile'
+                                    : 'View coach & sessions',
+                              ),
+                              onPressed: () async {
+                                final booked = await showCoachSessions(
+                                  context,
+                                  suggestion.coach,
+                                  authorize: widget.authorize,
+                                );
+                                if (!context.mounted || !mounted) return;
+                                if (booked == true) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Appointment booked. Find it in Live Coaching.',
+                                      ),
+                                    ),
+                                  );
+                                  _load();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (!_showAllCoaches && coaches.length > 2)
+                    TextButton(
+                      onPressed: () => setState(() => _showAllCoaches = true),
+                      child: Text(
+                        'Show all ${coaches.length} suggested coaches',
+                      ),
+                    ),
+                ],
                 if (data.uncoveredSkills.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(

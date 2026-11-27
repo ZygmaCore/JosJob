@@ -16,6 +16,32 @@ String coachingTime(DateTime start, DateTime end) {
   return '${AppFormats.date(start)} · ${AppFormats.clock(start)}–${AppFormats.clock(end)} (${AppFormats.timezone})';
 }
 
+/// Open the same coach profile and booking flow from a job skill-gap suggestion.
+Future<bool?> showCoachSessions(
+  BuildContext context,
+  CoachProfile coach, {
+  LiveCoachingApi? api,
+  CoachingAuthorize? authorize,
+}) async {
+  final client = api ?? LiveCoachingApi();
+  try {
+    return await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _CoachDetails(
+        coach: coach,
+        own: false,
+        book: (id) => (authorize ?? Session.instance.runAuthed)(
+          (t) => client.book(t, id),
+        ),
+      ),
+    );
+  } finally {
+    if (api == null) client.close();
+  }
+}
+
 class CoachingPage extends StatelessWidget {
   const CoachingPage({super.key});
   @override
@@ -694,9 +720,9 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
                 hint: 'Your experience and coaching approach',
               ),
               _field(
-                'Expertise (comma-separated)',
+                'Expertise / skill tags (comma-separated)',
                 _expertise,
-                hint: 'Career planning, interviews',
+                hint: 'SQL, Docker, Career planning, interviews',
               ),
               AppFormField(
                 label: 'Session duration in minutes',
@@ -879,6 +905,14 @@ class _CoachDetailsState extends State<_CoachDetails> {
             ],
           ),
           Text(widget.coach.headline),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              for (final tag in widget.coach.expertise) Chip(label: Text(tag)),
+            ],
+          ),
           const SizedBox(height: 16),
           Text(widget.coach.bio),
           const SizedBox(height: 16),

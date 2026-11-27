@@ -1,6 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+class _InstantPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _InstantPageTransitionsBuilder();
+
+  @override
+  Duration get transitionDuration => Duration.zero;
+
+  @override
+  Duration get reverseTransitionDuration => Duration.zero;
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => child;
+}
+
 ThemeData appTheme() {
   final base = ThemeData(
     useMaterial3: true,
@@ -47,6 +66,12 @@ ThemeData appTheme() {
     },
   );
   return base.copyWith(
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: {
+        for (final platform in TargetPlatform.values)
+          platform: const _InstantPageTransitionsBuilder(),
+      },
+    ),
     scaffoldBackgroundColor: AppColors.bg,
     colorScheme: base.colorScheme.copyWith(
       primary: AppColors.brandBlue,

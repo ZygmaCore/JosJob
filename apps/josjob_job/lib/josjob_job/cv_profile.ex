@@ -14,6 +14,7 @@ defmodule JosjobJob.CvProfile do
 
   attributes do
     uuid_primary_key(:id)
+    attribute(:full_name, :string, public?: true, constraints: [min_length: 2, max_length: 120])
     attribute(:headline, :string, public?: true, constraints: [max_length: 200])
     attribute(:summary, :string, public?: true, constraints: [max_length: 4000])
     attribute(:cv_facts, :map)
@@ -34,11 +35,11 @@ defmodule JosjobJob.CvProfile do
     defaults([:read])
 
     create :create do
-      accept([:headline, :summary])
+      accept([:full_name, :headline, :summary])
     end
 
     update :update do
-      accept([:headline, :summary])
+      accept([:full_name, :headline, :summary])
     end
   end
 end

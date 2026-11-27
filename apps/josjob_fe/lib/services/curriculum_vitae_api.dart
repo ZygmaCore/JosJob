@@ -52,6 +52,7 @@ class CvBackgroundEntry {
 }
 
 class CurriculumVitaeData {
+  final List<String> earnedSkillTags, editableSkills;
   final String fullName, email;
   final String? phone, location, headline, summary;
   final List<String> skills;
@@ -60,7 +61,13 @@ class CurriculumVitaeData {
   final List<CvPdfDocument> pdfDocuments;
   final CvPdfDocument? resumeDocument;
   CurriculumVitaeData.fromJson(Map<String, dynamic> j)
-    : fullName = (j['identity'] as Map)['full_name'] as String,
+    : earnedSkillTags = List<String>.from(
+        j['earned_skill_tags'] as List? ?? [],
+      ),
+      editableSkills = List<String>.from(
+        j['editable_skills'] as List? ?? j['skills'] as List,
+      ),
+      fullName = (j['identity'] as Map)['full_name'] as String,
       email = (j['identity'] as Map)['email'] as String,
       phone = (j['identity'] as Map)['phone'] as String?,
       location = (j['identity'] as Map)['location'] as String?,

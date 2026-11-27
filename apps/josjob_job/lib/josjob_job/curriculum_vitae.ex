@@ -31,14 +31,16 @@ defmodule JosjobJob.CurriculumVitae do
 
     %{
       identity: %{
-        full_name: user.full_name,
+        full_name: (profile && profile.full_name) || user.full_name,
         email: to_string(user.email),
         phone: phone(answers, user),
         location: text(answers["country"]) || text(user.address)
       },
       headline: profile && profile.headline,
       summary: profile && profile.summary,
-      skills: skills,
+      skills: JosjobJob.EarnedSkills.merge(user, skills),
+      editable_skills: skills,
+      earned_skill_tags: JosjobJob.EarnedSkills.list(user),
       experience:
         if(has_fact?(profile, "experience"),
           do:
@@ -92,8 +94,17 @@ defmodule JosjobJob.CurriculumVitae do
 
         attrs =
           params
-          |> Map.take(~w(headline summary))
-          |> Map.new(fn {key, value} -> {key, trim(value)} end)
+          |> Map.take(~w(full_name headline summary))
+          |> Map.new(fn {key, value} ->
+            value = trim(value)
+
+            value =
+              if key == "full_name" and is_binary(value),
+                do: String.replace(value, ~r/\s+/u, " "),
+                else: value
+
+            {key, value}
+          end)
 
         changeset =
           if profile,

@@ -216,9 +216,8 @@ defmodule JosjobLrn.Coaching do
       DateTime.compare(now, booking.ends_at) == :lt
   end
 
-  def dashboard(user) do
-    profile = my_profile(user)
-
+  @doc "Approved coaches and their available future slots; no private booking data."
+  def available_coaches do
     coaches =
       Profile
       |> Ash.Query.filter(status == :approved)
@@ -237,6 +236,19 @@ defmodule JosjobLrn.Coaching do
 
     slots =
       Enum.reject(slots, fn slot -> Enum.any?(slot.bookings, &(&1.status == :confirmed)) end)
+
+    Enum.map(coaches, fn coach ->
+      profile_json(coach)
+      |> Map.put(
+        :slots,
+        slots |> Enum.filter(&(&1.coach_id == coach.id)) |> Enum.map(&slot_json/1)
+      )
+    end)
+  end
+
+  def dashboard(user) do
+    profile = my_profile(user)
+    now = DateTime.utc_now()
 
     bookings =
       case profile do
@@ -262,14 +274,7 @@ defmodule JosjobLrn.Coaching do
       end
 
     %{
-      coaches:
-        Enum.map(coaches, fn coach ->
-          profile_json(coach)
-          |> Map.put(
-            :slots,
-            slots |> Enum.filter(&(&1.coach_id == coach.id)) |> Enum.map(&slot_json/1)
-          )
-        end),
+      coaches: available_coaches(),
       bookings: Enum.map(bookings, &booking_json(&1, user)),
       my_profile: profile && profile_json(profile),
       my_slots: Enum.map(own_slots, &slot_json/1)

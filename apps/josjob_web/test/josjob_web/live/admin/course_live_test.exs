@@ -177,6 +177,7 @@ defmodule JosjobWeb.Admin.CourseLiveTest do
         "section_id" => section.id,
         "title" => "Elixir Dasar",
         "description" => "Belajar Elixir",
+        "skill_tags" => " Elixir, SQL, sql,\n PostgreSQL ",
         "is_active" => "true",
         "industry_ids" => [industry.id]
       }
@@ -186,6 +187,8 @@ defmodule JosjobWeb.Admin.CourseLiveTest do
 
     course =
       Course |> Ash.Query.filter(title == "Elixir Dasar") |> Ash.read_one!(authorize?: false)
+
+    assert course.skill_tags == ["Elixir", "SQL", "PostgreSQL"]
 
     assert course_org_ids(course.id) == [org.id]
     assert course_industry_ids(course.id) == [industry.id]

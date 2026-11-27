@@ -104,6 +104,7 @@ class LearningCompletion {
 }
 
 class LearningOverview {
+  final List<Map<String, dynamic>> studies;
   final String scope;
   final Map<String, int> stats;
   final List<LearningEnrollment> enrollments;
@@ -111,6 +112,7 @@ class LearningOverview {
   final List<LearningSession> sessions;
   final List<LearningCompletion> members, completion;
   const LearningOverview({
+    this.studies = const [],
     required this.scope,
     required this.stats,
     required this.enrollments,
@@ -120,6 +122,9 @@ class LearningOverview {
     required this.completion,
   });
   factory LearningOverview.fromJson(Map<String, dynamic> j) => LearningOverview(
+    studies: (j['course_studies'] as List? ?? [])
+        .map((s) => Map<String, dynamic>.from(s as Map))
+        .toList(),
     scope: j['scope'] as String,
     stats: (j['stats'] as Map<String, dynamic>).map(
       (k, v) => MapEntry(k, (v as num).toInt()),

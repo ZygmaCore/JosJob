@@ -248,6 +248,32 @@ class _LearningOverviewViewState extends State<LearningOverviewView> {
       ('upcoming_sessions', 'Upcoming sessions', Icons.event_outlined),
     ];
     return [
+      if (!organization && data.studies.isNotEmpty)
+        _section(
+          'Your self-paced courses',
+          Column(
+            children: [
+              for (final study in data.studies)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.menu_book_outlined),
+                    title: Text(study['title'] as String),
+                    subtitle: Text(
+                      "${study['completed_count']}/${study['lesson_count']} lessons / ${study['progress']}%",
+                    ),
+                    trailing: const Icon(Icons.play_arrow_rounded),
+                    onTap: () async {
+                      await Navigator.of(
+                        context,
+                      ).pushNamed("/learn/${study['id']}");
+                      if (mounted) _load();
+                    },
+                  ),
+                ),
+            ],
+          ),
+          id: 'learning-self-paced-courses',
+        ),
       LayoutBuilder(
         builder: (context, constraints) {
           final columns = constraints.maxWidth >= 800

@@ -80,6 +80,35 @@ This supersedes the older planned-only descriptions of skill-gap/course hooks be
 
 ## Read this first
 
+Course awards update, 2026-11-27: completing a course snapshots its skill tags
+into owned awards. Earned tags participate in CV/profile matching and survive CV
+edits. Course certificates require explicit confirmation of the current CV name,
+then lock that certificate's recipient permanently at API/database level. CV
+names remain editable for future certificates. Pending/issued course records
+appear in Certificates and at course completion. See [course awards](api/course-awards.md).
+
+Self-paced course update, 2026-11-26: `JosjobLrn.Curriculum` now owns direct
+course study enrollment, ordered reading/practice lessons, private progress and
+server-graded quizzes. The 20 skill-demo courses have 60 original lessons.
+`/learn/:course_id` is the learning player; My Courses and learner Overview resume
+saved progress. Legacy class enrollment/coaching remain separate. This supersedes
+the earlier proposal-only curriculum and outline-only demo descriptions. See
+[the curriculum API](api/course-curriculum.md).
+
+Job-skill demo catalog, 2026-11-26: an explicit repeatable seed adds 20 free
+public course outlines and flexible enrollment classes, tagged to all 62 skill
+requirements in the 20 active CV-demo jobs. Existing courses, candidate data and
+edits remain intact. These are marked demo outlines with unpublished materials.
+See [the seed and usage guide](job-skill-course-demo.md).
+
+Skill tags update, 2026-11-26 (based on `956f739`): courses now store explicit
+`skill_tags`, editable in the course CMS and exposed by catalog APIs. Apply
+suggestions match job requirements with course tags and approved coach expertise
+through the existing skill aliases, without AI calls. Missing-skill chips filter
+both recommendations; courses open enrollment and coaches open their independent
+booking sheet. Untagged legacy courses retain text matching. See
+[applications and chat](api/applications-and-chat.md).
+
 UI consistency audit, 2026-11-18: a browser/source review of the Flutter app
 records prioritized styling, navigation/state and accessibility findings, with
 screenshots and acceptance checks. Read [the audit](ui-audit/2026-11-18/README.md)

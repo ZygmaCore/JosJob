@@ -292,7 +292,9 @@ class _CardBody extends StatelessWidget {
                     const SizedBox(width: 5),
                     Flexible(
                       child: Text(
-                        course.classCount == 0
+                        course.hasCurriculum
+                            ? 'Self-paced course'
+                            : course.classCount == 0
                             ? 'No classes yet'
                             : '${course.classCount} '
                                   '${course.classCount == 1 ? 'class' : 'classes'}',

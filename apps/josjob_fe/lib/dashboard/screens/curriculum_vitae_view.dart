@@ -9,6 +9,26 @@ import 'certificates_view.dart';
 
 typedef CvAuthorize = Future<T> Function<T>(Future<T> Function(String) call);
 
+Future<bool?> reviewCvForCertificate(
+  BuildContext context, {
+  required CvAuthorize authorize,
+}) async {
+  final api = CurriculumVitaeApi();
+  try {
+    final data = await authorize(api.fetch);
+    if (!context.mounted) return false;
+    return await showDialog<bool>(
+      context: context,
+      builder: (_) => _CvEditor(
+        data: data,
+        save: (attrs) => authorize((token) => api.save(token, attrs)),
+      ),
+    );
+  } finally {
+    api.close();
+  }
+}
+
 class CurriculumVitaeView extends StatefulWidget {
   final CurriculumVitaeApi? api;
   final CvAuthorize? authorize;
@@ -364,7 +384,22 @@ class _CurriculumVitaeViewState extends State<CurriculumVitaeView> {
                       color: AppColors.bg,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(skill, style: _style(12)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (d.earnedSkillTags.any(
+                          (tag) => tag.toLowerCase() == skill.toLowerCase(),
+                        )) ...[
+                          const Icon(
+                            Icons.school_outlined,
+                            size: 14,
+                            color: AppColors.brandBlue,
+                          ),
+                          const SizedBox(width: 5),
+                        ],
+                        Text(skill, style: _style(12)),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -394,7 +429,11 @@ class _CurriculumVitaeViewState extends State<CurriculumVitaeView> {
                     style: _style(13, color: AppColors.body),
                   ),
                   Text(
-                    '${c.source == 'onboarding' ? 'From onboarding · ' : ''}Self-reported${c.expired ? ' · Expired' : ''}',
+                    c.source == 'course_completion'
+                        ? (c.nameLocked
+                              ? 'Course completion / Name locked'
+                              : 'Course completed / Confirm your name in Certificates')
+                        : '${c.source == 'onboarding' ? 'From onboarding · ' : ''}Self-reported${c.expired ? ' · Expired' : ''}',
                     style: _style(12, color: AppColors.body),
                   ),
                   if (c.issuedOn != null)
@@ -499,9 +538,12 @@ class _CvEditor extends StatefulWidget {
 }
 
 class _CvEditorState extends State<_CvEditor> {
+  late final _fullName = TextEditingController(text: widget.data.fullName);
   late final _headline = TextEditingController(text: widget.data.headline),
       _summary = TextEditingController(text: widget.data.summary),
-      _skills = TextEditingController(text: widget.data.skills.join(', '));
+      _skills = TextEditingController(
+        text: widget.data.editableSkills.join(', '),
+      );
   late String _document = widget.data.resumeDocument?.id ?? '';
   bool _saving = false;
   String? _error;
@@ -509,11 +551,20 @@ class _CvEditorState extends State<_CvEditor> {
   void dispose() {
     _headline.dispose();
     _summary.dispose();
+    _fullName.dispose();
     _skills.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
+    if (_fullName.text.trim().length < 2 ||
+        _fullName.text.trim().length > 120) {
+      setState(
+        () => _error =
+            'Enter your full name as it should appear on your CV and future certificates.',
+      );
+      return;
+    }
     if (_saving) return;
     final skills = _skills.text
         .split(RegExp(r'[,;\n]'))
@@ -533,6 +584,7 @@ class _CvEditorState extends State<_CvEditor> {
     });
     try {
       await widget.save({
+        'full_name': _fullName.text.trim(),
         'headline': _headline.text.trim(),
         'summary': _summary.text.trim(),
         'skills': skills,
@@ -565,6 +617,16 @@ class _CvEditorState extends State<_CvEditor> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 AppFormField(
+                  key: const ValueKey('cv-edit-full-name'),
+                  label: 'Full name on CV',
+                  hint: 'Your name for future certificates',
+                  controller: _fullName,
+                  maxLength: 120,
+                  enabled: !_saving,
+                ),
+                const SizedBox(height: 18),
+                AppFormField(
+                  key: const ValueKey('cv-edit-headline'),
                   label: 'Professional headline',
                   hint: 'Your professional focus',
                   controller: _headline,
@@ -573,6 +635,7 @@ class _CvEditorState extends State<_CvEditor> {
                 ),
                 const SizedBox(height: 18),
                 AppFormField(
+                  key: const ValueKey('cv-edit-summary'),
                   label: 'Professional summary',
                   hint: 'Your experience and career goals',
                   controller: _summary,

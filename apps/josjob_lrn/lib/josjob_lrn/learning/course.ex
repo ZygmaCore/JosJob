@@ -22,6 +22,14 @@ defmodule JosjobLrn.Learning.Course do
     uuid_primary_key(:id)
     attribute(:title, :string, allow_nil?: false, public?: true)
     attribute(:description, :string, public?: true)
+
+    attribute(:skill_tags, {:array, :string},
+      allow_nil?: false,
+      default: [],
+      public?: true,
+      constraints: [max_length: 20, items: [min_length: 1, max_length: 60]]
+    )
+
     attribute(:is_active, :boolean, allow_nil?: false, default: true, public?: true)
 
     # Visibility: true = public (every student sees it in the catalog);
@@ -76,6 +84,7 @@ defmodule JosjobLrn.Learning.Course do
     default_accept([
       :title,
       :description,
+      :skill_tags,
       :is_active,
       :is_public,
       :price_cents,

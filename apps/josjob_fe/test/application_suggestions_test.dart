@@ -81,6 +81,72 @@ void main() {
   }
 
   testWidgets(
+    'skill tags filter courses and open matching coach sessions without leaving Apply',
+    (tester) async {
+      final data = suggestionsJson();
+      data['coaches'] = [
+        {
+          'id': 'docker-coach',
+          'display_name': 'Container coach',
+          'headline': 'Practical container skills',
+          'bio': 'Learn containers with guided practice.',
+          'expertise': ['Docker'],
+          'status': 'approved',
+          'session_minutes': 30,
+          'matched_skills': ['Docker'],
+          'slots': [
+            {
+              'id': 'docker-slot',
+              'starts_at': '2030-01-01T10:00:00Z',
+              'ends_at': '2030-01-01T10:30:00Z',
+            },
+          ],
+        },
+      ];
+      await openApply(
+        tester,
+        (_) async => http.Response(jsonEncode({'data': data}), 200),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('suggested-course-sql-course')),
+        findsOneWidget,
+      );
+      final chip = find.byKey(const ValueKey('gap-skill-Docker'));
+      await tester.ensureVisible(chip);
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('suggested-course-sql-course')),
+        findsNothing,
+      );
+      final coach = find.byKey(const ValueKey('suggested-coach-docker-coach'));
+      await tester.ensureVisible(coach);
+      await tester.tap(coach);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('book-slot-docker-slot')),
+        findsOneWidget,
+      );
+      expect(find.text('Container coach'), findsWidgets);
+      await tester.tap(find.byTooltip('Close profile'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('application-skill-gap')),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(chip);
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('suggested-course-sql-course')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'missing skills suggest real courses, explain uncovered skills and open the catalog',
     (tester) async {
       await openApply(

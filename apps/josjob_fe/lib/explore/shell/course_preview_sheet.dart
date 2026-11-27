@@ -236,6 +236,25 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if ((_detail?.skillTags ?? c.skillTags)
+                              .isNotEmpty) ...[
+                            Text(
+                              'Skills you will learn',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              key: const ValueKey('course-skill-tags'),
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                for (final tag
+                                    in _detail?.skillTags ?? c.skillTags)
+                                  Chip(label: Text(tag)),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                          ],
                           if (c.industries.isNotEmpty)
                             Wrap(
                               spacing: 8,
@@ -275,11 +294,32 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
                             Text(c.summary, style: _lead(context)),
                           ],
                           const SizedBox(height: 26),
-                          _section('Sessions'),
-                          const SizedBox(height: 12),
-                          _sessions(),
-                          if (_enrollmentConfirmed ||
-                              _enrolledClassIds.isNotEmpty) ...[
+                          if (_detail?.hasCurriculum ?? c.hasCurriculum) ...[
+                            _section('Self-paced learning'),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Structured reading, guided practice and a knowledge check. Your lesson progress is saved to your account.',
+                            ),
+                            const SizedBox(height: 14),
+                            FilledButton.icon(
+                              key: const ValueKey('open-course-curriculum'),
+                              onPressed: () => Navigator.of(context).pushNamed(
+                                '/learn/${Uri.encodeComponent(c.id)}',
+                              ),
+                              icon: const Icon(Icons.menu_book_outlined),
+                              label: const Text('View curriculum & learn'),
+                            ),
+                          ],
+                          if (!(_detail?.hasCurriculum ?? c.hasCurriculum) ||
+                              !c.isFree) ...[
+                            const SizedBox(height: 20),
+                            _section('Sessions'),
+                            const SizedBox(height: 12),
+                            _sessions(),
+                          ],
+                          if (!(_detail?.hasCurriculum ?? c.hasCurriculum) &&
+                              (_enrollmentConfirmed ||
+                                  _enrolledClassIds.isNotEmpty)) ...[
                             const SizedBox(height: 24),
                             _infoBox(
                               Icons.check_circle_outline,

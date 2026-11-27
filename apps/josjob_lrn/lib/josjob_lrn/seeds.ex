@@ -75,6 +75,26 @@ defmodule JosjobLrn.Seeds do
   @schedule [%{"date" => "2026-08-05", "start" => "09:00", "end" => "11:00"}]
   @capacity 25
 
+  @skill_tags %{
+    "Food Safety & Hygiene Essentials" => ["Food safety", "Food handling", "Hygiene"],
+    "Front Office & Guest Service Excellence" => [
+      "Customer service",
+      "Guest service",
+      "Front office"
+    ],
+    "Work Health & Safety White Card" => ["Workplace safety", "Construction safety"],
+    "Working Safely at Heights" => ["Working at heights", "Fall protection", "Workplace safety"],
+    "Infection Prevention & Control" => ["Infection control", "Hygiene"],
+    "Aged Care Support Foundations" => ["Aged care", "Person-centred care"],
+    "Workplace Communication Skills" => ["Communication", "Teamwork", "Customer service"],
+    "Introduction to IT Support" => [
+      "IT support",
+      "Troubleshooting",
+      "Hardware",
+      "Customer service"
+    ]
+  }
+
   @doc """
   Seed the sample catalog into the "Atveti" org. Idempotent: re-running finds
   existing rows by natural key instead of duplicating. Returns the number of
@@ -157,6 +177,7 @@ defmodule JosjobLrn.Seeds do
         |> Ash.Changeset.for_create(:create, %{
           title: title,
           description: description,
+          skill_tags: Map.get(@skill_tags, title, []),
           is_active: true,
           # Sample courses are public so individual learners (no org) see them.
           is_public: true,
@@ -170,7 +191,15 @@ defmodule JosjobLrn.Seeds do
       # back-fills rows seeded before is_public/price_cents existed).
       %Course{} = course ->
         course
-        |> Ash.Changeset.for_update(:update, %{is_public: true, price_cents: price_cents})
+        |> Ash.Changeset.for_update(:update, %{
+          is_public: true,
+          price_cents: price_cents,
+          skill_tags:
+            if(course.skill_tags == [],
+              do: Map.get(@skill_tags, title, []),
+              else: course.skill_tags
+            )
+        })
         |> Ash.update!(authorize?: false)
     end
   end

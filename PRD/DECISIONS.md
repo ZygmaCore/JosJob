@@ -38,6 +38,20 @@
 
 ## 2. Keputusan yang masih terbuka (level tim)
 
+Pembaruan user 2026-11-27: kelulusan course menambah tag skill pada pengguna.
+Sebelum sertifikat diterbitkan, pengguna wajib mengonfirmasi bahwa CV/nama sudah
+sesuai. Nama penerima diambil dari CV tersimpan lalu dikunci per sertifikat;
+perubahan CV berikutnya tidak boleh mengubah nama sertifikat yang sudah terbit.
+
+Pembaruan user 2026-11-26: sistem course mengikuti pola academy seperti Dicoding:
+pembelajaran mandiri, modul berurutan, materi/latihan/kuis dan progres tersimpan.
+Rekomendasi skill dari lowongan membuka course belajar, bukan kelas placeholder.
+
+Pembaruan user 2026-11-26: skill requirements lowongan dihubungkan ke tag skill
+course dan expertise coach. Pelamar dapat memilih skill yang kurang lalu membuka
+course atau sesi coach yang sesuai dari saran lamaran. Pencocokan memakai alias
+skill deterministik tanpa analisis AI tambahan; coaching tetap independen dari course.
+
 Pembaruan 2026-11-17: D20 menetapkan urutan hiring **Applied → Reviewing →
 Interview → Offer → Hired** (user). D21 menetapkan chat untuk lamaran dan coaching
 dengan tema visual yang sama (user). Implementasi pertama mengikat chat ke lamaran

@@ -33,10 +33,21 @@ Verification:
 For future local source updates, rebuild and recreate the app services:
 
 ```sh
-docker compose -f docker-compose.fullstack.yml build josjob_fe josjob_be
-docker compose -f docker-compose.fullstack.yml up -d --no-deps josjob_be josjob_fe
+docker compose -f docker-compose.fullstack.yml build josjob_fe josjob_be josjob_ragpdf
+docker compose -f docker-compose.fullstack.yml up -d josjob_ragpdf josjob_be josjob_fe
 ```
 
 The build context excludes frontend projects from the backend release as before;
 the separate frontend build still uses `apps/josjob_fe`. No data-reset command or
 volume removal is part of this refresh.
+
+Correction, 2026-11-26: the earlier `--no-deps` refresh left the standalone
+extraction service absent, causing `POST /api/rag/cv/extractions` to return 503.
+Start the PDF service with the app services and keep Compose dependency/health
+checks enabled. Existing saved profiles can still rank jobs while that service
+is down, so a successful job-list check alone does not verify PDF extraction.
+The service was built and started, and its health was checked from inside the
+backend release. A fresh fictional demo PDF posted through the authenticated
+backend endpoint returned HTTP 202 and completed with extracted skills using
+the keyword fallback. The temporary extraction was deleted after verification;
+no saved candidate profile was replaced.

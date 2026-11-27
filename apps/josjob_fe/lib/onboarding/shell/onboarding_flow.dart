@@ -17,7 +17,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   // completion screen.
   OnboardRole? _role;
   int _step = 0;
-  bool _forward = true; // drives slide direction of the page transition
   bool _submitting = false;
 
   // Set when confirming the identity step fails backend validation — currently
@@ -326,7 +325,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     setState(() {
       _role = r;
       _step = 0;
-      _forward = true;
     });
   }
 
@@ -391,7 +389,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     _saveDraft();
     if (_step < _totalSteps - 1) {
       setState(() {
-        _forward = true;
         _step++;
       });
       return;
@@ -403,7 +400,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     if (!mounted) return;
     setState(() {
       _submitting = false;
-      _forward = true;
       _step = _totalSteps; // completion screen
     });
   }
@@ -412,14 +408,12 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     if (_step == 0) {
       // Back out of the steps to the identity screen, keeping the selection.
       setState(() {
-        _forward = false;
         _pendingRole = _role;
         _role = null;
       });
       return;
     }
     setState(() {
-      _forward = false;
       _step--;
     });
   }
@@ -513,13 +507,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                   ? _skipOnboarding
                   : null,
             ),
-            Expanded(
-              child: _Transitioner(
-                forward: _forward,
-                reduceMotion: _reduceMotion(context),
-                child: body,
-              ),
-            ),
+            Expanded(child: body),
             if (onIdentity || _step < _totalSteps)
               _ActionBar(
                 onBack: _back,

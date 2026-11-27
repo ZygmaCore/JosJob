@@ -14,6 +14,8 @@ class _MyCoursesScreen extends StatefulWidget {
 
 class _MyCoursesScreenState extends State<_MyCoursesScreen> {
   final CoursesApi _api = CoursesApi();
+  final StudyApi _studyApi = StudyApi();
+  List<Map<String, dynamic>> _studies = [];
 
   bool _loading = true;
   String? _error;
@@ -28,6 +30,7 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
   @override
   void dispose() {
     _api.close();
+    _studyApi.close();
     super.dispose();
   }
 
@@ -37,12 +40,21 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
       _error = null;
     });
     try {
-      final list = await Session.instance.runAuthed(
-        (t) => _api.listEnrollments(t),
-      );
+      final results = await Future.wait<Object>([
+        Session.instance.runAuthed((t) => _api.listEnrollments(t)),
+        Session.instance.runAuthed(_studyApi.mine),
+      ]);
+      final list = results[0] as List<EnrolledCourse>;
+      final studies = results[1] as List<Map<String, dynamic>>;
       if (!mounted) return;
       setState(() {
-        _courses = list;
+        _courses = list
+            .where(
+              (course) =>
+                  !studies.any((study) => study['id'] == course.courseId),
+            )
+            .toList();
+        _studies = studies;
         _loading = false;
       });
     } on CourseApiException catch (e) {
@@ -85,9 +97,9 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
   String _subtitle() {
     if (_loading) return 'Loading your courses…';
     if (_error != null) return '';
-    return _courses.isEmpty
+    return _courses.isEmpty && _studies.isEmpty
         ? "You haven't enrolled in any courses yet."
-        : '${_courses.length} enrolled';
+        : '${_courses.length + _studies.length} enrolled';
   }
 
   Widget _body() {
@@ -124,7 +136,7 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
       );
     }
 
-    if (_courses.isEmpty) {
+    if (_courses.isEmpty && _studies.isEmpty) {
       return _DashCard(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
@@ -141,6 +153,49 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
 
     return Column(
       children: [
+        for (final study in _studies)
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    study['title'] as String,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "${study['completed_count']}/${study['lesson_count']} lessons / ${study['progress']}%",
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: (study['progress'] as num) / 100,
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: ValueKey("continue-study-${study['id']}"),
+                      onPressed: () async {
+                        await Navigator.of(
+                          context,
+                        ).pushNamed("/learn/${study['id']}");
+                        if (mounted) _load();
+                      },
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(
+                        study['progress'] == 100
+                            ? 'Review course'
+                            : 'Continue learning',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         for (final c in _courses)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -167,6 +222,8 @@ class _EnrolledCourseCard extends StatelessWidget {
         context,
         CourseSummary(
           id: detail.id,
+          hasCurriculum: detail.hasCurriculum,
+          skillTags: detail.skillTags,
           title: detail.title,
           description: detail.description,
           industries: detail.industries,

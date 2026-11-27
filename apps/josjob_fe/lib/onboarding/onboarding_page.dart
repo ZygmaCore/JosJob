@@ -42,7 +42,6 @@ part 'shell/onboarding_flow.dart';
 part 'shell/top_bar.dart';
 part 'shell/segmented_progress.dart';
 part 'shell/brand_logo.dart';
-part 'shell/transitioner.dart';
 part 'shell/content_shell.dart';
 part 'shell/step_header.dart';
 part 'steps/who_you_are_step.dart';

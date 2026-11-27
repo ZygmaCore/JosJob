@@ -18,7 +18,8 @@ defmodule JosjobLrn.Certificates do
       |> Ash.read!(authorize?: false)
       |> Enum.map(&to_json/1)
 
-    records ++ onboarding_certificates(user)
+    Enum.map(JosjobLrn.CourseAwards.list(user), &JosjobLrn.CourseAwards.json/1) ++
+      records ++ onboarding_certificates(user)
   end
 
   def add_certificate(user, attrs) do
@@ -31,14 +32,24 @@ defmodule JosjobLrn.Certificates do
   end
 
   def update_certificate(user, id, attrs) do
-    with {:ok, certificate} <- owned(user, id),
+    with :ok <- editable_award(user, id),
+         {:ok, certificate} <- owned(user, id),
          {:ok, attrs} <- attributes(attrs, certificate) do
       certificate |> Ash.Changeset.for_update(:update, attrs) |> Ash.update(authorize?: false)
     end
   end
 
   def delete_certificate(user, id) do
-    with {:ok, certificate} <- owned(user, id), do: Ash.destroy(certificate, authorize?: false)
+    with :ok <- editable_award(user, id),
+         {:ok, certificate} <- owned(user, id),
+         do: Ash.destroy(certificate, authorize?: false)
+  end
+
+  defp editable_award(user, id) do
+    case JosjobLrn.CourseAwards.owned(user, id) do
+      {:ok, _} -> {:error, :certificate_locked}
+      _ -> :ok
+    end
   end
 
   defp owned(user, id) do

@@ -13,6 +13,9 @@ class CertificateException implements Exception {
 }
 
 class LearnerCertificate {
+  final String? recipientName;
+  final bool nameLocked;
+  final List<String> skillTags;
   final String id, title, issuer, source;
   final String? issuedOn,
       expiresOn,
@@ -21,7 +24,10 @@ class LearnerCertificate {
       recordedPeriod;
   final bool editable, expired;
   LearnerCertificate.fromJson(Map<String, dynamic> j)
-    : id = j['id'] as String,
+    : recipientName = j['recipient_name'] as String?,
+      nameLocked = j['name_locked'] == true,
+      skillTags = List<String>.from(j['skill_tags'] as List? ?? []),
+      id = j['id'] as String,
       title = j['title'] as String,
       issuer = j['issuer'] as String,
       source = j['source'] as String,

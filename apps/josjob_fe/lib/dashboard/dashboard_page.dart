@@ -17,6 +17,7 @@ import 'screens/certificates_view.dart';
 import 'screens/curriculum_vitae_view.dart';
 import '../services/learning_overview_api.dart' show LearningCourse;
 import '../services/session.dart';
+import '../services/study_api.dart';
 import '../jobs/jobs_page.dart' show JobsView;
 import '../services/auth_api.dart' show AccountType;
 import '../services/courses_api.dart'

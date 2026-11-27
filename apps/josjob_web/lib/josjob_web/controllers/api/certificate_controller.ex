@@ -28,6 +28,9 @@ defmodule JosjobWeb.Api.CertificateController do
   defp respond(conn, {:error, :not_found}),
     do: conn |> put_status(404) |> json(%{error: "not_found"})
 
+  defp respond(conn, {:error, :certificate_locked}),
+    do: conn |> put_status(409) |> json(%{error: "certificate_locked"})
+
   defp respond(conn, {:error, _}),
     do: conn |> put_status(422) |> json(%{error: "invalid_certificate"})
 end

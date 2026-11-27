@@ -10,6 +10,8 @@ defmodule JosjobLrn.Overview do
 
   def fetch(user, "learner") do
     org_ids = Authz.member_orgs(user) |> Enum.map(& &1.id)
+    studies = JosjobLrn.Curriculum.mine(user)
+    study_ids = Enum.map(studies, & &1.id)
 
     enrollments =
       Enrollment
@@ -18,7 +20,7 @@ defmodule JosjobLrn.Overview do
       |> Ash.Query.load(class: [:instructor, course: :section])
       |> Ash.read!(authorize?: false)
 
-    enrolled_ids = Enum.map(enrollments, & &1.class.course_id) |> Enum.uniq()
+    enrolled_ids = (Enum.map(enrollments, & &1.class.course_id) ++ study_ids) |> Enum.uniq()
 
     catalog =
       Course
@@ -43,12 +45,23 @@ defmodule JosjobLrn.Overview do
      %{
        scope: "learner",
        stats: %{
-         active_enrollments: length(active),
-         completed_enrollments: Enum.count(enrollments, &(&1.status == :completed)),
+         active_enrollments:
+           Enum.count(active, &(&1.class.course_id not in study_ids)) +
+             Enum.count(studies, &(&1.progress < 100)),
+         completed_enrollments:
+           Enum.count(
+             enrollments,
+             &(&1.status == :completed and &1.class.course_id not in study_ids)
+           ) + Enum.count(studies, &(&1.progress == 100)),
          available_courses: available,
          upcoming_sessions: length(sessions)
        },
-       enrollments: active |> Enum.take(@preview_limit) |> Enum.map(&enrollment_json/1),
+       enrollments:
+         active
+         |> Enum.reject(&(&1.class.course_id in study_ids))
+         |> Enum.take(@preview_limit)
+         |> Enum.map(&enrollment_json/1),
+       course_studies: Enum.take(studies, @preview_limit),
        courses: Enum.map(courses, &course_json/1),
        upcoming_sessions: Enum.take(sessions, @preview_limit),
        members: [],

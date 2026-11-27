@@ -76,6 +76,20 @@ class WorkflowClient {
             'Please wait a moment before sending more messages.',
           'not_found' =>
             'This record is unavailable or you no longer have access.',
+          'enrollment_required' => 'Start learning to access this lesson.',
+          'cv_confirmation_required' =>
+            'Confirm that your CV and certificate name are correct.',
+          'cv_name_changed' =>
+            'Your CV name changed. Review the latest name and confirm again.',
+          'cv_name_required' =>
+            'Add your full name to your CV before issuing the certificate.',
+          'certificate_locked' =>
+            'The name on this certificate is permanently locked.',
+          'lesson_locked' => 'Complete the previous lessons first.',
+          'curriculum_unavailable' =>
+            'The course curriculum has not been published yet.',
+          'payment_required' =>
+            'Complete checkout from the course page before starting this paid course.',
           'validation_failed' => 'Check your entry and try again.',
           _ => 'The request could not be completed. Please try again.',
         };

@@ -84,6 +84,7 @@ class AuthContinuation {
       return null;
     }
     const roots = {
+      'learn',
       'jobs',
       'applications',
       'chats',

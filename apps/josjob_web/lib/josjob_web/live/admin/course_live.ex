@@ -320,7 +320,18 @@ defmodule JosjobWeb.Admin.CourseLive do
         do: params |> Map.get("organization_ids", []) |> List.wrap() |> clean_ids(),
         else: [active_org(socket)]
 
-    {industry_ids, org_ids, Map.drop(params, ["industry_ids", "organization_ids"])}
+    attrs =
+      params
+      |> Map.drop(["industry_ids", "organization_ids"])
+      |> Map.update("skill_tags", [], fn tags ->
+        tags
+        |> String.split([",", "\n"], trim: true)
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.uniq_by(&String.downcase/1)
+      end)
+
+    {industry_ids, org_ids, attrs}
   end
 
   defp clean_ids(ids), do: Enum.reject(ids, &(&1 in ["", nil]))
@@ -406,7 +417,7 @@ defmodule JosjobWeb.Admin.CourseLive do
 
   defp course_form(assigns) do
     ~H"""
-    <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-5">
+    <.form for={@form} id="course-form" phx-change="validate" phx-submit="save" class="space-y-5">
       <.input
         field={@form[:section_id]}
         type="select"
@@ -417,6 +428,16 @@ defmodule JosjobWeb.Admin.CourseLive do
       />
       <.input field={@form[:title]} type="text" label="Course title" required />
       <.input field={@form[:description]} type="textarea" label="Description" rows="3" />
+      <.input
+        field={@form[:skill_tags]}
+        value={Enum.join(List.wrap(@form[:skill_tags].value), ", ")}
+        type="text"
+        label="Skill tags (comma-separated)"
+        placeholder="SQL, PostgreSQL, Docker"
+      />
+      <p class="text-sm text-slate-500">
+        Tag the skills this course teaches. These connect the course to job requirements and candidate skill gaps. Up to 20 tags, 60 characters each.
+      </p>
       <.input field={@form[:is_active]} type="checkbox" label="Active" />
       <.input
         field={@form[:is_public]}

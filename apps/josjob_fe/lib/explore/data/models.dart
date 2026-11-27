@@ -38,6 +38,8 @@ class _IndustryVisual {
 /// A catalog course, backed 1:1 by [CourseSummary] from the backend. Only the
 /// fields the backend stores — no fabricated level/rating/duration.
 class _Course {
+  final bool hasCurriculum;
+  final List<String> skillTags;
   final String id;
   final String title;
   final String summary; // = description
@@ -48,6 +50,8 @@ class _Course {
   final String currency;
 
   const _Course({
+    this.hasCurriculum = false,
+    this.skillTags = const [],
     required this.id,
     required this.title,
     required this.summary,
@@ -59,6 +63,8 @@ class _Course {
   });
 
   factory _Course.fromApi(CourseSummary c) => _Course(
+    hasCurriculum: c.hasCurriculum,
+    skillTags: c.skillTags,
     id: c.id,
     title: c.title,
     summary: c.description,

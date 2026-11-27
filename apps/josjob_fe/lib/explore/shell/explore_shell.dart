@@ -90,7 +90,7 @@ class _ExploreShellState extends State<_ExploreShell> {
       if (_industry != null && !c.industries.contains(_industry)) return false;
       if (q.isNotEmpty) {
         final hay =
-            '${c.title} ${c.summary} ${c.industries.join(' ')} '
+            '${c.title} ${c.summary} ${c.industries.join(' ')} ${c.skillTags.join(' ')} '
                     '${c.section ?? ''}'
                 .toLowerCase();
         if (!hay.contains(q)) return false;

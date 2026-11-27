@@ -5,6 +5,7 @@ import 'auth/org_pending_page.dart';
 import 'onboarding/onboarding_page.dart';
 import 'dashboard/dashboard_page.dart';
 import 'dashboard/screens/live_coaching_view.dart';
+import 'learning/course_study_page.dart';
 import 'explore/explore_page.dart';
 import 'quiz/quiz_page.dart';
 import 'vod/vod_page.dart';
@@ -175,6 +176,9 @@ class _MyAppState extends State<MyApp> {
 
     Widget Function()? builder = _routes[uri.path];
     final parts = uri.pathSegments;
+    if (parts.length == 2 && parts.first == 'learn') {
+      builder = () => CourseStudyPage(courseId: parts[1]);
+    }
     final jobDetail = parts.length == 2 && parts.first == 'jobs';
     if (jobDetail) {
       builder = () => JobDetailsPage(

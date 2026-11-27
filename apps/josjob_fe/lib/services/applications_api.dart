@@ -1,5 +1,14 @@
 import 'workflow_client.dart';
 import 'courses_api.dart';
+import 'live_coaching_api.dart';
+
+class ApplicationCoachSuggestion {
+  final CoachProfile coach;
+  final List<String> matchedSkills;
+  ApplicationCoachSuggestion.fromJson(Map<String, dynamic> json)
+    : coach = CoachProfile.fromJson(json),
+      matchedSkills = List<String>.from(json['matched_skills'] as List? ?? []);
+}
 
 class ApplicationCourseSuggestion {
   final CourseSummary course;
@@ -13,8 +22,15 @@ class ApplicationSuggestions {
   final String status, source;
   final List<String> matchedSkills, missingSkills, uncoveredSkills;
   final List<ApplicationCourseSuggestion> courses;
+  final List<ApplicationCoachSuggestion> coaches;
   ApplicationSuggestions.fromJson(Map<String, dynamic> json)
-    : status = json['status'] as String,
+    : coaches = (json['coaches'] as List? ?? [])
+          .map(
+            (c) =>
+                ApplicationCoachSuggestion.fromJson(c as Map<String, dynamic>),
+          )
+          .toList(),
+      status = json['status'] as String,
       source = json['source'] as String,
       matchedSkills = List<String>.from(json['matched_skills'] as List),
       missingSkills = List<String>.from(json['missing_skills'] as List),

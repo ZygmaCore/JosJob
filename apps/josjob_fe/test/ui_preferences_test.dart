@@ -104,6 +104,7 @@ void main() {
   );
 
   test('return destination rejects external and authentication URLs', () {
+    expect(AuthContinuation.validate('/learn/course-1'), '/learn/course-1');
     for (final invalid in [
       'https://example.com',
       '//example.com/jobs',

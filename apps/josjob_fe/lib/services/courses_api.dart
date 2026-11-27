@@ -43,6 +43,8 @@ String formatPrice(int cents, String currency) {
 /// One catalog course as returned by the summary endpoint. Only the fields the
 /// backend actually stores — no level/rating/duration/etc.
 class CourseSummary {
+  final bool hasCurriculum;
+  final List<String> skillTags;
   final String id;
   final String title;
   final String description;
@@ -53,6 +55,8 @@ class CourseSummary {
   final String currency;
 
   const CourseSummary({
+    this.hasCurriculum = false,
+    this.skillTags = const [],
     required this.id,
     required this.title,
     required this.description,
@@ -69,6 +73,8 @@ class CourseSummary {
   String? get priceLabel => isFree ? null : formatPrice(priceCents!, currency);
 
   factory CourseSummary.fromJson(Map<String, dynamic> j) => CourseSummary(
+    hasCurriculum: j['has_curriculum'] == true,
+    skillTags: List<String>.from(j['skill_tags'] as List? ?? []),
     id: (j['id'] ?? '').toString(),
     title: (j['title'] ?? '').toString(),
     description: (j['description'] ?? '').toString(),
@@ -208,6 +214,8 @@ class CourseClass {
 
 /// A course with its classes — the detail behind a catalog entry.
 class CourseDetail {
+  final bool hasCurriculum;
+  final List<String> skillTags;
   final String id;
   final String title;
   final String description;
@@ -219,6 +227,8 @@ class CourseDetail {
   final List<CourseMaterial> materials;
 
   const CourseDetail({
+    this.hasCurriculum = false,
+    this.skillTags = const [],
     required this.id,
     required this.title,
     required this.description,
@@ -234,6 +244,8 @@ class CourseDetail {
   String? get priceLabel => isFree ? null : formatPrice(priceCents!, currency);
 
   factory CourseDetail.fromJson(Map<String, dynamic> j) => CourseDetail(
+    hasCurriculum: j['has_curriculum'] == true,
+    skillTags: List<String>.from(j['skill_tags'] as List? ?? []),
     id: (j['id'] ?? '').toString(),
     title: (j['title'] ?? '').toString(),
     description: (j['description'] ?? '').toString(),

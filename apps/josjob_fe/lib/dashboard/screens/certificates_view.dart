@@ -6,6 +6,7 @@ import '../../services/session.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/app_ui.dart';
 import '../../shared/app_form_field.dart';
+import '../../learning/course_award_card.dart';
 
 typedef CertificateAuthorize =
     Future<T> Function<T>(Future<T> Function(String) call);
@@ -207,7 +208,7 @@ class _CertificatesViewState extends State<CertificatesView> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Certificates you add are self-reported. Certifications saved during onboarding also appear here.',
+                'Course completion certificates use your confirmed CV name and lock it after issuance. Certificates you add yourself and onboarding records are self-reported.',
                 style: _style(13, color: AppColors.body),
               ),
             ),
@@ -243,104 +244,117 @@ class _CertificatesViewState extends State<CertificatesView> {
         for (final c in _certificates) _certificate(c),
     ],
   );
-  Widget _certificate(LearnerCertificate c) => _card(
-    key: ValueKey('certificate-${c.id}'),
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.tintBlue,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.workspace_premium_outlined,
-                color: AppColors.brandBlue,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
+  Widget _certificate(LearnerCertificate c) => c.source == 'course_completion'
+      ? CourseAwardCard(
+          authorize: _auth,
+          award: {
+            'id': c.id,
+            'title': c.title,
+            'recipient_name': c.recipientName,
+            'name_locked': c.nameLocked,
+            'skill_tags': c.skillTags,
+            'issued_on': c.issuedOn,
+            'credential_id': c.credentialId,
+          },
+        )
+      : _card(
+          key: ValueKey('certificate-${c.id}'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(c.title, style: _style(17, bold: true)),
-                  const SizedBox(height: 4),
-                  Text(
-                    c.issuer.isEmpty ? 'Issuer not provided' : c.issuer,
-                    style: _style(14, color: AppColors.body),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.tintBlue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium_outlined,
+                      color: AppColors.brandBlue,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.title, style: _style(17, bold: true)),
+                        const SizedBox(height: 4),
+                        Text(
+                          c.issuer.isEmpty ? 'Issuer not provided' : c.issuer,
+                          style: _style(14, color: AppColors.body),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            Chip(
-              label: Text(
-                c.source == 'onboarding'
-                    ? 'From onboarding · self-reported'
-                    : 'Self-reported',
-              ),
-            ),
-            if (c.expired) const Chip(label: Text('Expired')),
-          ],
-        ),
-        if (c.issuedOn != null) _detail('Issued', c.issuedOn!),
-        if (c.expiresOn != null) _detail('Expires', c.expiresOn!),
-        if (c.recordedPeriod?.isNotEmpty == true)
-          _detail('Recorded period', c.recordedPeriod!),
-        if (c.credentialId?.isNotEmpty == true)
-          _detail('Credential ID', c.credentialId!),
-        if (c.source == 'onboarding')
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              'This record comes from your onboarding answers.',
-              style: _style(12, color: AppColors.body),
-            ),
-          ),
-        if (c.editable || c.credentialUrl != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (c.credentialUrl != null)
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        (widget.onOpenLink ?? openLink)(c.credentialUrl!),
-                    icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text('Open credential'),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(
+                    label: Text(
+                      c.source == 'onboarding'
+                          ? 'From onboarding · self-reported'
+                          : 'Self-reported',
+                    ),
                   ),
-                if (c.editable) ...[
-                  TextButton.icon(
-                    key: ValueKey('edit-certificate-${c.id}'),
-                    onPressed: _busy ? null : () => _edit(c),
-                    icon: const Icon(Icons.edit_outlined, size: 17),
-                    label: const Text('Edit'),
-                  ),
-                  TextButton.icon(
-                    key: ValueKey('delete-certificate-${c.id}'),
-                    onPressed: _busy ? null : () => _delete(c),
-                    icon: const Icon(Icons.delete_outline, size: 17),
-                    label: const Text('Delete'),
-                  ),
+                  if (c.expired) const Chip(label: Text('Expired')),
                 ],
-              ],
-            ),
+              ),
+              if (c.issuedOn != null) _detail('Issued', c.issuedOn!),
+              if (c.expiresOn != null) _detail('Expires', c.expiresOn!),
+              if (c.recordedPeriod?.isNotEmpty == true)
+                _detail('Recorded period', c.recordedPeriod!),
+              if (c.credentialId?.isNotEmpty == true)
+                _detail('Credential ID', c.credentialId!),
+              if (c.source == 'onboarding')
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    'This record comes from your onboarding answers.',
+                    style: _style(12, color: AppColors.body),
+                  ),
+                ),
+              if (c.editable || c.credentialUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (c.credentialUrl != null)
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              (widget.onOpenLink ?? openLink)(c.credentialUrl!),
+                          icon: const Icon(Icons.open_in_new, size: 16),
+                          label: const Text('Open credential'),
+                        ),
+                      if (c.editable) ...[
+                        TextButton.icon(
+                          key: ValueKey('edit-certificate-${c.id}'),
+                          onPressed: _busy ? null : () => _edit(c),
+                          icon: const Icon(Icons.edit_outlined, size: 17),
+                          label: const Text('Edit'),
+                        ),
+                        TextButton.icon(
+                          key: ValueKey('delete-certificate-${c.id}'),
+                          onPressed: _busy ? null : () => _delete(c),
+                          icon: const Icon(Icons.delete_outline, size: 17),
+                          label: const Text('Delete'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
           ),
-      ],
-    ),
-  );
+        );
   Widget _detail(String label, String value) => Padding(
     padding: const EdgeInsets.only(top: 8),
     child: Text('$label: $value', style: _style(13, color: AppColors.body)),
