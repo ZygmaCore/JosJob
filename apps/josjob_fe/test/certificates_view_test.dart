@@ -66,6 +66,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('add-certificate')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('additional-certificates-tab')));
+    await tester.pumpAndSettle();
   }
 
   Finder key(String k) => find.byKey(ValueKey(k));

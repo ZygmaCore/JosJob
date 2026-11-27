@@ -78,7 +78,7 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SectionHeader(
-          'My courses',
+          'My learning',
           pageTitle: true,
           actionLabel: 'Browse catalog',
           onAction: () => _explore(context),
@@ -187,7 +187,7 @@ class _MyCoursesScreenState extends State<_MyCoursesScreen> {
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: Text(
                         study['progress'] == 100
-                            ? 'Review course'
+                            ? 'View results'
                             : 'Continue learning',
                       ),
                     ),

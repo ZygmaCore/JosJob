@@ -206,21 +206,23 @@ class _ExploreShellState extends State<_ExploreShell> {
     }
   }
 
-  Future<void> _openPreview(_Course course) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      builder: (_) => _CoursePreviewSheet(
-        course: course,
-        initialSaved: _saved.contains(course.id),
-        // Route through _toggleSaved so saving from the sheet gives the same
-        // snackbar feedback as saving from a card.
-        onToggleSaved: _toggleSaved,
-      ),
-    );
-  }
+  Future<void> _openPreview(_Course course) => showCatalogCourse(
+    context,
+    CourseSummary(
+      id: course.id,
+      title: course.title,
+      description: course.summary,
+      industries: course.industries,
+      classCount: course.classCount,
+      currency: course.currency,
+      priceCents: course.priceCents,
+      sectionName: course.section,
+      skillTags: course.skillTags,
+      hasCurriculum: course.hasCurriculum,
+    ),
+    initialSaved: _saved.contains(course.id),
+    onToggleSaved: _toggleSaved,
+  );
 
   @override
   Widget build(BuildContext context) {

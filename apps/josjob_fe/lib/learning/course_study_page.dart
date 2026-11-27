@@ -4,16 +4,19 @@ import '../services/session.dart';
 import '../services/workflow_client.dart';
 import '../theme/app_theme.dart';
 import 'course_award_card.dart';
+import '../shared/learning_navigation.dart';
 
 class CourseStudyPage extends StatefulWidget {
   final String courseId;
   final StudyApi? api;
   final WorkflowAuthorize? authorize;
+  final String? returnTo;
   const CourseStudyPage({
     super.key,
     required this.courseId,
     this.api,
     this.authorize,
+    this.returnTo,
   });
   @override
   State<CourseStudyPage> createState() => _CourseStudyPageState();
@@ -24,6 +27,14 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
   Map<String, dynamic>? _course;
   String? _selected, _error, _feedback;
   bool _busy = false;
+  bool _reviewing = false;
+  String? get _returnTo => learningReturnPath(widget.returnTo);
+  bool get _fromJob =>
+      _returnTo != null &&
+      {
+        'jobs',
+        'applications',
+      }.contains(Uri.parse(_returnTo!).pathSegments.first);
   final Map<String, int> _answers = {};
   final _contentScroll = ScrollController(keepScrollOffset: false);
   Future<T> _auth<T>(Future<T> Function(String) fn) =>
@@ -60,6 +71,7 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
       if (!mounted) return;
       setState(() {
         _course = result;
+        if (result['progress'] == 100) _reviewing = false;
         final feedback = result['assessment'] as Map?;
         if (assessment && feedback?['passed'] == false) {
           _feedback =
@@ -148,6 +160,7 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
                 : () {
                     setState(() {
                       _selected = lesson['id'] as String;
+                      _reviewing = _course?['progress'] == 100;
                       _answers.clear();
                       _feedback = null;
                     });
@@ -166,6 +179,7 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
 
   Widget _content() {
     final course = _course!;
+    if (course['progress'] == 100 && !_reviewing) return _results();
     final lesson = _lessons.where((l) => l['id'] == _selected).firstOrNull;
     return ListView(
       key: ValueKey('study-content-$_selected'),
@@ -180,22 +194,15 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
           Text(_feedback!, key: const ValueKey('study-feedback')),
           const SizedBox(height: 16),
         ],
-        if (course['progress'] == 100) ...[
-          if (course['award'] is Map)
-            CourseAwardCard(
-              award: Map<String, dynamic>.from(course['award'] as Map),
-              authorize: widget.authorize,
-            ),
-          const SizedBox(height: 20),
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Course completed! You have finished the lessons and passed the knowledge check.',
-                key: ValueKey('study-course-complete'),
-              ),
-            ),
+        if (_reviewing) ...[
+          TextButton.icon(
+            key: const ValueKey('back-to-course-results'),
+            onPressed: () => setState(() => _reviewing = false),
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Back to course results'),
           ),
+          const Text('Review mode / This course is already completed.'),
+          const SizedBox(height: 16),
         ],
         if (course['enrolled'] != true) ...[
           Text(
@@ -295,6 +302,62 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
     );
   }
 
+  Widget _results() => ListView(
+    key: const ValueKey('course-results'),
+    controller: _contentScroll,
+    padding: const EdgeInsets.all(24),
+    children: [
+      const Icon(Icons.check_circle, color: Colors.green, size: 48),
+      const SizedBox(height: 12),
+      Text(
+        'Course completed',
+        key: const ValueKey('study-course-complete'),
+        style: Theme.of(context).textTheme.headlineSmall,
+      ),
+      const SizedBox(height: 10),
+      const Text(
+        'Your learning progress is saved. Course skills are credited to your profile when completion is recorded.',
+      ),
+      const SizedBox(height: 18),
+      if (_fromJob) ...[
+        FilledButton.icon(
+          key: const ValueKey('return-to-job-after-learning'),
+          onPressed: () => returnFromLearning(context, _returnTo!),
+          icon: const Icon(Icons.work_outline),
+          label: Text(learningReturnLabel(_returnTo)),
+        ),
+        const SizedBox(height: 14),
+      ],
+      if (_course!['award'] is Map)
+        CourseAwardCard(
+          award: Map<String, dynamic>.from(_course!['award'] as Map),
+          authorize: widget.authorize,
+          primaryAction: !_fromJob,
+        ),
+      const SizedBox(height: 16),
+      OutlinedButton.icon(
+        key: const ValueKey('review-completed-course'),
+        onPressed: _lessons.isEmpty
+            ? null
+            : () => setState(() {
+                _reviewing = true;
+                _selected = _lessons.first['id'] as String;
+                _feedback = null;
+              }),
+        icon: const Icon(Icons.menu_book_outlined),
+        label: const Text('Review lessons'),
+      ),
+      const SizedBox(height: 10),
+      TextButton(
+        onPressed: () => returnFromLearning(
+          context,
+          '/dashboard?view=career&tab=learning-catalog',
+        ),
+        child: const Text('Find another course'),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.bg,
@@ -306,7 +369,12 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
           if (Navigator.of(context).canPop()) {
             Navigator.pop(context);
           } else {
-            Navigator.of(context).pushReplacementNamed('/dashboard?view=learn');
+            Navigator.of(context).pushReplacementNamed(
+              Uri(
+                path: '/courses/${Uri.encodeComponent(widget.courseId)}',
+                queryParameters: {'return_to': ?_returnTo},
+              ).toString(),
+            );
           }
         },
       ),
@@ -352,7 +420,15 @@ class _CourseStudyPageState extends State<CourseStudyPage> {
               if (_busy) const LinearProgressIndicator(),
               Expanded(
                 child: LayoutBuilder(
-                  builder: (context, size) => size.maxWidth >= 900
+                  builder: (context, size) =>
+                      _course!['progress'] == 100 && !_reviewing
+                      ? Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 850),
+                            child: _results(),
+                          ),
+                        )
+                      : size.maxWidth >= 900
                       ? Row(
                           children: [
                             SizedBox(width: 310, child: _syllabus()),

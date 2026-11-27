@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../shared/app_ui.dart';
+import '../shared/ask_ai_drawer.dart' show showAskAi;
 import '../applications/applications_view.dart';
 import '../shared/onboard_role.dart';
 import '../landing/landing_page_ascent.dart' show JosjobLandingPage;
@@ -77,6 +78,7 @@ part 'shell/mobile_drawer.dart';
 part 'shell/placeholder_panel.dart';
 part 'shell/view_switcher.dart';
 part 'shell/dashboard_shell.dart';
+part 'shell/career_shell.dart';
 
 // ---- overview -----------------------------------------------------------
 part 'overview/overview_individual.dart';
@@ -118,6 +120,20 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
+    final effectiveRole =
+        widget.role ??
+        (Session.instance.user?.accountType == AccountType.organization
+            ? OnboardRole.employer
+            : null);
+    if (!isOrg(effectiveRole)) {
+      return _CareerShell(
+        firstName: widget.firstName,
+        initialView: widget.initialView,
+        initialTab: widget.initialTab,
+        applicationScope: widget.applicationScope,
+        applicationStatus: widget.applicationStatus,
+      );
+    }
     return _DashboardShell(
       role: widget.role,
       firstName: widget.firstName,
@@ -162,7 +178,11 @@ void _demoAction(BuildContext c) {
 }
 
 /// Open the Explore Courses catalog (route registered in main.dart).
-void _explore(BuildContext c) => Navigator.of(c).pushNamed('/explore');
+void _explore(BuildContext c) => Navigator.of(c).pushNamed(
+  Session.instance.user?.accountType == AccountType.organization
+      ? '/explore'
+      : '/dashboard?view=career&tab=learning-catalog',
+);
 
 /// Open the Jobs board (route registered in main.dart).
 void _browseJobs(BuildContext c) => Navigator.of(c).pushNamed('/jobs');

@@ -1,13 +1,24 @@
-part of 'landing_page_ascent.dart';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:http/http.dart' as http;
+import '../services/api_config.dart';
 
-class _AskAiDrawer extends StatefulWidget {
-  const _AskAiDrawer({required this.onClose});
+Future<void> showAskAi(BuildContext context) => showDialog<void>(
+  context: context,
+  useSafeArea: false,
+  builder: (context) => AskAiDrawer(onClose: () => Navigator.of(context).pop()),
+);
+
+class AskAiDrawer extends StatefulWidget {
+  const AskAiDrawer({super.key, required this.onClose});
   final VoidCallback onClose;
   @override
-  State<_AskAiDrawer> createState() => _AskAiDrawerState();
+  State<AskAiDrawer> createState() => _AskAiDrawerState();
 }
 
-class _AskAiDrawerState extends State<_AskAiDrawer> {
+class _AskAiDrawerState extends State<AskAiDrawer> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final _history = <Map<String, String>>[];

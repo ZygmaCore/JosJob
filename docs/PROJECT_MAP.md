@@ -12,6 +12,19 @@ the checkout at the time of the original analysis only.
 This is a source-based orientation map, not a runtime certification. Recheck
 the current files when code changes.
 
+Candidate UX update, 2026-11-27 (working tree based on `61fadba`): the
+individual dashboard now has one stable Home / Jobs / My applications / Learning /
+Coaching / Profile & CV navigation. Old `view=jobs` and `view=learn` links resolve
+inside that shell; organization management retains its existing navigation.
+Learning separates My learning from Course catalog, and coach workspace is an
+account tool at `/coaching/workspace`. Course details are full pages at
+`/courses/:id`, with validated `return_to` carried into `/learn/:id`. Completed
+courses open results; lessons are available through explicit Review lessons.
+Apply places optional learning after the cover letter and consent, with a sticky
+Submit action. Course certificates and Additional certificates are separate;
+certificate confirmation offers a focused CV name correction and preserves the
+existing server-side immutable name lock. See [the UX contract](candidate-ux.md).
+
 User journey update, 2026-11-24 (working tree based on
 `fa8be2cfafa2a37eeeff05bd34dda199dc4c282b`): reviewed CV facts now populate
 the candidate profile and future application snapshots. Candidates can correct

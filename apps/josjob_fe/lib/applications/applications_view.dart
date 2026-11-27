@@ -1112,6 +1112,33 @@ class _ApplyPageState extends State<ApplyPage> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.bg,
     appBar: AppBar(title: const Text('Apply for this role')),
+    bottomNavigationBar: SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const ValueKey('submit-application'),
+                onPressed: _profile == null || !_consent || _sending
+                    ? null
+                    : _submit,
+                icon: const Icon(Icons.send_outlined),
+                label: Text(_sending ? 'Submitting...' : 'Submit application'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
     body: SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Center(
@@ -1177,14 +1204,6 @@ class _ApplyPageState extends State<ApplyPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                ApplicationSuggestionsCard(
-                  key: ValueKey('application-suggestions-$_profileRevision'),
-                  jobId: widget.job.id,
-                  api: _api,
-                  authorize: widget.authorize ?? Session.instance.runAuthed,
-                  onReturnFromLearning: _refreshAfterLearning,
-                ),
-                const SizedBox(height: 18),
                 _card(
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1222,14 +1241,6 @@ class _ApplyPageState extends State<ApplyPage> {
                           style: _style(12, color: AppColors.body),
                         ),
                       const SizedBox(height: 18),
-                      FilledButton.icon(
-                        key: const ValueKey('submit-application'),
-                        onPressed: !_consent || _sending ? null : _submit,
-                        icon: const Icon(Icons.send_outlined),
-                        label: Text(
-                          _sending ? 'Submitting…' : 'Submit application',
-                        ),
-                      ),
                       TextButton(
                         onPressed: _sending
                             ? null
@@ -1242,6 +1253,26 @@ class _ApplyPageState extends State<ApplyPage> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 18),
+                ExpansionTile(
+                  key: const ValueKey('optional-application-learning'),
+                  title: const Text('Optional: build skills for this role'),
+                  subtitle: const Text(
+                    'You can submit your application now. Learning is optional.',
+                  ),
+                  children: [
+                    ApplicationSuggestionsCard(
+                      key: ValueKey(
+                        'application-suggestions-$_profileRevision',
+                      ),
+                      jobId: widget.job.id,
+                      api: _api,
+                      authorize: widget.authorize ?? Session.instance.runAuthed,
+                      onReturnFromLearning: _refreshAfterLearning,
+                    ),
+                    const SizedBox(height: 18),
+                  ],
                 ),
               ],
             ],

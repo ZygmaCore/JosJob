@@ -52,7 +52,7 @@ class _Header extends StatelessWidget {
               Semantics(
                 header: true,
                 child: Text(
-                  'Explore courses. Build practical skills.',
+                  'Course catalog',
                   style: _h2s(
                     context,
                     color: AppColors.navy,

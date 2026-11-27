@@ -54,6 +54,7 @@ void main() {
     LiveCoachingApi api, {
     void Function(CoachingBooking)? join,
     bool admin = false,
+    bool workspace = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -64,12 +65,16 @@ void main() {
               authorize: _authorize,
               onJoin: join,
               isAdmin: admin,
+              initialWorkspace: workspace,
             ),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
+    if (!workspace) {
+      expect(find.byKey(const ValueKey('coach-workspace')), findsNothing);
+    }
   }
 
   testWidgets(
@@ -189,7 +194,7 @@ void main() {
         }),
       );
       addTearDown(api.close);
-      await showCoaching(tester, api);
+      await showCoaching(tester, api, workspace: true);
       await tester.tap(find.byKey(const ValueKey('coach-workspace')));
       await tester.pumpAndSettle();
       expect(find.text('Profile status: pending'), findsOneWidget);

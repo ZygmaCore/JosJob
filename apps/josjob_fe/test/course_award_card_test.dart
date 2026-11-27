@@ -59,7 +59,7 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('claim-course-certificate')));
       await tester.pumpAndSettle();
-      expect(find.text('Is your CV correct?'), findsOneWidget);
+      expect(find.text('Confirm certificate name'), findsOneWidget);
       expect(find.text('Ari Pratama'), findsOneWidget);
       final confirm = find.byKey(const ValueKey('issue-locked-certificate'));
       expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
@@ -90,8 +90,9 @@ void main() {
     final api = CourseAwardsApi(
       baseUrl: 'http://test',
       client: MockClient((request) async {
-        if (request.method == 'POST')
+        if (request.method == 'POST') {
           return http.Response(jsonEncode({'error': 'cv_name_changed'}), 409);
+        }
         previews++;
         return http.Response(
           jsonEncode({

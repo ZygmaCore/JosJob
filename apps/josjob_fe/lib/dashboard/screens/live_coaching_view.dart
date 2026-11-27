@@ -43,17 +43,18 @@ Future<bool?> showCoachSessions(
 }
 
 class CoachingPage extends StatelessWidget {
-  const CoachingPage({super.key});
+  final bool workspace;
+  const CoachingPage({super.key, this.workspace = false});
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.bg,
-    appBar: AppBar(title: const Text('Coaching')),
+    appBar: AppBar(title: Text(workspace ? 'Coach workspace' : 'Coaching')),
     body: SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
-          child: const LiveCoachingView(),
+          child: LiveCoachingView(initialWorkspace: workspace),
         ),
       ),
     ),
@@ -65,12 +66,14 @@ class LiveCoachingView extends StatefulWidget {
   final CoachingAuthorize? authorize;
   final void Function(CoachingBooking)? onJoin;
   final bool? isAdmin;
+  final bool initialWorkspace;
   const LiveCoachingView({
     super.key,
     this.api,
     this.authorize,
     this.onJoin,
     this.isAdmin,
+    this.initialWorkspace = false,
   });
   @override
   State<LiveCoachingView> createState() => _LiveCoachingViewState();
@@ -101,6 +104,7 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
   @override
   void initState() {
     super.initState();
+    _workspace = widget.initialWorkspace;
     _load();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted && !_loading && !_working && !_workspace && !_review) {
@@ -376,15 +380,16 @@ class _LiveCoachingViewState extends State<LiveCoachingView> {
               _review = false;
             }),
           ),
-          ChoiceChip(
-            key: const ValueKey('coach-workspace'),
-            label: const Text('Coach workspace'),
-            selected: _workspace && !_review,
-            onSelected: (_) => setState(() {
-              _workspace = true;
-              _review = false;
-            }),
-          ),
+          if (widget.initialWorkspace)
+            ChoiceChip(
+              key: const ValueKey('coach-workspace'),
+              label: const Text('Coach workspace'),
+              selected: _workspace && !_review,
+              onSelected: (_) => setState(() {
+                _workspace = true;
+                _review = false;
+              }),
+            ),
           if (_admin)
             ChoiceChip(
               label: const Text('Review coach profiles'),

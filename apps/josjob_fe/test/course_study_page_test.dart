@@ -153,6 +153,52 @@ void main() {
         find.byKey(const ValueKey('study-course-complete')),
         findsOneWidget,
       );
+      expect(find.byKey(const ValueKey('complete-study-lesson')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('review-completed-course')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('course-results')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('back-to-course-results')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'completed course prioritizes returning to its job and hides curriculum until review',
+    (tester) async {
+      final api = StudyApi(
+        baseUrl: 'http://test',
+        client: MockClient(
+          (_) async => http.Response(jsonEncode({'data': courseData(3)}), 200),
+        ),
+      );
+      addTearDown(api.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CourseStudyPage(
+            courseId: 'course',
+            api: api,
+            authorize: authorize,
+            returnTo: '/jobs/1?apply=1',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('return-to-job-after-learning')),
+        findsOneWidget,
+      );
+      expect(find.text('Back to application'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('open-mobile-curriculum')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('complete-study-lesson')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('review-completed-course')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

@@ -10,11 +10,13 @@ class CourseAwardCard extends StatefulWidget {
   final Map<String, dynamic> award;
   final CourseAwardsApi? api;
   final WorkflowAuthorize? authorize;
+  final bool primaryAction;
   const CourseAwardCard({
     super.key,
     required this.award,
     this.api,
     this.authorize,
+    this.primaryAction = true,
   });
   @override
   State<CourseAwardCard> createState() => _CourseAwardCardState();
@@ -62,14 +64,19 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
           context: context,
           builder: (dialogContext) => StatefulBuilder(
             builder: (context, update) => AlertDialog(
-              title: const Text('Is your CV correct?'),
+              title: const Text('Confirm certificate name'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      preview['title'] as String,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 10),
                     const Text(
-                      'Your certificate will use this name from your saved CV:',
+                      'Is this the correct name for your certificate? It comes from your saved CV.',
                     ),
                     const SizedBox(height: 14),
                     Text(
@@ -79,7 +86,12 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
                     ),
                     const SizedBox(height: 14),
                     const Text(
-                      'After confirmation, the name on this certificate is permanently locked. Editing your CV later will not change this certificate.',
+                      'Once issued, the name on this certificate cannot be changed. Your CV can still be edited for future certificates.',
+                    ),
+                    TextButton(
+                      key: const ValueKey('edit-cv-before-certificate'),
+                      onPressed: () => Navigator.pop(dialogContext, 'edit'),
+                      child: const Text('Correct name in CV'),
                     ),
                     const SizedBox(height: 12),
                     CheckboxListTile(
@@ -89,7 +101,7 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
                       onChanged: (value) =>
                           update(() => checked = value == true),
                       title: const Text(
-                        'My CV and the name shown above are correct.',
+                        'This is the correct name for this certificate.',
                       ),
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
@@ -101,11 +113,6 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
                   onPressed: () => Navigator.pop(dialogContext),
                   child: const Text('Not now'),
                 ),
-                TextButton(
-                  key: const ValueKey('edit-cv-before-certificate'),
-                  onPressed: () => Navigator.pop(dialogContext, 'edit'),
-                  child: const Text('Edit CV first'),
-                ),
                 FilledButton(
                   key: const ValueKey('issue-locked-certificate'),
                   onPressed:
@@ -114,7 +121,7 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
                               2
                       ? () => Navigator.pop(dialogContext, 'confirm')
                       : null,
-                  child: const Text('Confirm & lock name'),
+                  child: const Text('Issue certificate'),
                 ),
               ],
             ),
@@ -161,7 +168,7 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    issued ? 'Certificate of Completion' : 'Course completed',
+                    issued ? 'Certificate issued' : 'Certificate pending',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -215,14 +222,20 @@ class _CourseAwardCardState extends State<CourseAwardCard> {
               ),
             ] else ...[
               const SizedBox(height: 14),
-              FilledButton.icon(
-                key: const ValueKey('claim-course-certificate'),
-                onPressed: _busy ? null : _claim,
-                icon: const Icon(Icons.verified_outlined),
-                label: Text(
-                  _busy ? 'Loading...' : 'Review CV & get certificate',
+              if (widget.primaryAction)
+                FilledButton.icon(
+                  key: const ValueKey('claim-course-certificate'),
+                  onPressed: _busy ? null : _claim,
+                  icon: const Icon(Icons.verified_outlined),
+                  label: Text(_busy ? 'Loading...' : 'Get certificate'),
+                )
+              else
+                OutlinedButton.icon(
+                  key: const ValueKey('claim-course-certificate'),
+                  onPressed: _busy ? null : _claim,
+                  icon: const Icon(Icons.verified_outlined),
+                  label: Text(_busy ? 'Loading...' : 'Get certificate'),
                 ),
-              ),
             ],
             if (_error != null)
               Padding(

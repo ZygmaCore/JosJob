@@ -19,14 +19,93 @@ Future<bool?> reviewCvForCertificate(
     if (!context.mounted) return false;
     return await showDialog<bool>(
       context: context,
-      builder: (_) => _CvEditor(
-        data: data,
+      builder: (_) => _CertificateNameEditor(
+        name: data.fullName,
         save: (attrs) => authorize((token) => api.save(token, attrs)),
       ),
     );
   } finally {
     api.close();
   }
+}
+
+class _CertificateNameEditor extends StatefulWidget {
+  final String name;
+  final Future<void> Function(Map<String, dynamic>) save;
+  const _CertificateNameEditor({required this.name, required this.save});
+  @override
+  State<_CertificateNameEditor> createState() => _CertificateNameEditorState();
+}
+
+class _CertificateNameEditorState extends State<_CertificateNameEditor> {
+  late final _name = TextEditingController(text: widget.name);
+  final _form = GlobalKey<FormState>();
+  bool _busy = false;
+  String? _error;
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_form.currentState!.validate()) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.save({'full_name': _name.text.trim()});
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Correct your CV name'),
+    content: SizedBox(
+      width: 420,
+      child: Form(
+        key: _form,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'This updates the name in your CV. Issued certificate names stay locked.',
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              key: const ValueKey('certificate-cv-name'),
+              controller: _name,
+              enabled: !_busy,
+              decoration: const InputDecoration(labelText: 'Full name'),
+              maxLength: 120,
+              validator: (value) => (value ?? '').trim().length < 2
+                  ? 'Enter your full name (at least 2 characters).'
+                  : null,
+            ),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: AppColors.danger)),
+          ],
+        ),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: _busy ? null : _save,
+        child: Text(_busy ? 'Saving...' : 'Save name'),
+      ),
+    ],
+  );
 }
 
 class CurriculumVitaeView extends StatefulWidget {

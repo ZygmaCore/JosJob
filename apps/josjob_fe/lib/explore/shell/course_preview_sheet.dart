@@ -9,12 +9,16 @@ part of '../explore_page.dart';
 class _CoursePreviewSheet extends StatefulWidget {
   final _Course course;
   final bool initialSaved;
-  final ValueChanged<String> onToggleSaved;
+  final ValueChanged<String>? onToggleSaved;
   final String? returnLabel;
+  final String? returnTo;
+  final CourseDetail? initialDetail;
   const _CoursePreviewSheet({
     required this.course,
     required this.initialSaved,
-    required this.onToggleSaved,
+    this.onToggleSaved,
+    this.returnTo,
+    this.initialDetail,
     this.returnLabel,
   });
 
@@ -24,6 +28,9 @@ class _CoursePreviewSheet extends StatefulWidget {
 
 class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
   final CoursesApi _api = CoursesApi();
+  final _studyApi = StudyApi();
+  Future<Map<String, dynamic>>? _study;
+  final _sessionsKey = GlobalKey();
 
   late bool _saved = widget.initialSaved;
 
@@ -39,11 +46,18 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
   void initState() {
     super.initState();
     _loadDetail(initial: true);
+    final account = Session.instance.user?.id;
+    if (widget.onToggleSaved == null && account != null) {
+      const UiPreferences().savedCourses(account).then((ids) {
+        if (mounted) setState(() => _saved = ids.contains(widget.course.id));
+      });
+    }
   }
 
   @override
   void dispose() {
     _api.close();
+    _studyApi.close();
     super.dispose();
   }
 
@@ -55,12 +69,19 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
       });
     }
     try {
-      final d = await Session.instance.runAuthed(
-        (t) => _api.getCourse(t, widget.course.id),
-      );
+      final d = initial && widget.initialDetail != null
+          ? widget.initialDetail!
+          : await Session.instance.runAuthed(
+              (t) => _api.getCourse(t, widget.course.id),
+            );
       if (!mounted) return;
       setState(() {
         _detail = d;
+        if (d.hasCurriculum) {
+          _study = Session.instance.runAuthed(
+            (token) => _studyApi.get(token, d.id),
+          );
+        }
         _enrolledClassIds
           ..clear()
           ..addAll([
@@ -88,7 +109,22 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
 
   void _toggleSaved() {
     setState(() => _saved = !_saved);
-    widget.onToggleSaved(widget.course.id);
+    if (widget.onToggleSaved != null) {
+      widget.onToggleSaved!(widget.course.id);
+    } else {
+      final account = Session.instance.user?.id;
+      if (account != null) {
+        const preferences = UiPreferences();
+        preferences.savedCourses(account).then((ids) {
+          if (_saved) {
+            ids.add(widget.course.id);
+          } else {
+            ids.remove(widget.course.id);
+          }
+          return preferences.saveCourses(account, ids);
+        });
+      }
+    }
   }
 
   Future<void> _enroll(CourseClass c) async {
@@ -211,144 +247,271 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
   Widget build(BuildContext context) {
     final c = widget.course;
     final visual = _industryVisual(c.primaryIndustry);
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.bg,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Course details'),
+        leading: IconButton(
+          tooltip: widget.returnTo == null
+              ? 'Back to course catalog'
+              : learningReturnLabel(widget.returnTo),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _back,
+        ),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: ListView(
+            padding: EdgeInsets.zero,
             children: [
-              const _SheetGrabber(),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
+              _hero(c, visual),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _hero(c, visual),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    if ((_detail?.skillTags ?? c.skillTags).isNotEmpty) ...[
+                      Text(
+                        'Skills you will learn',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        key: const ValueKey('course-skill-tags'),
+                        spacing: 8,
+                        runSpacing: 6,
                         children: [
-                          if ((_detail?.skillTags ?? c.skillTags)
-                              .isNotEmpty) ...[
-                            Text(
-                              'Skills you will learn',
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              key: const ValueKey('course-skill-tags'),
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                for (final tag
-                                    in _detail?.skillTags ?? c.skillTags)
-                                  Chip(label: Text(tag)),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                          if (c.industries.isNotEmpty)
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                for (final name in c.industries)
-                                  _TagPill(
-                                    _industryVisual(name).short,
-                                    fg: _industryVisual(name).iconColor,
-                                    bg: _industryVisual(name).tint,
-                                  ),
-                              ],
-                            ),
-                          const SizedBox(height: 14),
-                          Text(
-                            c.title,
-                            style: GoogleFonts.poppins(
-                              fontSize: 24,
-                              height: 1.2,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.navy,
-                            ),
-                          ),
-                          if (c.section != null) ...[
-                            const SizedBox(height: 12),
-                            _metaItem(Icons.category_outlined, c.section!),
-                          ],
-                          const SizedBox(height: 8),
-                          _metaItem(
-                            Icons.sell_outlined,
-                            c.isFree ? 'Free' : (c.priceLabel ?? ''),
-                          ),
-                          if (c.summary.trim().isNotEmpty) ...[
-                            const SizedBox(height: 22),
-                            _section('About this course'),
-                            const SizedBox(height: 10),
-                            Text(c.summary, style: _lead(context)),
-                          ],
-                          const SizedBox(height: 26),
-                          if (_detail?.hasCurriculum ?? c.hasCurriculum) ...[
-                            _section('Self-paced learning'),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Structured reading, guided practice and a knowledge check. Your lesson progress is saved to your account.',
-                            ),
-                            const SizedBox(height: 14),
-                            FilledButton.icon(
-                              key: const ValueKey('open-course-curriculum'),
-                              onPressed: () => Navigator.of(context).pushNamed(
-                                '/learn/${Uri.encodeComponent(c.id)}',
-                              ),
-                              icon: const Icon(Icons.menu_book_outlined),
-                              label: const Text('View curriculum & learn'),
-                            ),
-                          ],
-                          if (!(_detail?.hasCurriculum ?? c.hasCurriculum) ||
-                              !c.isFree) ...[
-                            const SizedBox(height: 20),
-                            _section('Sessions'),
-                            const SizedBox(height: 12),
-                            _sessions(),
-                          ],
-                          if (!(_detail?.hasCurriculum ?? c.hasCurriculum) &&
-                              (_enrollmentConfirmed ||
-                                  _enrolledClassIds.isNotEmpty)) ...[
-                            const SizedBox(height: 24),
-                            _infoBox(
-                              Icons.check_circle_outline,
-                              'You are enrolled. This class is also available in My Courses.',
-                            ),
-                            const SizedBox(height: 16),
-                            _learningMaterials(),
-                          ],
-                          if (widget.returnLabel != null) ...[
-                            const SizedBox(height: 16),
-                            OutlinedButton.icon(
-                              key: const ValueKey('return-from-course'),
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.arrow_back_rounded),
-                              label: Text(widget.returnLabel!),
-                            ),
-                          ],
+                          for (final tag in _detail?.skillTags ?? c.skillTags)
+                            Chip(label: Text(tag)),
                         ],
                       ),
+                      const SizedBox(height: 14),
+                    ],
+                    if (c.industries.isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final name in c.industries)
+                            _TagPill(
+                              _industryVisual(name).short,
+                              fg: _industryVisual(name).iconColor,
+                              bg: _industryVisual(name).tint,
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 14),
+                    Text(
+                      c.title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        height: 1.2,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
+                      ),
                     ),
+                    if (c.section != null) ...[
+                      const SizedBox(height: 12),
+                      _metaItem(Icons.category_outlined, c.section!),
+                    ],
+                    const SizedBox(height: 8),
+                    _metaItem(
+                      Icons.sell_outlined,
+                      c.isFree ? 'Free' : (c.priceLabel ?? ''),
+                    ),
+                    if (c.summary.trim().isNotEmpty) ...[
+                      const SizedBox(height: 22),
+                      _section('About this course'),
+                      const SizedBox(height: 10),
+                      Text(c.summary, style: _lead(context)),
+                    ],
+                    const SizedBox(height: 26),
+                    if (_detail?.hasCurriculum ?? c.hasCurriculum) ...[
+                      _section('Self-paced learning'),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Structured reading, guided practice and a knowledge check. Your lesson progress is saved to your account.',
+                      ),
+                      const SizedBox(height: 14),
+                      _curriculumOverview(),
+                    ],
+                    if (!(_detail?.hasCurriculum ?? c.hasCurriculum) ||
+                        !c.isFree) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        key: _sessionsKey,
+                        child: _section('Enrollment options'),
+                      ),
+                      const SizedBox(height: 12),
+                      _sessions(),
+                    ],
+                    if (!(_detail?.hasCurriculum ?? c.hasCurriculum) &&
+                        (_enrollmentConfirmed ||
+                            _enrolledClassIds.isNotEmpty)) ...[
+                      const SizedBox(height: 24),
+                      _infoBox(
+                        Icons.check_circle_outline,
+                        'You are enrolled. This class is also available in My Courses.',
+                      ),
+                      const SizedBox(height: 16),
+                      _learningMaterials(),
+                    ],
+                    if (widget.returnLabel != null) ...[
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        key: const ValueKey('return-from-course'),
+                        onPressed: _back,
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        label: Text(widget.returnLabel!),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: (_detail?.hasCurriculum ?? c.hasCurriculum)
+          ? _learningAction()
+          : null,
+    );
+  }
+
+  void _back() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    } else {
+      returnFromLearning(
+        context,
+        widget.returnTo ?? '/dashboard?view=career&tab=learning-catalog',
+      );
+    }
+  }
+
+  Widget _curriculumOverview() {
+    if (_detailError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_detailError!),
+          TextButton(
+            onPressed: () => _loadDetail(initial: true),
+            child: const Text('Retry course details'),
+          ),
+        ],
+      );
+    }
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _study,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const LinearProgressIndicator();
+        }
+        if (snapshot.hasError) {
+          return TextButton(
+            onPressed: () => _loadDetail(initial: true),
+            child: const Text('Retry curriculum'),
+          );
+        }
+        final lessons = snapshot.data?['lessons'] as List? ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < lessons.length; i++) ...[
+              if (i == 0 ||
+                  lessons[i]['module_title'] != lessons[i - 1]['module_title'])
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 8),
+                  child: Text(
+                    lessons[i]['module_title'] as String,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  lessons[i]['kind'] == 'quiz'
+                      ? Icons.fact_check_outlined
+                      : Icons.menu_book_outlined,
+                ),
+                title: Text(lessons[i]['title'] as String),
+                subtitle: Text(
+                  lessons[i]['kind'] == 'quiz'
+                      ? 'Knowledge check'
+                      : 'Reading & practice',
+                ),
+              ),
+            ],
+          ],
         );
       },
     );
   }
+
+  Widget _learningAction() => SafeArea(
+    top: false,
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: FutureBuilder<Map<String, dynamic>>(
+        future: _study,
+        builder: (context, snapshot) {
+          final enrolled = snapshot.data?['enrolled'] == true;
+          final completed = snapshot.data?['progress'] == 100;
+          final needsCheckout =
+              !widget.course.isFree && !enrolled && _enrolledClassIds.isEmpty;
+          return Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const ValueKey('open-course-curriculum'),
+                  onPressed: _loadingDetail || _detail == null
+                      ? null
+                      : () async {
+                          if (needsCheckout) {
+                            final target = _sessionsKey.currentContext;
+                            if (target != null) {
+                              await Scrollable.ensureVisible(target);
+                            }
+                            return;
+                          }
+                          await Navigator.of(context).pushNamed(
+                            Uri(
+                              path:
+                                  '/learn/${Uri.encodeComponent(widget.course.id)}',
+                              queryParameters: {
+                                if (widget.returnTo != null)
+                                  'return_to': widget.returnTo!,
+                              },
+                            ).toString(),
+                          );
+                          if (mounted) await _loadDetail();
+                        },
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(
+                    needsCheckout
+                        ? 'View enrollment options'
+                        : completed
+                        ? 'View course results'
+                        : enrolled
+                        ? 'Continue learning'
+                        : 'Start learning',
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+  );
 
   // ---- Sessions (classes) + enrol --------------------------------------
   Widget _sessions() {
@@ -633,13 +796,6 @@ class _CoursePreviewSheetState extends State<_CoursePreviewSheet> {
                     color: _saved ? AppColors.brandBlue : AppColors.navy,
                     tooltip: _saved ? 'Remove from saved' : 'Save course',
                     onTap: _toggleSaved,
-                  ),
-                  const SizedBox(width: 4),
-                  _circleButton(
-                    icon: Icons.close,
-                    color: AppColors.navy,
-                    tooltip: 'Close',
-                    onTap: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),

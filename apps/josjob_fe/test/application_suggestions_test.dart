@@ -45,8 +45,9 @@ void main() {
 
   Future<void> openApply(
     WidgetTester tester,
-    Future<http.Response> Function(http.Request) suggestionResponse,
-  ) async {
+    Future<http.Response> Function(http.Request) suggestionResponse, {
+    bool expandLearning = true,
+  }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -78,6 +79,16 @@ void main() {
         ),
       ),
     );
+    if (expandLearning) {
+      await tester.pump();
+      await tester.pump();
+      final optional = find.byKey(
+        const ValueKey('optional-application-learning'),
+      );
+      await tester.ensureVisible(optional);
+      await tester.tap(optional);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
   }
 
   testWidgets(
@@ -170,7 +181,8 @@ void main() {
       await tester.ensureVisible(course);
       await tester.tap(course);
       await tester.pumpAndSettle();
-      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text('Course details'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -182,6 +194,7 @@ void main() {
     await openApply(
       tester,
       (_) async => http.Response(jsonEncode({'data': suggestionsJson()}), 200),
+      expandLearning: false,
     );
     await tester.pumpAndSettle();
     final consent = find.byKey(const ValueKey('application-consent'));

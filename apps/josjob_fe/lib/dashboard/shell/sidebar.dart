@@ -59,8 +59,9 @@ class _Sidebar extends StatelessWidget {
 class _BrandMark extends StatelessWidget {
   const _BrandMark();
 
-  void _goHome(BuildContext context) =>
-      Navigator.of(context).pushNamed('/welcome');
+  void _goHome(BuildContext context) => Navigator.of(
+    context,
+  ).pushNamed(Session.instance.isSignedIn ? '/dashboard' : '/welcome');
 
   @override
   Widget build(BuildContext context) => Semantics(

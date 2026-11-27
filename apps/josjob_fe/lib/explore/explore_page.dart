@@ -19,6 +19,8 @@ import '../services/courses_api.dart';
 import '../services/ui_preferences.dart';
 import '../services/open_link.dart';
 import '../shared/app_ui.dart';
+import '../services/study_api.dart';
+import '../shared/learning_navigation.dart';
 
 // =========================================================================
 // JosJob — Explore Courses (course discovery / catalog)
@@ -96,14 +98,126 @@ Future<void> showCatalogCourse(
   BuildContext context,
   CourseSummary course, {
   String? returnLabel,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  backgroundColor: Colors.transparent,
-  builder: (_) => _CoursePreviewSheet(
-    course: _Course.fromApi(course),
-    initialSaved: false,
-    onToggleSaved: (_) {},
-    returnLabel: returnLabel,
-  ),
-);
+  bool initialSaved = false,
+  ValueChanged<String>? onToggleSaved,
+}) async {
+  final origin = learningReturnPath(ModalRoute.of(context)?.settings.name);
+  final location = Uri(
+    path: '/courses/${Uri.encodeComponent(course.id)}',
+    queryParameters: {'return_to': ?origin},
+  ).toString();
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      settings: RouteSettings(name: location),
+      builder: (_) => CourseDetailPage(
+        courseId: course.id,
+        initial: course,
+        returnTo: origin,
+        returnLabel: returnLabel,
+        initialSaved: initialSaved,
+        onToggleSaved: onToggleSaved,
+      ),
+    ),
+  );
+}
+
+class CourseDetailPage extends StatefulWidget {
+  final String courseId;
+  final CourseSummary? initial;
+  final String? returnTo;
+  final String? returnLabel;
+  final bool initialSaved;
+  final ValueChanged<String>? onToggleSaved;
+  const CourseDetailPage({
+    super.key,
+    required this.courseId,
+    this.initial,
+    this.returnTo,
+    this.returnLabel,
+    this.initialSaved = false,
+    this.onToggleSaved,
+  });
+  @override
+  State<CourseDetailPage> createState() => _CourseDetailPageState();
+}
+
+class _CourseDetailPageState extends State<CourseDetailPage> {
+  final _api = CoursesApi();
+  late Future<CourseDetail> _detail = Session.instance.runAuthed(
+    (token) => _api.getCourse(token, widget.courseId),
+  );
+  @override
+  void dispose() {
+    _api.close();
+    super.dispose();
+  }
+
+  Widget _page(CourseSummary summary, [CourseDetail? detail]) =>
+      _CoursePreviewSheet(
+        course: _Course.fromApi(summary),
+        initialSaved: widget.initialSaved,
+        onToggleSaved: widget.onToggleSaved,
+        returnTo: learningReturnPath(widget.returnTo),
+        returnLabel: widget.returnLabel ?? learningReturnLabel(widget.returnTo),
+        initialDetail: detail,
+      );
+  @override
+  Widget build(BuildContext context) {
+    if (widget.initial != null) return _page(widget.initial!);
+    return FutureBuilder<CourseDetail>(
+      future: _detail,
+      builder: (context, snapshot) {
+        final d = snapshot.data;
+        if (d != null) {
+          return _page(
+            CourseSummary(
+              id: d.id,
+              title: d.title,
+              description: d.description,
+              industries: d.industries,
+              classCount: d.classes.length,
+              currency: d.currency,
+              sectionName: d.sectionName,
+              priceCents: d.priceCents,
+              skillTags: d.skillTags,
+              hasCurriculum: d.hasCurriculum,
+            ),
+            d,
+          );
+        }
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Course details'),
+            leading: IconButton(
+              tooltip: 'Back to learning',
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.pop(context);
+                } else {
+                  returnFromLearning(
+                    context,
+                    learningReturnPath(widget.returnTo) ??
+                        '/dashboard?view=career&tab=learning-catalog',
+                  );
+                }
+              },
+            ),
+          ),
+          body: Center(
+            child: snapshot.hasError
+                ? TextButton(
+                    onPressed: () => setState(
+                      () => _detail = Session.instance.runAuthed(
+                        (token) => _api.getCourse(token, widget.courseId),
+                      ),
+                    ),
+                    child: const Text('Retry course details'),
+                  )
+                : const CircularProgressIndicator(),
+          ),
+        );
+      },
+    );
+  }
+}

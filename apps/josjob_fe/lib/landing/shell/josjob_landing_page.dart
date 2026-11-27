@@ -35,7 +35,6 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
 
   final _journeyKey = GlobalKey();
   final _faqKey = GlobalKey();
-  bool _askAiOpen = false;
 
   void _jump(GlobalKey key) {
     final target = key.currentContext;
@@ -164,15 +163,6 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
                   _go(Session.instance.isSignedIn ? '/dashboard' : '/login'),
               child: Text(Session.instance.isSignedIn ? 'Dashboard' : 'Log in'),
             ),
-            if (MediaQuery.sizeOf(context).width >= 900) ...[
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                key: const ValueKey('ask-ai-open'),
-                onPressed: () => setState(() => _askAiOpen = true),
-                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
-                label: const Text('Ask AI'),
-              ),
-            ],
             if (MediaQuery.sizeOf(context).width < 900) ...[
               const SizedBox(width: 8),
               IconButton(
@@ -221,14 +211,6 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
                   entry.$3();
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.auto_awesome_rounded),
-              title: const Text('Ask AI'),
-              onTap: () {
-                Navigator.of(context).pop();
-                setState(() => _askAiOpen = true);
-              },
-            ),
             const Spacer(),
             FilledButton(
               onPressed: () {
@@ -1067,8 +1049,6 @@ class _JosjobLandingPageState extends State<JosjobLandingPage> {
             ],
           ),
         ),
-        if (_askAiOpen)
-          _AskAiDrawer(onClose: () => setState(() => _askAiOpen = false)),
       ],
     ),
   );

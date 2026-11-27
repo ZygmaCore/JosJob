@@ -13,7 +13,10 @@ defmodule JosjobLrn.CourseAwards do
         course_title: course.title,
         skill_tags: Enum.uniq_by(course.skill_tags, &String.downcase/1),
         completed_at: DateTime.utc_now()
-      }, on_conflict: :nothing, conflict_target: [:user_id, :course_id])
+      },
+      on_conflict: :nothing,
+      conflict_target: [:user_id, :course_id]
+    )
   end
 
   def for_course(user_id, course_id),

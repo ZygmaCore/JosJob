@@ -31,6 +31,10 @@ class _CertificatesViewState extends State<CertificatesView> {
   bool _loading = true, _busy = false;
   String? _error;
   int _generation = 0;
+  bool _courseGroup = true;
+  List<LearnerCertificate> get _visible => _certificates
+      .where((c) => (c.source == 'course_completion') == _courseGroup)
+      .toList();
   Future<T> _auth<T>(Future<T> Function(String) call) =>
       (widget.authorize ?? Session.instance.runAuthed)(call);
   @override
@@ -174,6 +178,25 @@ class _CertificatesViewState extends State<CertificatesView> {
       ),
       const SizedBox(height: 20),
       Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ChoiceChip(
+            key: const ValueKey('course-certificates-tab'),
+            label: const Text('Course certificates'),
+            selected: _courseGroup,
+            onSelected: (_) => setState(() => _courseGroup = true),
+          ),
+          ChoiceChip(
+            key: const ValueKey('additional-certificates-tab'),
+            label: const Text('Additional certificates'),
+            selected: !_courseGroup,
+            onSelected: (_) => setState(() => _courseGroup = false),
+          ),
+        ],
+      ),
+      const SizedBox(height: 18),
+      Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 12,
@@ -184,15 +207,16 @@ class _CertificatesViewState extends State<CertificatesView> {
                 ? 'Loading certificates…'
                 : _error != null
                 ? 'Certificate list unavailable'
-                : '${_certificates.length} ${_certificates.length == 1 ? 'certificate' : 'certificates'} saved',
+                : '${_visible.length} ${_visible.length == 1 ? 'certificate' : 'certificates'}',
             style: _style(14, bold: true),
           ),
-          FilledButton.icon(
-            key: const ValueKey('add-certificate'),
-            onPressed: _loading || _busy ? null : _edit,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add certificate'),
-          ),
+          if (!_courseGroup)
+            FilledButton.icon(
+              key: const ValueKey('add-certificate'),
+              onPressed: _loading || _busy ? null : _edit,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add certificate'),
+            ),
         ],
       ),
       const SizedBox(height: 18),
@@ -230,18 +254,21 @@ class _CertificatesViewState extends State<CertificatesView> {
             ],
           ),
         )
-      else if (_certificates.isEmpty)
+      else if (_visible.isEmpty)
         _card(
-          const AppStateView(
-            key: ValueKey('empty-certificates'),
+          AppStateView(
+            key: const ValueKey('empty-certificates'),
             icon: Icons.workspace_premium_outlined,
-            title: 'No certificates yet',
-            message:
-                'Add a certificate you hold to keep a record of your qualifications.',
+            title: _courseGroup
+                ? 'No course certificates yet'
+                : 'No additional certificates yet',
+            message: _courseGroup
+                ? 'Complete a course to earn skills and issue your certificate.'
+                : 'Add a certificate you hold to keep a record of your qualifications.',
           ),
         )
       else
-        for (final c in _certificates) _certificate(c),
+        for (final c in _visible) _certificate(c),
     ],
   );
   Widget _certificate(LearnerCertificate c) => c.source == 'course_completion'

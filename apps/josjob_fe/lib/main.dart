@@ -120,6 +120,7 @@ class _MyAppState extends State<MyApp> {
     '/onboarding': () => const OnboardingFlow(),
     '/dashboard': () => const DashboardPage(),
     '/coaching': () => const CoachingPage(),
+    '/coaching/workspace': () => const CoachingPage(workspace: true),
     '/explore': () => const ExploreCoursePage(),
     '/quiz': () => const QuizPage(),
     '/vod': () => const VodPlayerPage(),
@@ -137,6 +138,7 @@ class _MyAppState extends State<MyApp> {
   // onboarding step (mirrors the cold-start decision in [_startScreen]).
   static const Set<String> _needsOnboarding = {
     '/coaching',
+    '/coaching/workspace',
     '/dashboard',
     '/explore',
     '/quiz',
@@ -177,7 +179,16 @@ class _MyAppState extends State<MyApp> {
     Widget Function()? builder = _routes[uri.path];
     final parts = uri.pathSegments;
     if (parts.length == 2 && parts.first == 'learn') {
-      builder = () => CourseStudyPage(courseId: parts[1]);
+      builder = () => CourseStudyPage(
+        courseId: parts[1],
+        returnTo: uri.queryParameters['return_to'],
+      );
+    }
+    if (parts.length == 2 && parts.first == 'courses') {
+      builder = () => CourseDetailPage(
+        courseId: parts[1],
+        returnTo: uri.queryParameters['return_to'],
+      );
     }
     final jobDetail = parts.length == 2 && parts.first == 'jobs';
     if (jobDetail) {
