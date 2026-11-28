@@ -47,10 +47,15 @@
       <div :if={@password_login_enabled} class="w-full">
         <div class="divider">atau masuk dengan email</div>
 
-        <.form for={%{}} action="/auth/user/password/sign_in" method="post">
+        <.form
+          for={@password_form}
+          id="cms-password-login-form"
+          action="/auth/user/password/sign_in"
+          method="post"
+        >
           <div class="flex flex-col gap-1 text-left">
             <.input
-              name="user[email]"
+              field={@password_form[:email]}
               type="email"
               label="Email"
               placeholder="email@contoh.id"
@@ -58,7 +63,7 @@
               autocomplete="email"
             />
             <.input
-              name="user[password]"
+              field={@password_form[:password]}
               type="password"
               label="Password"
               placeholder="Password"
