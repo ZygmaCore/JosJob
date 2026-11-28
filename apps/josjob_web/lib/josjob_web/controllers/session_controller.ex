@@ -16,6 +16,7 @@ defmodule JosjobWeb.SessionController do
       :password_login_enabled,
       Application.get_env(:josjob, :cms_password_login, false)
     )
+    |> assign(:password_form, Phoenix.Component.to_form(%{}, as: "user"))
     |> render(:new)
   end
 end
