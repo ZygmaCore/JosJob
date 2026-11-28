@@ -77,6 +77,13 @@ config :josjob, :google_oauth,
   # BASE ke AuthPlug (ash menambah "/user/google/callback").
   redirect_uri: env!("GOOGLE_REDIRECT_URI", :string, nil) || "http://localhost:4000/auth"
 
+# TEMPORARY (hapus bersama strategi `password` di Josjob.Accounts.User):
+# login email/password di CMS. Aktif HANYA bila CMS_PASSWORD_LOGIN=true di
+# envs/.env (default: mati). Menyalakannya membuka permukaan brute-force baru
+# (rute auth web tidak punya rate limiting) — nyalakan hanya di dev, dan
+# matikan lagi setelah Google OAuth jalan.
+config :josjob, :cms_password_login, env!("CMS_PASSWORD_LOGIN", :string, nil) in ["true", "1"]
+
 # Cloudflare Stream (VOD terkelola: upload -> transcode -> HLS/CDN). App media
 # streaming = :josjob_ms. Dibaca dari envs/.env. Bila kosong ->
 # JosjobMs.configured?() = false -> upload & seed video nyata di-skip

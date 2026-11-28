@@ -112,7 +112,12 @@ defmodule JosjobWeb.Router do
 
     # Logout INSTAN: GET /sign-out hapus sesi + redirect ke "/".
     get "/sign-out", AuthController, :sign_out
-    auth_routes(AuthController, Josjob.Accounts.User, path: "/auth")
+    # TEMPORARY: rute password di-gate runtime oleh CmsPasswordLoginGate
+    # (aktif hanya bila CMS_PASSWORD_LOGIN=true; default mati).
+    auth_routes(AuthController, Josjob.Accounts.User,
+      path: "/auth",
+      strategy_router_plug: JosjobWeb.Plugs.CmsPasswordLoginGate
+    )
   end
 
   # Lab RAG (uji live pipeline CV → ranking). Cukup login, tanpa syarat member,

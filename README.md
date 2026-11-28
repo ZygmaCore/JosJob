@@ -176,6 +176,15 @@ Untuk OAuth browser, isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan
 `http://localhost:4000/auth/user/google/callback` pada Google OAuth client.
 Untuk Flutter web, daftarkan juga origin `http://localhost:8081`.
 
+TEMPORARY — login email/password di CMS (hanya sign-in, tanpa registrasi):
+aktif hanya bila `CMS_PASSWORD_LOGIN=true` di `envs/.env` (default: mati),
+lalu restart backend. Form-nya muncul di halaman login `/` di bawah tombol
+Google, dan `POST /auth/user/password/sign_in` memverifikasi Bcrypt lawan
+`hashed_password` (akun seed bisa masuk; akun yang hanya daftar via Google
+tidak bisa). Matikan lagi dan hapus fiturnya setelah Google OAuth jalan —
+rute auth web tidak punya rate limiting, jadi flag ini membuka permukaan
+brute-force selama menyala.
+
 | Endpoint API | Kegunaan |
 | --- | --- |
 | `POST /api/auth/register` | Registrasi email/password |
@@ -199,6 +208,7 @@ Konfigurasi integrasi ada di [`config/runtime.exs`](config/runtime.exs):
 | Cloudflare Realtime | `CLOUDFLARE_REALTIME_APP_ID`, `CLOUDFLARE_REALTIME_APP_SECRET`, `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_TOKEN` |
 | Storage dokumen | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`; opsional `S3_REGION`, `S3_PUBLIC_BASE_URL` |
 | Email undangan (Resend API) | `RESEND_API_KEY` (wajib untuk kirim); `MAIL_FROM_ADDRESS`, opsional `MAIL_FROM_NAME` |
+| Login password CMS (sementara) | `CMS_PASSWORD_LOGIN=true` untuk menyalakan (default mati); hapus setelah Google OAuth jalan |
 
 Email undangan dikirim lewat Resend API (tanpa server SMTP). Aktif bila
 `RESEND_API_KEY` di-set; kosong → email hanya tersimpan lokal (`/dev/mailbox`).
