@@ -50,6 +50,28 @@ defmodule Josjob.Accounts.User do
         identity_resource(Josjob.Accounts.UserIdentity)
         prevent_hijacking?(false)
       end
+
+      # TEMPORARY — login email/password di CMS, env-gated (default MATI).
+      # Alasan: tombol "Sign in with Google" adalah satu-satunya jalan masuk
+      # CMS, sementara Google OAuth di dev belum dikonfigurasi dan akun seed
+      # (@dev.test) memang bukan akun Google. Strategi ini HANYA sign-in:
+      # registrasi dimatikan (tidak ada pendaftaran mandiri), tidak ada
+      # reset password dan tidak ada sign-in token. Akun yang hanya daftar
+      # via Google (hashed_password nil) TIDAK bisa memakai jalur ini.
+      # Aktif hanya bila CMS_PASSWORD_LOGIN=true (config/runtime.exs);
+      # rute /auth/user/password/* di-gate oleh plug
+      # JosjobWeb.Plugs.CmsPasswordLoginGate.
+      # SYARAT PENGHAPUSAN: hapus blok `password` ini + form di halaman
+      # login + plug gate tersebut setelah Google OAuth jalan dan akun seed
+      # bisa sign-in Google.
+      password do
+        identity_field(:email)
+        hashed_password_field(:hashed_password)
+        sign_in_action_name(:sign_in_with_password)
+        sign_in_enabled?(true)
+        registration_enabled?(false)
+        sign_in_tokens_enabled?(false)
+      end
     end
   end
 

@@ -41,6 +41,40 @@
         </svg>
         Sign in with Google
       </a>
+
+      <%!-- TEMPORARY: login email/password CMS (env-gated, default mati).
+        Hapus form ini + strategi password setelah Google OAuth jalan. --%>
+      <div :if={@password_login_enabled} class="w-full">
+        <div class="divider">atau masuk dengan email</div>
+
+        <.form for={%{}} action="/auth/user/password/sign_in" method="post">
+          <div class="flex flex-col gap-1 text-left">
+            <.input
+              name="user[email]"
+              type="email"
+              label="Email"
+              placeholder="email@contoh.id"
+              required
+              autocomplete="email"
+            />
+            <.input
+              name="user[password]"
+              type="password"
+              label="Password"
+              placeholder="Password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-full mt-2">
+            Masuk dengan email
+          </button>
+        </.form>
+
+        <p class="text-xs opacity-60 mt-2">
+          Sementara — untuk akun seed CMS selagi Google OAuth belum dikonfigurasi.
+        </p>
+      </div>
     </div>
   </div>
 </div>
