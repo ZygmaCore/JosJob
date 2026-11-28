@@ -4,7 +4,7 @@
 
 **Goal:** Bearer-authenticated, org-scoped student API — browse catalog, view course detail (classes + materials), self-enroll/unenroll, list own enrollments — plus API docs.
 
-**Architecture:** Two JSON controllers in `apps/stellar_web` (pattern: `StellarWeb.Api.IndustryController`), a shared org-scope helper, and one domain helper `Learning.seats_left/1`. Enroll/unenroll go through the existing `Enrollment` actions (capacity + unique enforced in the domain); the controller pre-checks to return deterministic `409`s. No schema changes.
+**Architecture:** Two JSON controllers in `apps/josjob_web` (pattern: `JosjobWeb.Api.IndustryController`), a shared org-scope helper, and one domain helper `Learning.seats_left/1`. Enroll/unenroll go through the existing `Enrollment` actions (capacity + unique enforced in the domain); the controller pre-checks to return deterministic `409`s. No schema changes.
 
 **Tech Stack:** Phoenix 1.8 controllers (JSON), Ash 3, `:api_auth` Bearer plug.
 
@@ -14,7 +14,7 @@
 - **No schema changes / no migrations.** TEST DB only for verification.
 - All endpoints under the existing `:api_auth` pipeline (`conn.assigns.current_user`).
 - Responses use the `{ "data": … }` envelope; errors `{ "error": "<code>" }` with an HTTP status.
-- DRY/YAGNI. Reuse `StellarLrn.Learning.materials_for_class/1`.
+- DRY/YAGNI. Reuse `JosjobLrn.Learning.materials_for_class/1`.
 - Verify: `mix compile --warnings-as-errors` + `mix format --check-formatted` clean; temporary request-tests on the TEST DB (removed after). Then the doc task.
 
 ---
@@ -22,17 +22,17 @@
 ### Task 1: `Learning.seats_left/1` (domain helper)
 
 **Files:**
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning.ex`
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning.ex`
 
 **Interfaces:**
-- Produces: `StellarLrn.Learning.seats_left(class_or_id)` → `nil` (unlimited) | non-neg integer.
+- Produces: `JosjobLrn.Learning.seats_left(class_or_id)` → `nil` (unlimited) | non-neg integer.
 
 - [ ] **Step 1: Add alias + function**
 
-In `apps/stellar_lrn/lib/stellar_lrn/learning.ex`, add `Enrollment` to the alias line:
+In `apps/josjob_lrn/lib/josjob_lrn/learning.ex`, add `Enrollment` to the alias line:
 
 ```elixir
-  alias StellarLrn.Learning.{Section, Course, Class, Enrollment}
+  alias JosjobLrn.Learning.{Section, Course, Class, Enrollment}
 ```
 
 Add these functions (after `materials_for_class/…`, before the tenant helpers):
@@ -71,7 +71,7 @@ Expected: clean.
 - [ ] **Step 3: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_lrn
+git add apps/josjob_lrn
 git commit -m "feat(lrn): Learning.seats_left/1"
 ```
 
@@ -80,23 +80,23 @@ git commit -m "feat(lrn): Learning.seats_left/1"
 ### Task 2: Catalog API (`CatalogController`) + shared org-scope helper
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/controllers/api/student_scope.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/api/catalog_controller.ex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (catalog routes under `:api_auth`)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/api/student_scope.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/api/catalog_controller.ex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (catalog routes under `:api_auth`)
 
 **Interfaces:**
-- Produces: `StellarWeb.Api.StudentScope.org_ids/1`; `GET /api/catalog/courses`, `GET /api/catalog/courses/:id`.
-- Consumes: `StellarLrn.Learning.{Course, Class}`, `StellarLrn.Learning.{seats_left/1, materials_for_class/1}`, `StellarDoc.Documents.Document`, `StellarLrn.Learning.Enrollment`.
+- Produces: `JosjobWeb.Api.StudentScope.org_ids/1`; `GET /api/catalog/courses`, `GET /api/catalog/courses/:id`.
+- Consumes: `JosjobLrn.Learning.{Course, Class}`, `JosjobLrn.Learning.{seats_left/1, materials_for_class/1}`, `JosjobDoc.Documents.Document`, `JosjobLrn.Learning.Enrollment`.
 
 - [ ] **Step 1: Shared org-scope helper**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/api/student_scope.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/api/student_scope.ex`:
 
 ```elixir
-defmodule StellarWeb.Api.StudentScope do
+defmodule JosjobWeb.Api.StudentScope do
   @moduledoc "Org ids tempat user jadi member aktif (scoping API student)."
   require Ash.Query
-  alias Stellar.Orgs.Membership
+  alias Josjob.Orgs.Membership
 
   def org_ids(user) do
     Membership
@@ -110,22 +110,22 @@ end
 
 - [ ] **Step 2: Catalog controller**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/api/catalog_controller.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/api/catalog_controller.ex`:
 
 ```elixir
-defmodule StellarWeb.Api.CatalogController do
+defmodule JosjobWeb.Api.CatalogController do
   @moduledoc """
   Katalog student (Bearer). Course aktif yang dibagikan ke org tempat user jadi
   member. Detail menyertakan kelas (di org user) + materi.
   """
-  use StellarWeb, :controller
+  use JosjobWeb, :controller
 
   require Ash.Query
 
-  alias StellarLrn.Learning
-  alias StellarLrn.Learning.{Course, Class, Enrollment}
-  alias StellarDoc.Documents.Document
-  alias StellarWeb.Api.StudentScope
+  alias JosjobLrn.Learning
+  alias JosjobLrn.Learning.{Course, Class, Enrollment}
+  alias JosjobDoc.Documents.Document
+  alias JosjobWeb.Api.StudentScope
 
   # GET /api/catalog/courses
   def index(conn, _params) do
@@ -232,7 +232,7 @@ end
 
 - [ ] **Step 3: Routes**
 
-In `router.ex`, inside `scope "/api", StellarWeb.Api do ... end` (after the `payments` scope, before the scope closes), add:
+In `router.ex`, inside `scope "/api", JosjobWeb.Api do ... end` (after the `payments` scope, before the scope closes), add:
 
 ```elixir
     # Katalog student (Bearer).
@@ -252,7 +252,7 @@ Expected: clean.
 - [ ] **Step 5: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_web
+git add apps/josjob_web
 git commit -m "feat(api): student catalog endpoints"
 ```
 
@@ -261,29 +261,29 @@ git commit -m "feat(api): student catalog endpoints"
 ### Task 3: Enrollment API (`EnrollmentController`)
 
 **Files:**
-- Create: `apps/stellar_web/lib/stellar_web/controllers/api/enrollment_controller.ex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (enroll/unenroll/my routes)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/api/enrollment_controller.ex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (enroll/unenroll/my routes)
 
 **Interfaces:**
 - Produces: `POST /api/classes/:id/enroll`, `DELETE /api/classes/:id/enroll`, `GET /api/me/enrollments`.
 
 - [ ] **Step 1: Controller**
 
-Create `apps/stellar_web/lib/stellar_web/controllers/api/enrollment_controller.ex`:
+Create `apps/josjob_web/lib/josjob_web/controllers/api/enrollment_controller.ex`:
 
 ```elixir
-defmodule StellarWeb.Api.EnrollmentController do
+defmodule JosjobWeb.Api.EnrollmentController do
   @moduledoc """
   Enrollment student (Bearer). Enroll/unenroll ke kelas di org tempat user member.
   Kapasitas & dobel diperiksa eksplisit (409) + backstop domain.
   """
-  use StellarWeb, :controller
+  use JosjobWeb, :controller
 
   require Ash.Query
 
-  alias StellarLrn.Learning
-  alias StellarLrn.Learning.{Class, Enrollment}
-  alias StellarWeb.Api.StudentScope
+  alias JosjobLrn.Learning
+  alias JosjobLrn.Learning.{Class, Enrollment}
+  alias JosjobWeb.Api.StudentScope
 
   # POST /api/classes/:id/enroll
   def create(conn, %{"id" => class_id}) do
@@ -437,7 +437,7 @@ Ensure `create/2` reads exactly:
 
 - [ ] **Step 3: Routes**
 
-In `router.ex`, inside `scope "/api", StellarWeb.Api`, after the catalog scope, add:
+In `router.ex`, inside `scope "/api", JosjobWeb.Api`, after the catalog scope, add:
 
 ```elixir
     # Enrollment student (Bearer).
@@ -458,7 +458,7 @@ Expected: clean.
 - [ ] **Step 5: Commit (USER runs git — do not execute)**
 
 ```bash
-git add apps/stellar_web
+git add apps/josjob_web
 git commit -m "feat(api): student enroll/unenroll/my-enrollments"
 ```
 
@@ -467,23 +467,23 @@ git commit -m "feat(api): student enroll/unenroll/my-enrollments"
 ### Task 4: Temporary request-tests + full verification
 
 **Files:**
-- Create (temp): `apps/stellar_web/test/stellar_web/controllers/api/student_api_test.exs`
+- Create (temp): `apps/josjob_web/test/josjob_web/controllers/api/student_api_test.exs`
 
 - [ ] **Step 1: Write the request-test**
 
-Create `apps/stellar_web/test/stellar_web/controllers/api/student_api_test.exs`:
+Create `apps/josjob_web/test/josjob_web/controllers/api/student_api_test.exs`:
 
 ```elixir
-defmodule StellarWeb.Api.StudentApiTest do
-  use StellarWeb.ConnCase, async: false
+defmodule JosjobWeb.Api.StudentApiTest do
+  use JosjobWeb.ConnCase, async: false
 
   require Ash.Query
 
-  alias StellarLrn.Learning.{Section, Course, CourseOrganization, Class}
+  alias JosjobLrn.Learning.{Section, Course, CourseOrganization, Class}
 
   defp user!(attrs \\ %{}) do
     {:ok, u} =
-      Stellar.Accounts.User
+      Josjob.Accounts.User
       |> Ash.Changeset.for_create(
         :create,
         Map.merge(%{email: "s#{System.unique_integer([:positive])}@ex.com", full_name: "S"}, attrs)
@@ -495,7 +495,7 @@ defmodule StellarWeb.Api.StudentApiTest do
 
   defp org!(owner) do
     {:ok, o} =
-      Stellar.Orgs.Organization
+      Josjob.Orgs.Organization
       |> Ash.Changeset.for_create(:create, %{name: "Org #{System.unique_integer([:positive])}", user_id: owner.id})
       |> Ash.create(authorize?: false)
 
@@ -504,7 +504,7 @@ defmodule StellarWeb.Api.StudentApiTest do
 
   defp member!(user, org) do
     {:ok, m} =
-      Stellar.Orgs.Membership
+      Josjob.Orgs.Membership
       |> Ash.Changeset.for_create(:create, %{user_id: user.id, organization_id: org.id, status: :active})
       |> Ash.create(authorize?: false)
 
@@ -628,7 +628,7 @@ end
 
 - [ ] **Step 2: Run the request-tests**
 
-Run: `cd apps/stellar_web && mix test test/stellar_web/controllers/api/student_api_test.exs && cd ../..`
+Run: `cd apps/josjob_web && mix test test/josjob_web/controllers/api/student_api_test.exs && cd ../..`
 Expected: all pass. If token minting differs (`token_for_user` returning `:error`), fall back to issuing a token via the password/`sign_in` flow or `Ash.load(user, :token)` — the point is a valid Bearer accepted by `ApiAuth`.
 
 - [ ] **Step 3: Full suite + format**
@@ -638,7 +638,7 @@ Expected: all pass, format clean.
 
 - [ ] **Step 4: Remove the temp test (project norm)**
 
-Run: `rm -f apps/stellar_web/test/stellar_web/controllers/api/student_api_test.exs`
+Run: `rm -f apps/josjob_web/test/josjob_web/controllers/api/student_api_test.exs`
 
 - [ ] **Step 5: Re-verify**
 

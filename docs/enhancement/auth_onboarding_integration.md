@@ -1,6 +1,6 @@
 # Auth & Onboarding — Frontend/Backend Integration
 
-This document describes how the unified Flutter web app (`apps/stellar_fe`) was
+This document describes how the unified Flutter web app (`apps/josjob_fe`) was
 wired to the Phoenix/Ash backend for **email/password + Google authentication**
 and **onboarding**, plus the backend additions that support it. It reflects what
 is **implemented** on branch `feat/fe-auth-backend-integration` (not a forward
@@ -25,9 +25,9 @@ in the gitignored `envs/.env` and are read at runtime.
 | FE (`--dart-define`) | `API_BASE_URL` | Backend base URL | `http://localhost:4000` |
 | FE (`--dart-define`) | `GOOGLE_CLIENT_ID` | **Web** OAuth client ID; enables the Google button | *(empty → button hidden)* |
 | Backend (`envs/.env`) | `GOOGLE_CLIENT_ID` | `aud` validated on the id_token (must match the FE value) | — |
-| Backend (config) | `:stellar_web, :cors_origins` | Allowed CORS origins for `/api` | `"*"` (dev) |
+| Backend (config) | `:josjob_web, :cors_origins` | Allowed CORS origins for `/api` | `"*"` (dev) |
 
-`apps/stellar_fe/lib/services/api_config.dart` reads these via
+`apps/josjob_fe/lib/services/api_config.dart` reads these via
 `String.fromEnvironment`.
 
 > [!IMPORTANT]
@@ -39,8 +39,8 @@ in the gitignored `envs/.env` and are read at runtime.
 
 ## 2. Backend additions
 
-All changes are additive to `apps/stellar/lib/stellar/accounts/user.ex`,
-`google_auth.ex`, and `apps/stellar_web/…/api/auth_controller.ex` + `router.ex`.
+All changes are additive to `apps/josjob/lib/josjob/accounts/user.ex`,
+`google_auth.ex`, and `apps/josjob_web/…/api/auth_controller.ex` + `router.ex`.
 
 ### 2.1 User attributes
 
@@ -101,20 +101,20 @@ is handled):
 
 ```elixir
 plug CORSPlug,
-  origin: Application.compile_env(:stellar_web, :cors_origins, "*"),
+  origin: Application.compile_env(:josjob_web, :cors_origins, "*"),
   credentials: false
 ```
 
 `credentials: false` because `/api` is Bearer-only (no cookies) and `"*"` with
 `allow-credentials` is an invalid CORS combination. **Lock origins down for
-production** via `config :stellar_web, :cors_origins`.
+production** via `config :josjob_web, :cors_origins`.
 
 ---
 
 ## 3. Frontend architecture
 
 A small cross-cutting services layer (plain public libraries under
-`apps/stellar_fe/lib/services/`, not `part` files):
+`apps/josjob_fe/lib/services/`, not `part` files):
 
 | File | Responsibility |
 | :--- | :--- |
@@ -221,7 +221,7 @@ mix ecto.create && mix ecto.migrate          # from the umbrella root
 mix phx.server                                # http://localhost:4000
 
 # 3. Frontend
-cd apps/stellar_fe
+cd apps/josjob_fe
 flutter run -d chrome --web-port=8080 \
   --dart-define=API_BASE_URL=http://localhost:4000 \
   --dart-define=GOOGLE_CLIENT_ID=<web-client-id>.apps.googleusercontent.com

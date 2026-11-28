@@ -3,23 +3,22 @@
 # =============================================================================
 # Backend (Elixir umbrella) — local dev / preview image.
 #
-# Runs the Phoenix JSON API (app :stellar_web, all umbrella apps) as an OTP
+# Runs the Phoenix JSON API (app :josjob_web, all umbrella apps) as an OTP
 # release. Built as a PROD release on purpose: config/runtime.exs binds the
 # endpoint on all interfaces in prod, whereas dev mode binds 127.0.0.1 (which is
 # unreachable from outside the container) and spawns asset watchers. The release
 # also ships the migrate/seed helpers (rel/overlays/bin/*).
 #
 # WHY THIS IMAGE EXISTS: the `xberg` Rust NIF publishes no precompiled binary for
-# Windows-MSVC (only linux-gnu / windows-gnu / apple-darwin), and
-# config/config.exs sets `force_build: xberg: true`, so it is compiled from
-# source — hence the Rust toolchain below. Building in a Linux/glibc container
-# sidesteps the broken Windows-native toolchain entirely.
+# Windows-MSVC (only linux-gnu / windows-gnu / apple-darwin). config/config.exs
+# opts into source builds only when XBERG_BUILD=true. This image uses the Linux NIF,
+# avoiding a Rust toolchain download and the unsupported Windows-MSVC target.
 #
 # Base images MUST be glibc (debian), NOT musl/alpine: the NIF's precompiled
 # target list has x86_64-unknown-linux-gnu but no -musl, and the C NIFs link
 # glibc too. Versions pinned to .tool-versions (elixir 1.19.5 / erlang 27.3.4.3).
 #
-#   docker compose --env-file envs/.env up -d --build stellar_be   ->  :4000
+#   docker compose --env-file envs/.env up -d --build josjob_be   ->  :4000
 # =============================================================================
 
 ARG ELIXIR_IMAGE=hexpm/elixir:1.19.5-erlang-27.3.4.3-debian-bookworm-20260610-slim
@@ -35,17 +34,10 @@ FROM ${ELIXIR_IMAGE} AS build
 
 # git             : git-sourced deps (heroicons)
 # build-essential : C NIFs (bcrypt_elixir, picosat_elixir) via elixir_make/cc
-# curl + ca-certs : rustup installer over https
+# curl + ca-certs : HTTPS downloads
 RUN apt-get update -y \
  && apt-get install -y --no-install-recommends build-essential git curl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
-
-# Rust toolchain — xberg's rustler NIF is force-built from source (config.exs).
-ENV RUSTUP_HOME=/opt/rustup \
-    CARGO_HOME=/opt/cargo \
-    PATH=/opt/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-      | sh -s -- -y --profile minimal --default-toolchain stable
 
 WORKDIR /app
 ENV MIX_ENV=prod
@@ -67,15 +59,18 @@ ENV HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120
 RUN mix deps.get --only prod || mix deps.get --only prod
 RUN mix deps.compile
 
-# Compile the umbrella and assemble the release. Static web assets are NOT built
-# here — this image serves the JSON API; the admin/LiveDashboard HTML assets are
-# undigested (Phoenix serves them undigested + logs a warning, no crash).
+# Compile the umbrella and build the Phoenix assets so the browser login and
+# LiveView admin pages work alongside the JSON API in the preview release.
 COPY rel rel
 # Normalize CRLF -> LF on the release helper scripts in case the build context
 # came from a Windows checkout (a stray \r breaks their /bin/sh shebang).
 RUN sed -i 's/\r$//' rel/overlays/bin/* 2>/dev/null || true
+# Ensure executable bits survive checkouts/filesystems that drop them —
+# otherwise bin/migrate fails with "Permission denied" at container start.
+RUN chmod +x rel/overlays/bin/*
 RUN mix compile
-RUN mix release stellar
+RUN cd apps/josjob_web && mix assets.deploy
+RUN mix release josjob
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM ${RUNNER_IMAGE} AS runtime
@@ -92,7 +87,9 @@ RUN apt-get update -y \
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 MIX_ENV=prod
 WORKDIR /app
 
-COPY --from=build /app/_build/prod/rel/stellar ./
+COPY --from=build /app/_build/prod/rel/josjob ./
+# Safety net: pastikan script release (bin/migrate, bin/seed, bin/server) executable.
+RUN chmod +x bin/*
 
 # config/runtime.exs (Dotenvy) reads $RELEASE_ROOT/.env and .prod.overrides.env.
 # Create empty files so a missing file can never trip the loader — real values

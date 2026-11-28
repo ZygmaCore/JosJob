@@ -1,8 +1,12 @@
 # Artefak build & deps -> dibuat ulang di dalam image
 _build/
 deps/
+**/_build/
+**/deps/
 .elixir_ls/
 *.plt
+tmp/
+output/
 
 # VCS & tooling
 .git/

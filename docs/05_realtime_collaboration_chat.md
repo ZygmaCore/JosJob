@@ -1,5 +1,11 @@
 # Real-time Collaboration & Discussion Chat
 
+Historical design only. The current application/coaching implementation is
+documented in [applications and shared chat](api/applications-and-chat.md).
+It persists each message before delivery and uses Flutter's existing Session
+and shared chat widget; the buffered course-room and Riverpod design below is
+not the implemented system.
+
 This document details the real-time chat architecture, Phoenix Channel setup, OTP supervision trees for server-side state, message persistence buffers, and Riverpod frontend bindings.
 
 ---
@@ -39,7 +45,7 @@ graph TD
 # lib/backend/chat/chat_room_server.ex
 defmodule Backend.Chat.ChatRoomServer do
   use GenServer, restart: :transient
-  alias Stellar.Chat.Message
+  alias Josjob.Chat.Message
 
   # Client API
   def start_link(room_id) do
@@ -100,7 +106,7 @@ end
 ### Connection Validation
 Upon channel subscription:
 *   The system reads the socket's actor/user representation.
-*   It queries the `Stellar.Courses.Enrollment` resource to confirm if the user has an active enrollment in the parent course. If unauthorized, returns `{:error, %{reason: "unauthorized"}}`.
+*   It queries the `Josjob.Courses.Enrollment` resource to confirm if the user has an active enrollment in the parent course. If unauthorized, returns `{:error, %{reason: "unauthorized"}}`.
 
 ### Communication Event Schemas
 

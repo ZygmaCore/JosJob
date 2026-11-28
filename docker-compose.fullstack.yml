@@ -2,20 +2,35 @@
 #
 #   docker compose --env-file envs/.env up -d --build
 #     paradedb  (Postgres/ParadeDB)     -> localhost:5438
-#     stellar_be (Elixir/Phoenix API)   -> http://localhost:4000
-#     stellar_fe (Flutter web, unified) -> http://localhost:8081
+#     josjob_be (Elixir/Phoenix API)   -> http://localhost:4000
+#     josjob_fe (Flutter web, unified) -> http://localhost:8081
 #
-# The backend runs in a Linux/glibc container on purpose: the xberg Rust NIF has
-# no Windows-MSVC precompiled binary (and is force-built from source), so it
-# won't `mix compile` on a native Windows box — the container sidesteps that.
+# The backend runs in a Linux/glibc container on purpose: the xberg Rust NIF ships
+# a prebuilt binary for linux-gnu (it has no Windows-MSVC build), so it won't
+# `mix compile` on a native Windows box — the container sidesteps that.
 # See the root Dockerfile header for details.
 #
 # The FE bakes API_BASE_URL at build time; to talk to THIS local backend it must
 # be http://localhost:4000 (the compose default). If your root .env points it at
 # a remote backend, override it and rebuild: `API_BASE_URL=http://localhost:4000
-# docker compose up -d --build stellar_fe`.
+# docker compose up -d --build josjob_fe`.
 
 services:
+  josjob_ragpdf:
+    build:
+      context: ./apps/josjob_ragpdf
+    image: josjob-ragpdf:local
+    env_file:
+      - path: envs/.env
+        required: false
+    environment:
+      RAGPDF_PORT: "4010"
+      RAGPDF_API_TOKEN: ${RAGPDF_API_TOKEN:-local-cv-extraction-only}
+      RAGPDF_PROVIDER_ORDER: ${RAGPDF_PROVIDER_ORDER:-gemini,nine_router,keyword}
+    ports:
+      - "127.0.0.1:4010:4010"
+    restart: unless-stopped
+
   paradedb:
     image: paradedb/paradedb:latest
     container_name: paradedb
@@ -25,7 +40,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-stellar_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-josjob_dev}
     ports:
       - "${POSTGRES_PORT:-5438}:5432"
     volumes:
@@ -36,7 +51,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-stellar_dev}",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-josjob_dev}",
         ]
       interval: 5s
       timeout: 5s
@@ -48,15 +63,17 @@ services:
   # serves on :4000. Reads optional integration creds (Google/Stripe/Cloudflare)
   # from envs/.env; DB + secrets below override anything there.
   #
-  #   docker compose --env-file envs/.env up -d --build stellar_be
+  #   docker compose --env-file envs/.env up -d --build josjob_be
   #     API -> http://localhost:4000   (point the FE's API_BASE_URL here)
-  stellar_be:
+  josjob_be:
     build:
       context: .
       dockerfile: Dockerfile
-    image: stellar-be:local
+    image: josjob-be:local
     depends_on:
       paradedb:
+        condition: service_healthy
+      josjob_ragpdf:
         condition: service_healthy
     env_file:
       - path: envs/.env
@@ -66,13 +83,15 @@ services:
       PORT: "4000"
       PHX_HOST: localhost
       PHX_SERVER: "true"
+      RAGPDF_BASE_URL: ${RAGPDF_BASE_URL:-http://josjob_ragpdf:4010}
+      RAGPDF_API_TOKEN: ${RAGPDF_API_TOKEN:-local-cv-extraction-only}
       # DB — reach paradedb over the compose network on 5432 (the 5438 mapping is
       # host-only). Creds mirror the paradedb service defaults above.
       POSTGRES_HOST: paradedb
       POSTGRES_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-stellar_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-josjob_dev}
       # Secrets — LOCAL DEV ONLY (prod injects real ones via envs/.env or CI).
       # runtime.exs raises without these in :prod.
       SECRET_KEY_BASE: "${SECRET_KEY_BASE:-Y0gF2tQz9eje//pqz7zcdkgV1vfWQnoemQowVep17A1GPIZeAIRMteuO1TxmPd0O}"
@@ -84,9 +103,9 @@ services:
       - "4000:4000"
     restart: unless-stopped
 
-  stellar_fe:
+  josjob_fe:
     build:
-      context: ./apps/stellar_fe
+      context: ./apps/josjob_fe
       # Baked into the web bundle at BUILD time (Dart String.fromEnvironment).
       # Substituted from the root .env (auto-loaded) or envs/.env via:
       #   docker compose --env-file envs/.env up --build
@@ -95,7 +114,7 @@ services:
       args:
         API_BASE_URL: ${API_BASE_URL:-http://localhost:4000}
         GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-    image: stellar-fe:local
+    image: josjob-fe:local
     ports:
       - "8081:8080" # host 8081 -> nginx 8080 in the container
     restart: unless-stopped

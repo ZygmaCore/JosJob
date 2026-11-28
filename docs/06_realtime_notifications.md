@@ -36,14 +36,14 @@ Notifications must track delivery state, user device tokens, and unread badges u
 
 ```elixir
 # Notification Resource
-defmodule Stellar.Notifications.Notification do
+defmodule Josjob.Notifications.Notification do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "notifications"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -55,7 +55,7 @@ defmodule Stellar.Notifications.Notification do
   end
 
   relationships do
-    belongs_to :user, Stellar.Accounts.User
+    belongs_to :user, Josjob.Accounts.User
   end
 
   actions do
@@ -68,14 +68,14 @@ defmodule Stellar.Notifications.Notification do
 end
 
 # FCM Token Resource
-defmodule Stellar.Notifications.FCMToken do
+defmodule Josjob.Notifications.FCMToken do
   use Ash.Resource,
-    otp_app: :stellar,
+    otp_app: :josjob,
     data_layer: AshPostgres.DataLayer
 
   postgres do
     table "fcm_tokens"
-    repo Stellar.Repo
+    repo Josjob.Repo
   end
 
   attributes do
@@ -85,7 +85,7 @@ defmodule Stellar.Notifications.FCMToken do
   end
 
   relationships do
-    belongs_to :user, Stellar.Accounts.User
+    belongs_to :user, Josjob.Accounts.User
   end
 
   actions do
@@ -135,13 +135,13 @@ To alert users whose devices are offline or when the app is in the background, w
 ### Oban FCM Delivery Worker
 
 ```elixir
-defmodule Stellar.Workers.SendPushNotificationJob do
+defmodule Josjob.Workers.SendPushNotificationJob do
   use Oban.Worker, queue: :push_notifications, max_attempts: 3
 
   @impl true
   def perform(%Oban.Job{args: %{"notification_id" => notif_id}}) do
     # Fetch the notification and load the user and their associated fcm_tokens using Ash
-    case Stellar.Notifications.Notification
+    case Josjob.Notifications.Notification
          |> Ash.Query.filter(id == ^notif_id)
          |> Ash.Query.load(user: :fcm_tokens)
          |> Ash.read_one() do

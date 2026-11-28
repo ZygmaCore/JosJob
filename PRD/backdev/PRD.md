@@ -1,6 +1,6 @@
 # PRD Backend — JosJob (backdev)
 
-> **Scope dokumen ini:** backend saja (Elixir/Phoenix + Ash, `apps/stellar*`).
+> **Scope dokumen ini:** backend saja (Elixir/Phoenix + Ash, `apps/josjob*`).
 > Frontend ada di `../frontdev/PRD.md`. Keputusan level tim ada di `../PRD.md`.
 > Dokumen ini ditulis dalam Bahasa Indonesia dengan istilah teknis Inggris.
 >
@@ -23,7 +23,7 @@
 
 ## 1. Tujuan scope backend
 
-Membangun, di atas Stellar yang sudah ada, semua yang dibutuhkan sisi server
+Membangun, di atas JosJob yang sudah ada, semua yang dibutuhkan sisi server
 untuk loop **Match → Gap → Learn → Re-match**:
 
 1. Lowongan + lamaran yang sebelumnya hanya UI/stub menjadi backend nyata.
@@ -40,33 +40,33 @@ sudah ada.
 
 ### 2.1 Keputusan yang sudah final
 
-- **Modular monolith.** Elixir umbrella, 10 apps, satu rilis OTP `stellar`.
+- **Modular monolith.** Elixir umbrella, 10 apps, satu rilis OTP `josjob`.
   Bukan microservices yang di-deploy terpisah. Alasan: repo sudah seperti
   itu, satu tim kecil, dan deadline hackathon tidak memungkinkan pemecahan
   service.
-- **Arah dependensi:** `stellar_web → stellar → stellar_ms` (leaf, tanpa
-  dependensi umbrella). Jangan membuat `stellar_ms` bergantung ke `stellar`
+- **Arah dependensi:** `josjob_web → josjob → josjob_ms` (leaf, tanpa
+  dependensi umbrella). Jangan membuat `josjob_ms` bergantung ke `josjob`
   (cycle). Kode baru ditaruh di app yang memiliki concern-nya — jangan
-  menumpuk semua di `apps/stellar` + `apps/stellar_web`.
-- **Deploy:** Docker Compose di VPS (sudah dites build + deploy Stellar oleh
+  menumpuk semua di `apps/josjob` + `apps/josjob_web`.
+- **Deploy:** Docker Compose di VPS (sudah dites build + deploy JosJob oleh
   user, jalan tanpa user — cukup untuk demo). Domain sudah ada. Cloudflare
-  dipakai nanti (bareng streaming yang sudah ada di Stellar). Bila menang
+  dipakai nanti (bareng streaming yang sudah ada di JosJob). Bila menang
   dan go public, arsitektur deployment dimatangkan lagi.
 
 ### 2.2 App yang dipakai dan yang dibangun baru
 
 | App | Status | Peran di hackathon |
 | --- | --- | --- |
-| `stellar` | Sudah ada | Core: Accounts, Orgs, RBAC, Payments, Invitations, Repo, semua migrasi. |
-| `stellar_web` | Sudah ada | Satu-satunya Phoenix endpoint: router, controller, plug, LiveView, JSON API, channel. Semua HTTP/web di sini. |
-| `stellar_lrn` | Sudah ada | Learning: Section/Course/Class/Enrollment. Dipakai untuk hook kursus. |
-| `stellar_doc` | Sudah ada | Dokumen + access grant. Dipakai untuk penyimpanan CV sebagai dokumen. |
-| `stellar_ms` | Sudah ada | Leaf media: Cloudflare Stream (VOD) + Realtime (SFU/TURN) + S3. Panggil lewat facade `StellarMs`, jangan langsung ke provider. |
-| `stellar_rag` | Sudah ada | RAG ingestion ke Atomic Server (AtomicClient, Indexer, Extractor + xberg). Dipakai sebagai referensi pola ekstraksi; jangan duplikasi logika ekstraksi di tempat baru tanpa alasan. |
-| `stellar_ai` | Minimal, dikembangkan | Agent Jido: `TeacherAssistant` dan `HeadHunter` (TODO matching). **Di sinilah CV extraction + matching tinggal.** Tambah runtime deps di `mix.exs` app ini dan `in_umbrella: true` di app yang memanggilnya. |
-| `stellar_job` | **Stub kosong → DIBANGUN** | Domain jobs: Job, Application, Company listing. Ini pekerjaan utama hackathon di backend. |
-| `stellar_quiz` | Stub — jangan disentuh | Di luar scope (VISION). |
-| `stellar_rt` | Stub — jangan disentuh | Di luar scope (VISION). |
+| `josjob` | Sudah ada | Core: Accounts, Orgs, RBAC, Payments, Invitations, Repo, semua migrasi. |
+| `josjob_web` | Sudah ada | Satu-satunya Phoenix endpoint: router, controller, plug, LiveView, JSON API, channel. Semua HTTP/web di sini. |
+| `josjob_lrn` | Sudah ada | Learning: Section/Course/Class/Enrollment. Dipakai untuk hook kursus. |
+| `josjob_doc` | Sudah ada | Dokumen + access grant. Dipakai untuk penyimpanan CV sebagai dokumen. |
+| `josjob_ms` | Sudah ada | Leaf media: Cloudflare Stream (VOD) + Realtime (SFU/TURN) + S3. Panggil lewat facade `JosjobMs`, jangan langsung ke provider. |
+| `josjob_rag` | Sudah ada | RAG ingestion ke Atomic Server (AtomicClient, Indexer, Extractor + xberg). Dipakai sebagai referensi pola ekstraksi; jangan duplikasi logika ekstraksi di tempat baru tanpa alasan. |
+| `josjob_ai` | Minimal, dikembangkan | Agent Jido: `TeacherAssistant` dan `HeadHunter` (TODO matching). **Di sinilah CV extraction + matching tinggal.** Tambah runtime deps di `mix.exs` app ini dan `in_umbrella: true` di app yang memanggilnya. |
+| `josjob_job` | **Stub kosong → DIBANGUN** | Domain jobs: Job, Application, Company listing. Ini pekerjaan utama hackathon di backend. |
+| `josjob_quiz` | Stub — jangan disentuh | Di luar scope (VISION). |
+| `josjob_rt` | Stub — jangan disentuh | Di luar scope (VISION). |
 
 ### 2.3 Kontrak dengan frontdev (seam)
 
@@ -97,7 +97,7 @@ diam-diam:
   email kantor, email gratisan/publik ditolak.
 - RBAC **data-driven per-org** (bukan `ash_rbac` code-defined):
   `permissions / roles / role_permissions / memberships / membership_roles`,
-  engine `Stellar.Authz` (`permissions_for/ can?/ active_org_id`), plug
+  engine `Josjob.Authz` (`permissions_for/ can?/ active_org_id`), plug
   `AssignActiveOrg` + `RequirePermission` + `RequireMember`, org switcher
   (`POST /switch-org`). Role seed: employer, coordinator, teacher, worker,
   graduate (+ `default`, + superuser bypass lintas tenant).
@@ -253,7 +253,7 @@ CI. V2 diaktifkan hanya bila ada keputusan tim + ada token/waktu. Detail di
 ### 5.3 Hook ke kursus (selling point)
 
 `missing_skills[]` dari tiap item ranking harus dapat dipetakan ke
-course/class Stellar (`stellar_lrn`) — minimal mengembalikan
+course/class JosJob (`josjob_lrn`) — minimal mengembalikan
 `course_id`/`class_id` yang relevan bila ada. Ini yang membedakan JosJob
 dari job board biasa. Bila tidak ada kursus yang cocok untuk suatu skill,
 kembalikan `course: null` — jangan mengarang kursus.
@@ -270,25 +270,25 @@ kembalikan `course: null` — jangan mengarang kursus.
 
 ## 6. Model data (baru + reuse)
 
-### 6.1 Baru — `stellar_job`
+### 6.1 Baru — `josjob_job`
 
 | Resource | Field inti | Catatan |
 | --- | --- | --- |
-| `Job` | `title`, `company_id`/`organization_id`, `location` (teks, dari employer), `employment_type` (full-time/part-time/internship/contract/freelance), `work_mode` (remote/hybrid/onsite), `industry`, `description`, `requirements` (skill list), `salary_band` (opsional), `status` (draft/active/expired), `posted_at` | Org-scoped; hanya employer tenant sendiri yang boleh post/manage. Ikuti pola resource Ash yang sudah ada di `stellar_lrn`. |
+| `Job` | `title`, `company_id`/`organization_id`, `location` (teks, dari employer), `employment_type` (full-time/part-time/internship/contract/freelance), `work_mode` (remote/hybrid/onsite), `industry`, `description`, `requirements` (skill list), `salary_band` (opsional), `status` (draft/active/expired), `posted_at` | Org-scoped; hanya employer tenant sendiri yang boleh post/manage. Ikuti pola resource Ash yang sudah ada di `josjob_lrn`. |
 | `Application` | `job_id`, `user_id`, `cv_id`, `status`, `applied_at` | Status awal — lihat OPEN-QUESTIONS (Q: set status lamaran). Unik: satu user + satu job + satu CV aktif. |
-| `Cv` | `user_id`, `file_url` (S3-compatible, pola dokumen), `extracted` (JSON terstruktur), `embedding_ref`, `status` (§4.4), `provider`, `model`, `analyzed_at` | Simpan sebagai dokumen (`stellar_doc`) bila memungkinkan; jangan duplikasi logika upload dokumen. |
+| `Cv` | `user_id`, `file_url` (S3-compatible, pola dokumen), `extracted` (JSON terstruktur), `embedding_ref`, `status` (§4.4), `provider`, `model`, `analyzed_at` | Simpan sebagai dokumen (`josjob_doc`) bila memungkinkan; jangan duplikasi logika upload dokumen. |
 | `CvAnalysis` / hasil | `cv_id`, `job_id`, `match_score`, `missing_skills[]`, `explanation`, `provider`, `model` | Satu baris per pasangan CV–lowongan per versi analisis. |
 
 ### 6.2 Reuse — jangan buat baru
 
-- User/Org/RBAC/Payment/Invitation: `stellar` (sudah ada).
-- Course/Class/Enrollment: `stellar_lrn` (sudah ada) — untuk hook kursus.
-- Dokumen + grant: `stellar_doc` (sudah ada) — untuk file CV.
-- VOD/live: `stellar_ms` (sudah ada).
-- RAG ingestion: `stellar_rag` (sudah ada) — referensi pola ekstraksi
+- User/Org/RBAC/Payment/Invitation: `josjob` (sudah ada).
+- Course/Class/Enrollment: `josjob_lrn` (sudah ada) — untuk hook kursus.
+- Dokumen + grant: `josjob_doc` (sudah ada) — untuk file CV.
+- VOD/live: `josjob_ms` (sudah ada).
+- RAG ingestion: `josjob_rag` (sudah ada) — referensi pola ekstraksi
   (xberg); jangan duplikasi logika ekstraksi tanpa alasan.
 - Migrasi: buat dengan `mix ecto.gen.migration`, ikuti konvensi repo.
-  Resource Ash mengikuti pola yang sudah ada (lihat `stellar_lrn`).
+  Resource Ash mengikuti pola yang sudah ada (lihat `josjob_lrn`).
 
 ### 6.3 Data synthetic
 
@@ -381,6 +381,6 @@ membuat lowongan langsung aktif (lihat §3).
 - Ketersediaan model gratis di 9Router dapat berubah sewaktu-waktu (provider
   dapat menarik free tier) — mitigasi: fallback berlapis + provenance.
 - Round-robin → skor tidak deterministik (lihat §4.3).
-- Originality: pekerjaan baru selama lomba adalah `stellar_job` +
-  `stellar_ai` (CV/matching) + integrasi; Stellar yang sudah ada harus
+- Originality: pekerjaan baru selama lomba adalah `josjob_job` +
+  `josjob_ai` (CV/matching) + integrasi; JosJob yang sudah ada harus
   diatribusi, bukan diklaim sebagai karya baru.

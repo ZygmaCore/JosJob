@@ -1,21 +1,183 @@
-# Project map: JosJob on Stellar
+# Project map: JosJob
+
+Naming update, 2026-11-12: source paths and symbols below use the renamed
+`josjob_*` apps and `Josjob*` namespaces. The Graphify snapshot described here
+predates this rename and the jobs UI work; it does not match the current
+checkout. Query the current files until the repository is reindexed.
+See [the rebranding transition guide](REBRANDING.md).
 
 Analyzed on 2026-11-11 at commit `31d9fdc0cb9a244c86eaa835435ee6f26c72535e`.
-Selected Graphify repository: `ZygmaCore/JosJob` (the local origin URL still
-uses `ZygmaCore/job-seeker-ai`). The indexed commit matches this checkout.
+Selected Graphify repository: `ZygmaCore/JosJob`. The indexed commit matched
+the checkout at the time of the original analysis only.
 This is a source-based orientation map, not a runtime certification. Recheck
 the current files when code changes.
 
+Candidate UX update, 2026-11-27 (working tree based on `61fadba`): the
+individual dashboard now has one stable Home / Jobs / My applications / Learning /
+Coaching / Profile & CV navigation. Old `view=jobs` and `view=learn` links resolve
+inside that shell; organization management retains its existing navigation.
+Learning separates My learning from Course catalog, and coach workspace is an
+account tool at `/coaching/workspace`. Course details are full pages at
+`/courses/:id`, with validated `return_to` carried into `/learn/:id`. Completed
+courses open results; lessons are available through explicit Review lessons.
+Apply places optional learning after the cover letter and consent, with a sticky
+Submit action. Course certificates and Additional certificates are separate;
+certificate confirmation offers a focused CV name correction and preserves the
+existing server-side immutable name lock. See [the UX contract](candidate-ux.md).
+
+User journey update, 2026-11-24 (working tree based on
+`fa8be2cfafa2a37eeeff05bd34dda199dc4c282b`): reviewed CV facts now populate
+the candidate profile and future application snapshots. Candidates can correct
+skills before accepting extraction or through Edit CV details; job relevance and
+Apply suggestions use those corrections. See [the CV API](api/curriculum-vitae.md).
+The fullstack Compose includes the standalone PDF service and connects it to
+the backend over Docker DNS. Apply preserves account/job-specific drafts,
+offers profile editing, returns from course enrollment and opens existing
+applications. My Courses opens enrolled course materials; catalog material URLs
+require enrollment, instruction or management permission. These updates supersede
+older implementation-gap descriptions below; curriculum/quiz completion and legal
+publication remain separate work.
+
 Working-tree update on branch `feat/job-listings`: the PRD's listing slice is
-implemented in `StellarJob.Job` / `StellarJob.Listings`, the `/api/jobs` CRUD
+implemented in `JosjobJob.Job` / `JosjobJob.Listings`, the `/api/jobs` CRUD
 controller, and the Flutter jobs board/editor plus dashboard vacancies view.
 See [the jobs API and verification notes](api/jobs.md). The indexed commit and
 the historical implementation inventory below predate this branch; CV analysis,
 AI ranking, saved jobs and applications remain separate planned work.
 
+Jobs Overview now uses `GET /api/me/jobs-overview` for scoped active-listing
+counts, latest vacancies and private saved-profile facts. Fake match scores,
+application/interview counts, profile-strength scores and open-to-work status
+have been removed from the overview. See [the Jobs overview API](api/jobs-overview.md).
+
+Jobs → Curriculum Vitae uses `GET/PATCH /api/me/cv` for saved account/onboarding
+facts, certificates, professional headline/summary and an explicitly selected
+owned PDF. The former sample persona and profile-strength card are removed.
+`JosjobJob.CvProfile` belongs to the candidate and references an optional document;
+`josjob_job` now depends on `josjob_doc`. See [the CV API](api/curriculum-vitae.md).
+
+The Learn dashboard overview now uses authenticated summaries from
+`GET /api/me/learning-overview` instead of sample statistics and course cards.
+See [the overview API and permission rules](api/learning-overview.md).
+
+The Learn Certificates destination reads `GET /api/me/certificates` from the
+`JosjobLrn.Certificates` domain and existing onboarding certifications. It supports
+private self-reported records, editing/deletion and credential links; it does not
+automatically issue awards from course enrollments. See [the certificate API](api/certificates.md).
+
+Live Coaching now uses `GET /api/me/live-coaching` for independent approved
+coach profiles, availability slots and free one-on-one bookings. Admission uses
+`coaching:<booking_id>:one_on_one`; course/class enrollment is not a prerequisite.
+Legacy class rooms remain separate. See [the coaching API](api/live-coaching.md).
+
+Product decisions D18/D19 separate coaching from courses. Coaching's Profile,
+Slot and Booking resources live in `JosjobLrn.Coaching`, alongside the existing
+Learning domain. Ordered reading/video/quiz course curriculum remains planned.
+See [the redesign proposal](../PRD/LEARNING_AND_COACHING_REDESIGN.md).
+
+CV relevance update, 2026-11-23 (D23): analyze/extract each CV version once,
+reuse saved role categories and skills, and sort the regular job listing by
+category relevance, skill overlap and recency. Normal ranking makes no AI or
+embedding calls. Identical owned PDFs reuse saved extraction; saved facts remain
+usable after the PDF service expires. Related and less relevant jobs remain in
+the list. See [CV relevance](api/cv-job-rankings.md) for APIs, privacy, taxonomy
+coverage, deployment and in-memory sorting limits. Graphify predates this work.
+
+Application learning suggestions update, 2026-11-24: the Apply page now reads
+`GET /api/jobs/:job_id/application-suggestions`. `JosjobRag.ApplicationSuggestions`
+compares the specific job with the latest owned analyzed CV, falling back to saved
+CV-profile skills when no analyzed skills exist, and recommends accessible catalog
+courses/classes. Missing skills and learning suggestions are advisory; submission
+remains available. See [applications and chat](api/applications-and-chat.md).
+This supersedes the older planned-only descriptions of skill-gap/course hooks below.
+
 ## Read this first
 
-JosJob renovates the existing Stellar learning and placement platform. The new
+Course awards update, 2026-11-27: completing a course snapshots its skill tags
+into owned awards. Earned tags participate in CV/profile matching and survive CV
+edits. Course certificates require explicit confirmation of the current CV name,
+then lock that certificate's recipient permanently at API/database level. CV
+names remain editable for future certificates. Pending/issued course records
+appear in Certificates and at course completion. See [course awards](api/course-awards.md).
+
+Self-paced course update, 2026-11-26: `JosjobLrn.Curriculum` now owns direct
+course study enrollment, ordered reading/practice lessons, private progress and
+server-graded quizzes. The 20 skill-demo courses have 60 original lessons.
+`/learn/:course_id` is the learning player; My Courses and learner Overview resume
+saved progress. Legacy class enrollment/coaching remain separate. This supersedes
+the earlier proposal-only curriculum and outline-only demo descriptions. See
+[the curriculum API](api/course-curriculum.md).
+
+Job-skill demo catalog, 2026-11-26: an explicit repeatable seed adds 20 free
+public course outlines and flexible enrollment classes, tagged to all 62 skill
+requirements in the 20 active CV-demo jobs. Existing courses, candidate data and
+edits remain intact. These are marked demo outlines with unpublished materials.
+See [the seed and usage guide](job-skill-course-demo.md).
+
+Skill tags update, 2026-11-26 (based on `956f739`): courses now store explicit
+`skill_tags`, editable in the course CMS and exposed by catalog APIs. Apply
+suggestions match job requirements with course tags and approved coach expertise
+through the existing skill aliases, without AI calls. Missing-skill chips filter
+both recommendations; courses open enrollment and coaches open their independent
+booking sheet. Untagged legacy courses retain text matching. See
+[applications and chat](api/applications-and-chat.md).
+
+UI consistency audit, 2026-11-18: a browser/source review of the Flutter app
+records prioritized styling, navigation/state and accessibility findings, with
+screenshots and acceptance checks. Read [the audit](ui-audit/2026-11-18/README.md)
+for baseline evidence. The subsequent [fix report](ui-audit/2026-11-18/FIXES.md)
+maps the implementation and verification to all 20 findings. Shared Flutter
+theme/components live in `theme/app_theme.dart` and `shared/app_ui.dart`;
+`shared/app_router.dart` connects named feature routes to browser history.
+Dashboard view/tab and application scope/stage are URL parameters. Auth return
+paths and device-local course bookmarks use `services/ui_preferences.dart`.
+
+The landing page now follows the official daisyUI Codex skill's component
+guidance in Flutter: persistent navigation, hero job search, an interactive
+Jobs/Learning/Coaching preview,
+job/learning/coaching cards, a three-step journey and accessible FAQ cards.
+`/welcome` exposes the landing page to guests and signed-in users without
+changing the signed-in `/` dashboard destination.
+See [the landing refresh notes](ui-audit/2026-11-18/landing-daisyui.md) for the
+skill installation details, implementation boundary and browser verification.
+
+Public job access update, 2026-11-18 (D22): active listings and details are public
+across organizations. `/jobs` bypasses login/onboarding, and new accounts can
+apply without membership. Overview listing counts use the same public collection.
+Optional Bearer auth supplies employer capabilities; drafts/expired listings,
+management scope, writes, applications and chat retain their access checks.
+This supersedes earlier descriptions of organization-scoped vacancy discovery.
+See [public access verification](verification/public-jobs-2026-11-18.md).
+
+Manual vacancy/hiring data can be explicitly added with
+`apps/josjob/priv/repo/manual_job_seeds.exs`: a separate demo organization,
+candidate/employer accounts, 12 vacancies and five staged applications with chat.
+It is never seeded on startup. See [the local manual-testing guide](manual-job-testing.md).
+
+A separate explicit CV relevance seed creates six candidates with distinct PDF
+CVs and saved category profiles, an employer, and 22 marked jobs (20 active).
+It is additive, preserves existing demo edits and passwords, and uses no AI.
+See [the multi-account CV demo](cv-relevance-demo.md) for credentials, repeatable
+seed commands and per-account expected ordering. The local database has been
+seeded. Local frontend/backend images were refreshed on 2026-11-23 and the
+landing page and all six account-specific job orders were verified live.
+
+Vacancy/hiring verification, 2026-11-17: deletion and application submission now
+serialize on the same job row to prevent a concurrent foreign-key failure.
+Backend edge tests and an opt-in local Docker API/browser suite cover the hiring
+stage matrix, permissions, pagination, live chat and concurrent writes. See the
+[verification results and repeat instructions](verification/jobs-hiring-2026-11-17.md).
+
+Applications and chat update, 2026-11-17: the Applications destination now uses
+persisted application/profile snapshots and hiring history from `JosjobJob.Applications`.
+The confirmed sequence is Applied → Reviewing → Interview → Offer → Hired, with
+rejection/withdrawal exits. `JosjobRt.Chat` owns shared messaging for applications
+and independent coaching bookings. The Flutter `ChatPage` is shared by both.
+`josjob_rt` now depends on core, jobs and learning; web depends on `josjob_rt`.
+See [applications and chat](api/applications-and-chat.md). This working-tree update
+supersedes older statements below that applications and `josjob_rt` are empty.
+
+JosJob extends the existing learning and placement foundation. The new
 product loop is **Match → Gap → Learn → Re-match**: upload a CV, rank jobs,
 explain missing skills, recommend learning, then re-run matching. The learning
 foundation is implemented; the jobs/CV loop is still planned at this snapshot.
@@ -29,8 +191,8 @@ For product intent, start with [the master PRD](../PRD/PRD.md),
 For implemented behavior, use the source and tests rather than older prose.
 
 The backend is a **modular monolith**: ten Elixir umbrella apps, one OTP release
-named `stellar`, one Phoenix endpoint, and one shared `Stellar.Repo`. Flutter is
-the unified client in `apps/stellar_fe`; it is outside the Mix app list.
+named `josjob`, one Phoenix endpoint, and one shared `Josjob.Repo`. Flutter is
+the unified client in `apps/josjob_fe`; it is outside the Mix app list.
 There is no need to reconstruct the abandoned Go/TypeScript/Python microservice
 design. Source: [root Mix project](../mix.exs).
 
@@ -41,19 +203,23 @@ The arrows below are declared `in_umbrella` dependencies, read from each app's
 
 ```mermaid
 flowchart TD
-  web[stellar_web: HTTP, LiveView, Channels]
-  core[stellar: accounts, orgs, RBAC, payments, Repo]
-  learning[stellar_lrn: learning resources]
-  documents[stellar_doc: documents and grants]
-  rag[stellar_rag: text ingestion]
-  media[stellar_ms: media and storage providers]
+  web[josjob_web: HTTP, LiveView, Channels]
+  core[josjob: accounts, orgs, RBAC, payments, Repo]
+  learning[josjob_lrn: learning resources]
+  documents[josjob_doc: documents and grants]
+  jobs[josjob_job: listings and candidate CV]
+  rag[josjob_rag: text ingestion]
+  media[josjob_ms: media and storage providers]
   web --> core
   web --> learning
   web --> documents
+  web --> jobs
   web --> rag
   web --> media
   learning --> core
   learning --> documents
+  jobs --> core
+  jobs --> documents
   documents --> core
   rag --> core
   core --> media
@@ -61,26 +227,26 @@ flowchart TD
 
 | App | Current responsibility | Entry points |
 | --- | --- | --- |
-| `stellar` | Accounts/auth, organizations/memberships, reference data, RBAC, invitations, Stripe billing, shared database and seeding | [application](../apps/stellar/lib/stellar/application.ex), [authorization](../apps/stellar/lib/stellar/authz.ex), [release tasks](../apps/stellar/lib/stellar/release.ex) |
-| `stellar_web` | All HTTP routes/controllers, API gates, LiveView CMS, sockets, presence | [router](../apps/stellar_web/lib/stellar_web/router.ex), [endpoint](../apps/stellar_web/lib/stellar_web/endpoint.ex), [LiveView auth](../apps/stellar_web/lib/stellar_web/live/live_auth.ex) |
-| `stellar_lrn` | Implemented Section/Course/Class/Enrollment resources, catalog scoping, materials, live admission, sample learning data | [learning domain](../apps/stellar_lrn/lib/stellar_lrn/learning.ex), [resources](../apps/stellar_lrn/lib/stellar_lrn/learning), [seeds](../apps/stellar_lrn/lib/stellar_lrn/seeds.ex) |
-| `stellar_doc` | Implemented document metadata and access grants; ownership/org/share visibility | [document domain](../apps/stellar_doc/lib/stellar_doc/documents.ex), [resources](../apps/stellar_doc/lib/stellar_doc/documents) |
-| `stellar_ms` | Implemented Cloudflare Stream VOD, Cloudflare Realtime SFU/TURN, S3-compatible upload signing; no umbrella dependencies | [VOD facade](../apps/stellar_ms/lib/stellar_ms.ex), [live facade](../apps/stellar_ms/lib/stellar_ms/realtime.ex), [storage facade](../apps/stellar_ms/lib/stellar_ms/storage.ex) |
-| `stellar_rag` | Implemented document extraction and ingestion to Atomic Server; not a completed conversational assistant | [indexer](../apps/stellar_rag/lib/stellar_rag/indexer.ex), [extractor](../apps/stellar_rag/lib/stellar_rag/extractor.ex), [Atomic client](../apps/stellar_rag/lib/stellar_rag/atomic_client.ex) |
-| `stellar_ai` | Minimal Jido HeadHunter/TeacherAssistant and example actions; CV analysis/matching planned | [HeadHunter](../apps/stellar_ai/lib/agents/head_hunter.ex), [TeacherAssistant](../apps/stellar_ai/lib/agents/teacher_assistant.ex) |
-| `stellar_job` | Generated `hello/0` stub; jobs/applications backend planned | [module](../apps/stellar_job/lib/stellar_job.ex) |
-| `stellar_quiz` | Generated stub; quiz UI exists separately in Flutter | [module](../apps/stellar_quiz/lib/stellar_quiz.ex) |
-| `stellar_rt` | Generated stub; current sockets/live signaling already live in `stellar_web` | [module](../apps/stellar_rt/lib/stellar_rt.ex) |
-| `stellar_fe` | Flutter client with real services for auth/onboarding/catalog/documents/live; jobs and some dashboard/quiz content remain sample UI | [bootstrap and routes](../apps/stellar_fe/lib/main.dart), [services](../apps/stellar_fe/lib/services), [theme](../apps/stellar_fe/lib/theme/app_theme.dart) |
+| `josjob` | Accounts/auth, organizations/memberships, reference data, RBAC, invitations, Stripe billing, shared database and seeding | [application](../apps/josjob/lib/josjob/application.ex), [authorization](../apps/josjob/lib/josjob/authz.ex), [release tasks](../apps/josjob/lib/josjob/release.ex) |
+| `josjob_web` | All HTTP routes/controllers, API gates, LiveView CMS, sockets, presence | [router](../apps/josjob_web/lib/josjob_web/router.ex), [endpoint](../apps/josjob_web/lib/josjob_web/endpoint.ex), [LiveView auth](../apps/josjob_web/lib/josjob_web/live/live_auth.ex) |
+| `josjob_lrn` | Implemented Section/Course/Class/Enrollment resources, catalog scoping, materials, live admission, sample learning data | [learning domain](../apps/josjob_lrn/lib/josjob_lrn/learning.ex), [resources](../apps/josjob_lrn/lib/josjob_lrn/learning), [seeds](../apps/josjob_lrn/lib/josjob_lrn/seeds.ex) |
+| `josjob_doc` | Implemented document metadata and access grants; ownership/org/share visibility | [document domain](../apps/josjob_doc/lib/josjob_doc/documents.ex), [resources](../apps/josjob_doc/lib/josjob_doc/documents) |
+| `josjob_ms` | Implemented Cloudflare Stream VOD, Cloudflare Realtime SFU/TURN, S3-compatible upload signing; no umbrella dependencies | [VOD facade](../apps/josjob_ms/lib/josjob_ms.ex), [live facade](../apps/josjob_ms/lib/josjob_ms/realtime.ex), [storage facade](../apps/josjob_ms/lib/josjob_ms/storage.ex) |
+| `josjob_rag` | Implemented document extraction and ingestion to Atomic Server; not a completed conversational assistant | [indexer](../apps/josjob_rag/lib/josjob_rag/indexer.ex), [extractor](../apps/josjob_rag/lib/josjob_rag/extractor.ex), [Atomic client](../apps/josjob_rag/lib/josjob_rag/atomic_client.ex) |
+| `josjob_ai` | Minimal Jido HeadHunter/TeacherAssistant and example actions; CV analysis/matching planned | [HeadHunter](../apps/josjob_ai/lib/agents/head_hunter.ex), [TeacherAssistant](../apps/josjob_ai/lib/agents/teacher_assistant.ex) |
+| `josjob_job` | Generated `hello/0` stub; jobs/applications backend planned | [module](../apps/josjob_job/lib/josjob_job.ex) |
+| `josjob_quiz` | Generated stub; quiz UI exists separately in Flutter | [module](../apps/josjob_quiz/lib/josjob_quiz.ex) |
+| `josjob_rt` | Generated stub; current sockets/live signaling already live in `josjob_web` | [module](../apps/josjob_rt/lib/josjob_rt.ex) |
+| `josjob_fe` | Flutter client with real services for auth/onboarding/catalog/documents/live; jobs and some dashboard/quiz content remain sample UI | [bootstrap and routes](../apps/josjob_fe/lib/main.dart), [services](../apps/josjob_fe/lib/services), [theme](../apps/josjob_fe/lib/theme/app_theme.dart) |
 
-Keep media/storage integrations behind `StellarMs`, `StellarMs.Realtime`, and
-`StellarMs.Storage`. Keep `stellar_ms` a leaf app to avoid dependency cycles.
+Keep media/storage integrations behind `JosjobMs`, `JosjobMs.Realtime`, and
+`JosjobMs.Storage`. Keep `josjob_ms` a leaf app to avoid dependency cycles.
 Feature resources belong in their owning app; database migrations remain under
-[`apps/stellar/priv/repo/migrations`](../apps/stellar/priv/repo/migrations).
+[`apps/josjob/priv/repo/migrations`](../apps/josjob/priv/repo/migrations).
 All Ash resources use the shared Repo. Domain registration is in
 [`config/config.exs`](../config/config.exs).
 
-`Stellar.Release` dynamically invokes `StellarLrn.Seeds` via `apply/3`; do not
+`Josjob.Release` dynamically invokes `JosjobLrn.Seeds` via `apply/3`; do not
 replace that with a core → learning dependency, which would close a cycle.
 New feature apps need explicit runtime dependencies and caller `in_umbrella`
 dependencies before use; merely listing an app in the release does not wire APIs.
@@ -109,32 +275,32 @@ Sections/courses are shared to organizations through join resources. Courses
 also have industry joins, public/private visibility, price and currency.
 The instructor belongs to a **Class**, not Course. Materials for a class are
 course documents plus its instructor's documents with no `course_id`.
-See [Course](../apps/stellar_lrn/lib/stellar_lrn/learning/course.ex),
-[Class](../apps/stellar_lrn/lib/stellar_lrn/learning/class.ex), and
-[materials/live helpers](../apps/stellar_lrn/lib/stellar_lrn/learning.ex).
+See [Course](../apps/josjob_lrn/lib/josjob_lrn/learning/course.ex),
+[Class](../apps/josjob_lrn/lib/josjob_lrn/learning/class.ex), and
+[materials/live helpers](../apps/josjob_lrn/lib/josjob_lrn/learning.ex).
 
 Authorization is layered: browser/session or JWT authentication, route gates,
 LiveView mount/reconnect gates, and explicit query scoping/domain helpers.
 Many reads use `authorize?: false`; a resource's existence does not establish
 tenant isolation. Preserve the caller's checks when reusing those reads.
-`Stellar.Authz` derives permissions from active memberships and role joins;
+`Josjob.Authz` derives permissions from active memberships and role joins;
 superuser is the database `is_superuser` flag. API student scoping uses
-[`StudentScope.org_ids/1`](../apps/stellar_web/lib/stellar_web/controllers/api/student_scope.ex).
+[`StudentScope.org_ids/1`](../apps/josjob_web/lib/josjob_web/controllers/api/student_scope.ex).
 
 ## Feature traces: UI → transport → domain/provider
 
 | Feature | Connections to inspect together | Existing verification |
 | --- | --- | --- |
-| Sign-in/session | Flutter `services/session.dart` → `auth_api.dart` → `/api/auth/{register,login,google,refresh}` → `Api.AuthController` → `Stellar.Accounts`; browser OAuth uses `StellarWeb.AuthController` and a session | [API auth tests](../apps/stellar_web/test/stellar_web/controllers/api/auth_controller_test.exs), [registration tests](../apps/stellar/test/stellar/accounts/registration_test.exs), [login E2E](../e2e/tests/login.spec.ts) |
-| Offline onboarding | Flutter optimistic Session updates → `SyncEngine` → Drift/SQLite outbox → `/api/onboarding/progress` and `/api/onboarding/answers` → `Stellar.Accounts.Onboarding.Sync` | [backend sync tests](../apps/stellar/test/stellar/accounts/onboarding_sync_test.exs), [Flutter answers tests](../apps/stellar_fe/test/put_answers_test.dart) |
-| Catalog/enrollment | Flutter `courses_api.dart`/explore UI → `/api/catalog/courses`, `/api/classes/:id/enroll`, `/api/me/enrollments` → catalog/enrollment controllers + StudentScope → `StellarLrn.Learning` | [learning admission tests](../apps/stellar_lrn/test/stellar_lrn/learning/live_gate_test.exs), [admin enrollment tests](../apps/stellar_web/test/stellar_web/live/admin/enrollment_live_test.exs) |
-| Paid enrollment | EnrollmentController `create_intent`/`confirm` → `Stellar.Payments.Billing` → Stripe client; server supplies the price and confirms payment before enrollment | [Stripe webhook tests](../apps/stellar/test/stellar/payments/stripe/webhook_test.exs), [form encoder tests](../apps/stellar/test/stellar/payments/stripe/form_encoder_test.exs) |
-| Document upload/sharing | Flutter `documents_api.dart` → `/api/documents` and grants endpoints → DocumentController → `StellarMs.Storage` signing + `StellarDoc.Documents` visibility/grant helpers | [upload tests](../apps/stellar_web/test/stellar_web/controllers/api/document_upload_test.exs), [Flutter API tests](../apps/stellar_fe/test/documents_api_test.dart), [document LiveView tests](../apps/stellar_web/test/stellar_web/live/my_document_live_test.exs) |
-| Current VOD upload | Flutter `vod_document_api.dart` → `/api/vod/documents/upload-url`, `/api/vod/documents`, status → VodDocumentController → `StellarMs`/Cloudflare Stream + Document metadata | [Flutter VOD document tests](../apps/stellar_fe/test/vod_document_api_test.dart), [media tests](../apps/stellar_ms/test/stellar_ms) |
-| Live class | Flutter `live/service/signaling_client.dart` + `live_session_controller.dart` → JWT `/socket` → `live_room:class:<class_id>[:mode]` → LiveRoomChannel → `Learning.live_role/2` + Presence + `StellarMs.Realtime` | [channel tests](../apps/stellar_web/test/stellar_web/channels/live_room_channel_test.exs), [learning gate tests](../apps/stellar_lrn/test/stellar_lrn/learning/live_gate_test.exs), [Flutter live model tests](../apps/stellar_fe/test/live/live_models_test.dart) |
-| Teacher invitations | Flutter admin/invite screens → `/api/admin/teacher-invitations` and public token-gated `/api/invitations/:token` → invitation controllers → `Stellar.Invitations.Service`, account/RBAC provisioning, mailer | [service tests](../apps/stellar/test/stellar/invitations/service_test.exs), [API tests](../apps/stellar_web/test/stellar_web/controllers/api/invitation_controller_test.exs) |
-| RAG ingestion | `/rag` → RagLive → `Indexer.ingest/4` → Xberg text extraction → AtomicClient database/atom requests; namespace uses organization + course | [RAG tests](../apps/stellar_rag/test) |
-| Admin management | Router permission pipelines + authenticated live sessions → `live/admin/*` → core, learning, document domains; organization/permission assigns via LiveAuth | [LiveView tests](../apps/stellar_web/test/stellar_web/live/admin), [navigation tests](../apps/stellar_web/test/stellar_web/admin_nav_test.exs) |
+| Sign-in/session | Flutter `services/session.dart` → `auth_api.dart` → `/api/auth/{register,login,google,refresh}` → `Api.AuthController` → `Josjob.Accounts`; browser OAuth uses `JosjobWeb.AuthController` and a session | [API auth tests](../apps/josjob_web/test/josjob_web/controllers/api/auth_controller_test.exs), [registration tests](../apps/josjob/test/josjob/accounts/registration_test.exs), [login E2E](../e2e/tests/login.spec.ts) |
+| Offline onboarding | Flutter optimistic Session updates → `SyncEngine` → Drift/SQLite outbox → `/api/onboarding/progress` and `/api/onboarding/answers` → `Josjob.Accounts.Onboarding.Sync` | [backend sync tests](../apps/josjob/test/josjob/accounts/onboarding_sync_test.exs), [Flutter answers tests](../apps/josjob_fe/test/put_answers_test.dart) |
+| Catalog/enrollment | Flutter `courses_api.dart`/explore UI → `/api/catalog/courses`, `/api/classes/:id/enroll`, `/api/me/enrollments` → catalog/enrollment controllers + StudentScope → `JosjobLrn.Learning` | [learning admission tests](../apps/josjob_lrn/test/josjob_lrn/learning/live_gate_test.exs), [admin enrollment tests](../apps/josjob_web/test/josjob_web/live/admin/enrollment_live_test.exs) |
+| Paid enrollment | EnrollmentController `create_intent`/`confirm` → `Josjob.Payments.Billing` → Stripe client; server supplies the price and confirms payment before enrollment | [Stripe webhook tests](../apps/josjob/test/josjob/payments/stripe/webhook_test.exs), [form encoder tests](../apps/josjob/test/josjob/payments/stripe/form_encoder_test.exs) |
+| Document upload/sharing | Flutter `documents_api.dart` → `/api/documents` and grants endpoints → DocumentController → `JosjobMs.Storage` signing + `JosjobDoc.Documents` visibility/grant helpers | [upload tests](../apps/josjob_web/test/josjob_web/controllers/api/document_upload_test.exs), [Flutter API tests](../apps/josjob_fe/test/documents_api_test.dart), [document LiveView tests](../apps/josjob_web/test/josjob_web/live/my_document_live_test.exs) |
+| Current VOD upload | Flutter `vod_document_api.dart` → `/api/vod/documents/upload-url`, `/api/vod/documents`, status → VodDocumentController → `JosjobMs`/Cloudflare Stream + Document metadata | [Flutter VOD document tests](../apps/josjob_fe/test/vod_document_api_test.dart), [media tests](../apps/josjob_ms/test/josjob_ms) |
+| Live class | Flutter `live/service/signaling_client.dart` + `live_session_controller.dart` → JWT `/socket` → `live_room:class:<class_id>[:mode]` → LiveRoomChannel → `Learning.live_role/2` + Presence + `JosjobMs.Realtime` | [channel tests](../apps/josjob_web/test/josjob_web/channels/live_room_channel_test.exs), [learning gate tests](../apps/josjob_lrn/test/josjob_lrn/learning/live_gate_test.exs), [Flutter live model tests](../apps/josjob_fe/test/live/live_models_test.dart) |
+| Teacher invitations | Flutter admin/invite screens → `/api/admin/teacher-invitations` and public token-gated `/api/invitations/:token` → invitation controllers → `Josjob.Invitations.Service`, account/RBAC provisioning, mailer | [service tests](../apps/josjob/test/josjob/invitations/service_test.exs), [API tests](../apps/josjob_web/test/josjob_web/controllers/api/invitation_controller_test.exs) |
+| RAG ingestion | `/rag` → RagLive → `Indexer.ingest/4` → Xberg text extraction → AtomicClient database/atom requests; namespace uses organization + course | [RAG tests](../apps/josjob_rag/test) |
+| Admin management | Router permission pipelines + authenticated live sessions → `live/admin/*` → core, learning, document domains; organization/permission assigns via LiveAuth | [LiveView tests](../apps/josjob_web/test/josjob_web/live/admin), [navigation tests](../apps/josjob_web/test/josjob_web/admin_nav_test.exs) |
 
 These tests are navigation pointers, not a claim of exhaustive coverage or a
 passing suite. The mapping was established by source inspection.
@@ -157,7 +323,7 @@ passing suite. The mapping was established by source inspection.
   Some newer feature/service files are standalone, so inspect neighboring code.
 - At the indexed baseline, the jobs board read hard-coded `jobs/data/jobs_data.dart`.
   On `feat/job-listings`, that data is preserved as
-  [historical test fixtures](../apps/stellar_fe/test/fixtures/legacy_job_samples.dart)
+  [historical test fixtures](../apps/josjob_fe/test/fixtures/legacy_job_samples.dart)
   and the production board uses the API. Fixture match percentages are invented,
   not AI results.
 
@@ -165,16 +331,16 @@ passing suite. The mapping was established by source inspection.
 
 ```mermaid
 flowchart LR
-  cv[CV upload + consent] -. planned .-> analysis[stellar_ai: extraction + embeddings]
-  jobs[stellar_job: jobs + applications] -. planned .-> ranking[Ranking + explanation + missing skills]
+  cv[CV upload + consent] -. planned .-> analysis[josjob_ai: extraction + embeddings]
+  jobs[josjob_job: jobs + applications] -. planned .-> ranking[Ranking + explanation + missing skills]
   analysis -. planned .-> ranking
-  ranking -. planned .-> learning[Existing stellar_lrn courses/classes]
+  ranking -. planned .-> learning[Existing josjob_lrn courses/classes]
   learning -. planned .-> rematch[Re-match after learning]
 ```
 
-The PRD assigns job/application resources to `stellar_job`, CV extraction and
-matching to `stellar_ai`, file reuse to `stellar_doc`, and HTTP endpoints to
-`stellar_web`. Proposed `/api/jobs` and `/api/cv` contracts are absent from the
+The PRD assigns job/application resources to `josjob_job`, CV extraction and
+matching to `josjob_ai`, file reuse to `josjob_doc`, and HTTP endpoints to
+`josjob_web`. Proposed `/api/jobs` and `/api/cv` contracts are absent from the
 current router. Gemini primary, localhost-only 9Router fallback, asynchronous
 analysis through Oban, reproducible ranking, missing-skill course links, and CV
 consent/deletion are requirements, not completed implementation.
@@ -189,7 +355,7 @@ their designated owners. Do not turn PRD recommendations into assumed facts.
 1. `CLAUDE.md` still describes Flutter as UI-only and learning/RAG as stubs;
    the actual services/resources above supersede those descriptions. It also
    places historical Courses resources in core; current learning resources use
-   the `StellarLrn.Learning` namespace in `stellar_lrn`.
+   the `JosjobLrn.Learning` namespace in `josjob_lrn`.
 2. README/older architecture docs mention `/admin`/AshAdmin and a sign-in path.
    The current router instead serves login at `/` and explicit admin LiveViews;
    it has no `/admin` route. Check routes before documenting a user journey.
@@ -200,8 +366,8 @@ their designated owners. Do not turn PRD recommendations into assumed facts.
 4. Document's module comment still says upload is unavailable; current upload
    controllers and storage facade implement presigned uploads. Document
    `course_id` is an unvalidated relationship UUID, not a declared foreign key.
-5. The dedicated `stellar_rt` app is empty, while authenticated notification
-   join/ping and live signaling are implemented in `stellar_web`. The notification
+5. The dedicated `josjob_rt` app is empty, while authenticated notification
+   join/ping and live signaling are implemented in `josjob_web`. The notification
    channel is a foundation, not a completed notification delivery system.
 6. Class-prefixed live rooms derive host/guest roles on the server. Free/demo
    rooms still accept client roles; the channel documents this limitation and
@@ -214,7 +380,7 @@ their designated owners. Do not turn PRD recommendations into assumed facts.
 
 ## Runtime and checks
 
-[`Stellar.Application`](../apps/stellar/lib/stellar/application.ex) supervises
+[`Josjob.Application`](../apps/josjob/lib/josjob/application.ex) supervises
 Repo, DNSCluster, PubSub, AshAuthentication, and Oban. Web supervises Presence,
 Telemetry, and Endpoint. Oban has default/media/transcription/mailer queues;
 test configuration uses manual execution and the Ecto SQL sandbox.
@@ -229,7 +395,7 @@ provides ParadeDB (host port 5438), Phoenix (4000), and Flutter/nginx (8081).
 The default compose file only defines the database and frontend. Runtime
 configuration lives in [`config/runtime.exs`](../config/runtime.exs); frontend
 configuration is also baked into its build. Release migrations/seeds use
-`Stellar.Release` and scripts in [`rel/overlays/bin`](../rel/overlays/bin).
+`Josjob.Release` and scripts in [`rel/overlays/bin`](../rel/overlays/bin).
 README describes CI/CD, but this checkout has no `.github` workflow directory
 or `.gitlab-ci.yml`; do not assume the pipeline is present here.
 
@@ -261,7 +427,7 @@ errors were resolved. The user explicitly selected `ZygmaCore/JosJob`:
 | Graph size | 6,090 nodes, 11,211 edges, 409 communities |
 | Document coverage | Free plan: README.md only; this map and PRD files must be read locally |
 
-Successful file-neighbor queries connected `StellarLrn.Learning` to course,
+Successful file-neighbor queries connected `JosjobLrn.Learning` to course,
 class, enrollment, section and document resources, catalog/enrollment
 controllers, LiveRoomChannel, ClassLive and learning admission tests. Separate
 queries verified Authz's membership/role/permission dependencies and its web

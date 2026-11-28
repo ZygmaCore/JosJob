@@ -43,6 +43,10 @@ sebagai desain?
 
 ## Q4. Set status lamaran
 
+Diputuskan 2026-11-17 pada D20: Applied → Reviewing → Interview → Offer → Hired.
+Rekomendasi lama di bawah sudah digantikan. Lihat
+[kontrak aplikasi dan chat](../../docs/api/applications-and-chat.md).
+
 **Pertanyaan:** Status lamaran apa saja yang didukung?
 
 - Opsi A: Pending / Reviewed / Accepted / Rejected.
@@ -103,7 +107,7 @@ user?
 **Pertanyaan:** Embedding CV/lowongan disimpan di mana?
 
 - Opsi A: ParadeDB + pgvector (image ParadeDB sudah pgvector-capable).
-- Opsi B: Atomic Server (sudah dipakai `stellar_rag` untuk ingestion).
+- Opsi B: Atomic Server (sudah dipakai `josjob_rag` untuk ingestion).
 - Opsi C: kolom di Postgres biasa (vector sebagai array) untuk v1, pindah
   nanti bila perlu.
 

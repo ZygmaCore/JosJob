@@ -1,0 +1,1067 @@
+[
+  {
+    "section": "Software Engineering",
+    "title": "Elixir and Phoenix Backend Foundations",
+    "skill_tags": [
+      "Elixir",
+      "Phoenix",
+      "PostgreSQL",
+      "Redis",
+      "SQL",
+      "GraphQL"
+    ],
+    "description": "Practice building a Phoenix API, modeling relational data, writing SQL queries, caching with Redis and exposing a GraphQL endpoint.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Model a backend request",
+        "kind": "reading",
+        "body": "A Phoenix request passes through a router and a controller before a context performs the business operation. Keep database queries in the context so both HTTP and background work use the same rules. PostgreSQL stores durable records; Redis can cache results that can be reconstructed. A cache must not be the only copy of important data. GraphQL resolvers should call the same authorized context functions as REST controllers.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Elixir, Phoenix, PostgreSQL, Redis, SQL, GraphQL."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Build a task API with a title and completion flag. Create a PostgreSQL table, implement create/list/complete operations, and validate an empty title. Cache the task count, then invalidate it after a write. Write down which requests require authentication. Test that one user cannot modify another user's task.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Where should durable task records be stored?",
+            "options": [
+              "Only in the browser",
+              "In PostgreSQL",
+              "Only in a Redis cache"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Software Engineering",
+    "title": "Java and Spring Backend Development",
+    "skill_tags": [
+      "Java",
+      "Spring",
+      "SQL",
+      "PostgreSQL"
+    ],
+    "description": "Practice Java services, Spring application structure, database queries and PostgreSQL persistence through a small backend project.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Separate service responsibilities",
+        "kind": "reading",
+        "body": "A Spring controller handles HTTP input, a service coordinates a business operation, and a repository reads or writes persisted records. Constructor injection makes dependencies explicit. Validate request data before saving it. A transaction groups related database changes so that either all of them commit or none of them do. Parameterized SQL separates values from query syntax.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Java, Spring, SQL, PostgreSQL."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Create a Java inventory service with product and quantity fields. Add a Spring endpoint to adjust stock, reject negative totals, and store products in PostgreSQL. Wrap a stock adjustment and its audit record in one transaction. Test both a valid adjustment and a rejected request.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What is the purpose of a database transaction?",
+            "options": [
+              "Commit related changes together or roll them back",
+              "Make every query run without validation",
+              "Replace all service classes"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Software Engineering",
+    "title": "Containers and Cloud Operations",
+    "skill_tags": [
+      "Docker",
+      "Kubernetes",
+      "Linux",
+      "Terraform",
+      "Git"
+    ],
+    "description": "Practice version control, Linux operations, Docker images, Kubernetes deployments and infrastructure definitions using Terraform.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Build reproducible deployments",
+        "kind": "reading",
+        "body": "Git records reviewed source changes. A Docker image packages an application and its runtime dependencies; a container is a running instance of an image. Kubernetes schedules containers and observes health, while Terraform describes infrastructure resources. Keep credentials outside images and version control. Distinguish liveness, which detects a stuck process, from readiness, which controls whether an instance receives traffic.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Docker, Kubernetes, Linux, Terraform, Git."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Containerize a small service with a health endpoint. Run it locally and inspect its logs. Define a Kubernetes deployment and readiness probe. Sketch Terraform resources for its network and runtime. Change a configuration value without putting a secret into Git, then document a rollback procedure.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Which information should stay outside a committed Docker image?",
+            "options": [
+              "Application source",
+              "Dependency versions",
+              "Production credentials"
+            ],
+            "correct_index": 2
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Software Engineering",
+    "title": "React and Web Interface Foundations",
+    "skill_tags": [
+      "React",
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ],
+    "description": "Practice semantic HTML, responsive CSS, typed JavaScript and React components while building a small web interface.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Compose an interactive web page",
+        "kind": "reading",
+        "body": "HTML gives content its structure, CSS controls presentation, and JavaScript handles interaction. TypeScript checks the shapes of values before runtime. A React component derives its output from props and state. Update state through its setter rather than changing an existing object in place. Use labels for inputs and native buttons for actions so the interface works with a keyboard.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: React, JavaScript, TypeScript, HTML, CSS."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Build a searchable product list with React and TypeScript. Use semantic HTML and a responsive CSS layout. Represent loading, empty results and request failures separately. Label the search input and verify that every action works without a mouse.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What should a React component normally derive its rendered output from?",
+            "options": [
+              "Props and state",
+              "A hidden global counter only",
+              "Manual edits to rendered HTML"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Software Engineering",
+    "title": "Vue Application Development",
+    "skill_tags": [
+      "Vue",
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ],
+    "description": "Practice Vue components, reactive state, TypeScript integration and accessible page structure through a small application.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Understand reactive Vue components",
+        "kind": "reading",
+        "body": "A Vue single-file component groups its template, logic and style. Reactive values drive the rendered view. Use computed values for results derived from existing state, such as a filtered list, rather than keeping duplicate state that can become inconsistent. Props flow into a component; events communicate requested changes back to its parent. TypeScript helps document those contracts.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Vue, JavaScript, TypeScript, HTML, CSS."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Build a Vue task list with a filter and completion toggle. Type the task object, pass a task into a child component and emit a toggle event. Derive the visible list with a computed value. Add an input label and test empty and completed lists.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "How should a child Vue component normally request a parent-owned state change?",
+            "options": [
+              "Mutate the parent DOM",
+              "Emit an event",
+              "Rewrite the parent source file"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Software Engineering",
+    "title": "Angular and Reactive Interfaces",
+    "skill_tags": [
+      "Angular",
+      "RxJS",
+      "TypeScript"
+    ],
+    "description": "Practice Angular components, typed forms and RxJS streams to coordinate user input and asynchronous application data.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Coordinate asynchronous input",
+        "kind": "reading",
+        "body": "An Angular component presents state, while a service shares data access logic. RxJS models streams of values over time. Debouncing avoids acting on every keystroke; switchMap replaces an older inner subscription when a new value arrives. Handle loading and errors explicitly, and clean up subscriptions with lifecycle-aware mechanisms. TypeScript types improve the boundary between the API and the view.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Angular, RxJS, TypeScript."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Create an Angular search form. Debounce its value stream, use switchMap for requests and show loading, no-result and failure states. Simulate a slow earlier request followed by a faster later request. Verify that obsolete results do not replace the current search.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Which operator is useful for replacing an older search subscription?",
+            "options": [
+              "switchMap",
+              "A fixed global variable",
+              "An HTML comment"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Software Engineering",
+    "title": "Frontend Testing and Accessibility",
+    "skill_tags": [
+      "Cypress",
+      "Testing Library",
+      "Accessibility Audits"
+    ],
+    "description": "Practice user-focused component tests with Testing Library, browser journeys with Cypress and keyboard and accessibility audits.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Test observable user behavior",
+        "kind": "reading",
+        "body": "Testing Library encourages tests that find controls by their accessible role or label and interact as a person would. Cypress can check a complete browser journey across pages. Accessibility audits include keyboard navigation, visible focus, meaningful labels and contrast. Automated audits find some problems; keyboard and screen-reader checks are still necessary. Prefer assertions about visible outcomes over private component state.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Cypress, Testing Library, Accessibility Audits."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Test a sign-in form: empty submission, invalid credentials, loading and success. Add a browser journey that reaches a protected page. Navigate the form using Tab and Enter, check the focus indicator and inspect input labels. Record a failure and the user-visible behavior that fixes it.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Which selector best describes a user-facing submit action?",
+            "options": [
+              "A private component variable",
+              "A generated CSS class",
+              "The button's accessible role and name"
+            ],
+            "correct_index": 2
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Product and Design",
+    "title": "Product Design and User Research",
+    "skill_tags": [
+      "UX Research",
+      "Figma",
+      "Prototyping",
+      "UI Design",
+      "Service Design"
+    ],
+    "description": "Practice interview planning, research synthesis, service mapping and Figma prototypes that connect user needs to interface decisions.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Turn research into design decisions",
+        "kind": "reading",
+        "body": "UX research starts with a question about users and a decision the team needs to make. Ask neutral questions, record observations separately from interpretations and look for patterns across participants. A service map includes touchpoints beyond a single screen. In Figma, use reusable components and prototype the important interactions before refining decoration. Test a specific task rather than asking whether a design looks good.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: UX Research, Figma, Prototyping, UI Design, Service Design."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Plan five neutral interview questions about finding a job. Summarize observations into three needs, map one application journey and prototype its key screens in Figma. Run a task-based usability check and record where the participant hesitates. Explain one revision using that evidence.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Which research question is least leading?",
+            "options": [
+              "You like this simple screen, right?",
+              "Tell me how you last applied for a job.",
+              "Would you agree our app is better?"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Product and Design",
+    "title": "Visual Identity and Motion Design",
+    "skill_tags": [
+      "Illustrator",
+      "Motion Design",
+      "Figma"
+    ],
+    "description": "Practice vector artwork, visual identity systems and motion storyboards, using Illustrator and Figma as the design tools.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Create a consistent visual system",
+        "kind": "reading",
+        "body": "A visual identity combines typography, color, spacing and reusable shapes. Illustrator is useful for scalable vector artwork; Figma helps assemble interface components. Motion should communicate a change in state or guide attention. Define a small set of consistent motion timings and provide a reduced-motion alternative. Avoid relying on color or movement alone to communicate important information.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Illustrator, Motion Design, Figma."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Design a small identity for a fictional learning app. Create a vector mark in Illustrator and a button component in Figma. Storyboard loading, success and error states. Explain what each animation communicates, and draw a reduced-motion version of the same interaction.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What is a useful reason to add motion to an interface?",
+            "options": [
+              "To communicate a state change",
+              "To hide an error message",
+              "To replace every text label"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Data and Analytics",
+    "title": "Practical Data Analysis",
+    "skill_tags": [
+      "SQL",
+      "Excel",
+      "Statistics",
+      "Python",
+      "Pandas",
+      "Analytics"
+    ],
+    "description": "Practice cleaning a small dataset, querying it with SQL, analyzing it with Excel and Pandas and explaining basic statistical findings.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Analyze data before drawing conclusions",
+        "kind": "reading",
+        "body": "Start a data analysis with a clear question, the unit represented by each row and a data-quality check. SQL can select, group and join records; Excel and Pandas support exploration and cleaning. Missing values, duplicates and inconsistent units can distort a result. Describe a distribution with appropriate summaries and distinguish an observed association from evidence of causation.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: SQL, Excel, Statistics, Python, Pandas, Analytics."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Create a small sales dataset with date, product, quantity and price columns. Add one duplicate and one missing price, then document how you handle them. Calculate revenue using SQL, Excel or Pandas. Compare groups and write a short conclusion that states both the finding and a limitation.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What should you check before comparing totals from two datasets?",
+            "options": [
+              "Only their file names",
+              "Whether their units and row definitions are compatible",
+              "Whether their colors match"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Data and Analytics",
+    "title": "Business Intelligence Dashboards",
+    "skill_tags": [
+      "Power BI",
+      "Tableau",
+      "Excel",
+      "SQL"
+    ],
+    "description": "Practice preparing reporting data, choosing useful metrics and designing Power BI and Tableau dashboards with clear business explanations.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Make a dashboard answer a decision",
+        "kind": "reading",
+        "body": "A dashboard should connect a metric to a business decision. Define the grain of the data and the exact calculation behind each measure. Power BI and Tableau can aggregate and filter data, but the visual cannot repair an incorrect join. Label units, choose a comparison period and avoid using a truncated axis to exaggerate a difference. Confirm totals against the source query.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Power BI, Tableau, Excel, SQL."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Build a monthly sales dashboard from a small SQL result or spreadsheet. Include revenue, quantity and a comparison period. Add one useful filter, state the definition of every measure and reconcile the displayed total with the original data. Write the decision a viewer can make from the dashboard.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "How can you check a dashboard total?",
+            "options": [
+              "Compare it with the source query or validated calculation",
+              "Hide the axis labels",
+              "Add more decorative charts"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Data and Analytics",
+    "title": "Data Pipelines and Transformation",
+    "skill_tags": [
+      "Airflow",
+      "Spark",
+      "dbt",
+      "Python",
+      "SQL"
+    ],
+    "description": "Practice scheduling data workflows with Airflow, transforming datasets with dbt and SQL and processing larger tables using Spark.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Design a reliable data pipeline",
+        "kind": "reading",
+        "body": "A data pipeline moves data through collection, transformation and publication. Airflow coordinates tasks and their dependencies; dbt defines SQL transformations and tests; Spark processes partitioned datasets. Design retries so that rerunning a task does not silently duplicate output. Check source freshness, expected schema and key uniqueness. Keep a record of failed runs and make recovery steps explicit.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Airflow, Spark, dbt, Python, SQL."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Sketch a daily orders pipeline. Add an extraction task, a dbt transformation and a validation step. Describe where Spark would help if the dataset grows. Simulate rerunning the same date twice and explain how your output avoids duplicates. Write down one alert and a safe recovery action.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What property makes a retried pipeline task safer?",
+            "options": [
+              "It appends the same records every time",
+              "It ignores all validation errors",
+              "It produces the intended result without duplicate side effects"
+            ],
+            "correct_index": 2
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Data and Analytics",
+    "title": "Machine Learning Foundations",
+    "skill_tags": [
+      "Machine Learning",
+      "TensorFlow",
+      "Python",
+      "Statistics"
+    ],
+    "description": "Practice data splitting, baseline models, evaluation and a small TensorFlow model, explaining results and limitations using statistics.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Evaluate a model on unseen data",
+        "kind": "reading",
+        "body": "A machine-learning model learns patterns from training data. Use separate validation and test data to evaluate choices and final performance. Leakage occurs when information unavailable at prediction time enters training or evaluation. A simple baseline helps determine whether a TensorFlow model adds value. Select a metric that matches the problem, and report limitations instead of treating one score as universal proof.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Machine Learning, TensorFlow, Python, Statistics."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Prepare a small labeled dataset in Python. Split it before fitting transformations, train a simple baseline and compare it with a small TensorFlow model. Choose a suitable metric and inspect a few errors. Explain how you checked for leakage and what the test set does not represent.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Which practice reduces data leakage?",
+            "options": [
+              "Use future outcomes as input features",
+              "Split data before fitting preprocessing steps",
+              "Tune the model repeatedly on the final test set"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Finance and Accounting",
+    "title": "Accounting and Financial Reporting",
+    "skill_tags": [
+      "Accounting",
+      "Bookkeeping",
+      "Financial Reporting",
+      "IFRS",
+      "Auditing"
+    ],
+    "description": "Practice bookkeeping entries, financial statements, introductory IFRS reporting concepts and an audit evidence checklist.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Connect bookkeeping to financial statements",
+        "kind": "reading",
+        "body": "Bookkeeping records transactions with balanced entries. A ledger groups those entries by account, and a trial balance helps check arithmetic before financial statements are prepared. Financial reporting requires consistent classification and documented accounting policies. IFRS concepts guide reporting but depend on the transaction and applicable standard. Auditing examines evidence supporting a claim; a balanced entry alone does not prove that a transaction occurred.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Accounting, Bookkeeping, Financial Reporting, IFRS, Auditing."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Record a fictional cash contribution, equipment purchase and customer sale. Explain the debit and credit for each, prepare a trial balance and map accounts to simple financial statements. List the evidence you would retain and an accounting judgment that needs professional review.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What does a balanced bookkeeping entry establish by itself?",
+            "options": [
+              "That the transaction must be genuine",
+              "That no further evidence is needed",
+              "That its debit and credit amounts balance"
+            ],
+            "correct_index": 2
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Finance and Accounting",
+    "title": "Budgeting and Financial Models",
+    "skill_tags": [
+      "Budgeting",
+      "Financial Modeling",
+      "Excel",
+      "Taxation"
+    ],
+    "description": "Practice spreadsheet budgets, scenario-based financial models and organizing taxation inputs for review by a qualified professional.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Build an explainable financial model",
+        "kind": "reading",
+        "body": "A financial model separates inputs, calculations and outputs. A budget is a plan; actual results and forecasts should be labeled separately. Use explicit assumptions, consistent units and checks that reveal inconsistent totals. Scenario analysis changes a small number of assumptions to explore their effect. Taxation inputs depend on jurisdiction and current rules, so use documented assumptions rather than presenting a fictional rate as legal advice.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Budgeting, Financial Modeling, Excel, Taxation."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Build an Excel budget for a fictional cafe. Separate price, sales volume and costs from formulas. Add base, lower-sales and higher-cost scenarios. Check the cash balance and label any illustrative tax assumptions. Summarize which assumption affects the outcome most and what evidence would improve it.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Where should important modeling assumptions be recorded?",
+            "options": [
+              "As explicit inputs with labels and sources",
+              "Only inside an unexplained final number",
+              "Nowhere if the spreadsheet calculates"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Finance and Accounting",
+    "title": "Enterprise Finance Systems",
+    "skill_tags": [
+      "SAP",
+      "Oracle Financials",
+      "Accounting"
+    ],
+    "description": "Practice mapping accounting workflows to SAP and Oracle Financials concepts, including transaction entry, reconciliation and reporting.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Map a finance process before configuring a system",
+        "kind": "reading",
+        "body": "Enterprise finance systems such as SAP and Oracle Financials connect transactions, approvals and reporting. Start with a process map: who enters a record, who approves it and how it reaches the ledger. Master data should be consistent across suppliers, accounts and business units. Reconciliation compares records from independent sources and investigates differences. Separate operational permissions so one person cannot silently control every step.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: SAP, Oracle Financials, Accounting."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Map a fictional supplier invoice from receipt to payment. Identify master data, approval steps, ledger effects and reconciliation evidence. Compare how those concepts could appear in SAP and Oracle Financials without claiming identical screens. Define two roles and one exception that requires review.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Why is separation of duties useful in a finance workflow?",
+            "options": [
+              "It eliminates the need for records",
+              "It reduces unchecked control by a single person",
+              "It makes every transaction anonymous"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Hospitality and Cafe Operations",
+    "title": "Barista and Coffee Preparation",
+    "skill_tags": [
+      "Barista Skills",
+      "Coffee Brewing",
+      "Latte Art",
+      "Food Safety"
+    ],
+    "description": "Practice a coffee preparation workflow, brewing variables, milk-texturing and latte-art exercises, with a food-safety checklist.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Control the variables in coffee preparation",
+        "kind": "reading",
+        "body": "Coffee preparation depends on dose, grind, water, time and a repeatable workflow. Record one variable at a time when comparing brews. Milk texturing for latte art also requires attention to temperature and cleanliness. Follow your venue's approved food-safety procedures and equipment instructions; a tasting preference never overrides a safety requirement. Good service includes preparing the order consistently and communicating clearly.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Barista Skills, Coffee Brewing, Latte Art, Food Safety."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Write a preparation checklist for a fictional cafe. Record a starting recipe and compare two brews while changing only one variable. Sketch a milk-texturing and cleaning workflow, then describe a latte-art practice sequence. Note the local procedure or trained supervisor you would consult for safety decisions.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "How should you compare the effect of a brewing variable?",
+            "options": [
+              "Change every variable at once",
+              "Skip recording the recipe",
+              "Change one variable while recording the others"
+            ],
+            "correct_index": 2
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Hospitality and Cafe Operations",
+    "title": "Coffee Roasting Foundations",
+    "skill_tags": [
+      "Roasting",
+      "Coffee Brewing",
+      "Barista Skills"
+    ],
+    "description": "Practice interpreting roast profiles, recording tasting observations and relating roasting choices to coffee brewing outcomes.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Record a roast before comparing its outcome",
+        "kind": "reading",
+        "body": "A roast profile records how a batch changes over time. Bean characteristics, equipment and process choices affect the result, so compare batches with a consistent recording method. Tasting notes can help connect a roast choice to a brewing outcome, but they do not replace equipment training or safety procedures. Change one planned variable, record the result and avoid drawing a universal rule from a single batch.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Roasting, Coffee Brewing, Barista Skills."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Create a roast-log template with batch identity, timings, observations and a tasting section. Compare two fictional profiles and state one hypothesis about their brewing outcomes. Plan a controlled follow-up and list the equipment guidance you would need before operating a roaster.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What makes a comparison between roast batches more useful?",
+            "options": [
+              "Consistent logs and a controlled change",
+              "No record of batch identity",
+              "Changing all settings without notes"
+            ],
+            "correct_index": 0
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Hospitality and Cafe Operations",
+    "title": "Cafe Stock and Service Operations",
+    "skill_tags": [
+      "Food Preparation",
+      "Inventory Planning",
+      "POS Systems",
+      "Food Safety"
+    ],
+    "description": "Practice preparation checklists, stock planning, POS order workflows and food-safety controls using a small cafe scenario.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Connect stock, preparation and service",
+        "kind": "reading",
+        "body": "Inventory planning relates expected demand to stock on hand, replenishment and waste. A POS system records orders and sales, but its records should be reconciled with stock movements and adjustments. Food preparation needs a clear sequence and safe handling controls defined by the venue. Use dated checklists and explain who handles an exception such as missing stock, an incorrect order or a food-safety concern.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Food Preparation, Inventory Planning, POS Systems, Food Safety."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Create a one-shift cafe plan with starting stock, expected sales and a preparation list. Record fictional orders in a POS-style table and reconcile them with closing stock. Add one waste entry and one correction. Define the escalation path for a safety concern rather than improvising a new rule.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "What should a stock reconciliation compare?",
+            "options": [
+              "Only the color of the stock labels",
+              "Expected movements with recorded sales, adjustments and actual stock",
+              "Only the number of staff on shift"
+            ],
+            "correct_index": 1
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "section": "Leadership and Operations",
+    "title": "Team Leadership and Shift Planning",
+    "skill_tags": [
+      "Team Leadership",
+      "Communication",
+      "Teamwork",
+      "Inventory Planning"
+    ],
+    "description": "Practice shift handovers, team feedback, workload planning and inventory coordination using a small operations-team scenario.",
+    "lessons": [
+      {
+        "module_title": "Foundations",
+        "title": "Make responsibilities and handovers explicit",
+        "kind": "reading",
+        "body": "Team leadership combines clear expectations, realistic planning and feedback. A handover should explain current work, unresolved issues and the next responsible person. Use specific observations when giving feedback and invite the other person's perspective. Inventory decisions affect both the team and service, so communicate shortages early. A plan should include how the team escalates an unexpected problem, not just the ideal schedule.\n\nLearning goals\nAfter this lesson, explain the main idea in your own words and identify how it relates to these job skills: Team Leadership, Communication, Teamwork, Inventory Planning."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Guided practice",
+        "kind": "reading",
+        "body": "Plan a shift for a four-person team. Assign responsibilities, prepare a handover note and add an unexpected stock shortage. Write a short feedback conversation using an observable example. Explain who owns the next action, when it will be checked and how the team can raise a concern.\n\nSelf-check\nKeep your notes or project locally. Check each step against the concepts in the previous lesson, identify one uncertainty, and describe what you would verify next. This exercise is self-assessed; no reviewer approval or professional certification is implied."
+      },
+      {
+        "module_title": "Practice and assessment",
+        "title": "Knowledge check",
+        "kind": "quiz",
+        "body": "Answer both questions. A score of at least 80% completes this course. You can review the previous lessons and retry.",
+        "questions": [
+          {
+            "id": "concept",
+            "prompt": "Which handover is most actionable?",
+            "options": [
+              "Everything is probably fine",
+              "Someone should do something later",
+              "The stock check is incomplete; Maya will finish it before the next shift"
+            ],
+            "correct_index": 2
+          },
+          {
+            "id": "practice",
+            "prompt": "What should you do after completing the guided practice?",
+            "options": [
+              "Claim mastery without checking the result",
+              "Check the result against the lesson, record uncertainties and identify a next verification step",
+              "Skip the result and copy a completion label"
+            ],
+            "correct_index": 1
+          }
+        ]
+      }
+    ]
+  }
+]

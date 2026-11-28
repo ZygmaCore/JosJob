@@ -1,14 +1,14 @@
-# JosJob - Learning & Job Placement on Stellar
+# JosJob - Online Learning & Job Placement
 
-JosJob mengembangkan platform Stellar untuk menghubungkan pencarian kerja dan
+JosJob menghubungkan pencarian kerja dan
 pembelajaran. Backend memakai Elixir/Phoenix, Ash Framework, dan PostgreSQL;
 frontend terpadu memakai Flutter. Arah produk adalah **Match -> Gap -> Learn ->
 Re-match**: mencocokkan CV dengan lowongan, mengenali kekurangan skill,
 merekomendasikan pembelajaran, lalu mencocokkan ulang.
 
 **Status saat ini:** katalog pembelajaran, enrollment, dokumen, integrasi media,
-dan CRUD lowongan sudah tersedia. Analisis CV, ranking AI, rekomendasi berbasis
-gap skill, saved jobs, dan pengiriman lamaran masih merupakan pekerjaan terencana.
+dan CRUD lowongan, lamaran, hiring dan chat sudah tersedia. Analisis CV,
+ranking AI, rekomendasi berbasis gap skill dan saved jobs masih direncanakan.
 
 ## Fitur dan batas implementasi
 
@@ -29,6 +29,10 @@ Lowongan baru berstatus draft; employer berizin dapat mempublikasikannya melalui
 editor. Data contoh lama hanya menjadi fixture test, bukan hasil matching AI atau
 lowongan yang otomatis di-seed. Lihat [kontrak jobs API](docs/api/jobs.md).
 
+Lamaran sekarang memakai data database: Applied → Reviewing → Interview → Offer →
+Hired, riwayat perubahan, review employer dan chat. Booking coaching juga memiliki
+chat dengan tampilan bersama. Lihat [kontrak aplikasi dan chat](docs/api/applications-and-chat.md).
+
 Outbox offline saat ini hanya mencakup progress dan jawaban onboarding.
 Channel notifikasi tersedia sebagai fondasi join/ping, belum sebagai sistem
 pengiriman notifikasi lengkap. Integrasi eksternal memerlukan kredensial masing-masing.
@@ -36,25 +40,25 @@ pengiriman notifikasi lengkap. Integrasi eksternal memerlukan kredensial masing-
 ## Arsitektur dan struktur repositori
 
 Backend merupakan modular monolith: sepuluh aplikasi Elixir dalam satu umbrella,
-satu release OTP `stellar`, satu endpoint Phoenix, dan database bersama melalui
-`Stellar.Repo`. Flutter berada di repositori yang sama tetapi di luar daftar app Mix.
+satu release OTP `josjob`, satu endpoint Phoenix, dan database bersama melalui
+`Josjob.Repo`. Flutter berada di repositori yang sama tetapi di luar daftar app Mix.
 
 | Direktori | Tanggung jawab |
 | --- | --- |
-| `apps/stellar` | Akun, organisasi, RBAC, pembayaran, Repo, migrasi dan seed |
-| `apps/stellar_web` | HTTP/JSON API, LiveView admin, autentikasi web dan Phoenix Channels |
-| `apps/stellar_job` | Resource lowongan, pencarian dan operasi employer dengan pembatasan organisasi |
-| `apps/stellar_lrn` | Katalog, kelas, enrollment dan materi pembelajaran |
-| `apps/stellar_doc` | Dokumen dan grant akses |
-| `apps/stellar_ms` | Provider media Cloudflare dan storage kompatibel S3 |
-| `apps/stellar_rag` | Ekstraksi dan ingestion dokumen |
-| `apps/stellar_ai` | Kerangka agent Jido; analisis CV dan matching masih direncanakan |
-| `apps/stellar_quiz`, `apps/stellar_rt` | App scaffold; signaling aktif berada di `stellar_web` |
-| `apps/stellar_fe` | Flutter client, layanan API, session dan outbox onboarding |
+| `apps/josjob` | Akun, organisasi, RBAC, pembayaran, Repo, migrasi dan seed |
+| `apps/josjob_web` | HTTP/JSON API, LiveView admin, autentikasi web dan Phoenix Channels |
+| `apps/josjob_job` | Resource lowongan, pencarian dan operasi employer dengan pembatasan organisasi |
+| `apps/josjob_lrn` | Katalog, kelas, enrollment dan materi pembelajaran |
+| `apps/josjob_doc` | Dokumen dan grant akses |
+| `apps/josjob_ms` | Provider media Cloudflare dan storage kompatibel S3 |
+| `apps/josjob_rag` | Ekstraksi dan ingestion dokumen |
+| `apps/josjob_ai` | Kerangka agent Jido; analisis CV dan matching masih direncanakan |
+| `apps/josjob_quiz`, `apps/josjob_rt` | App scaffold; signaling aktif berada di `josjob_web` |
+| `apps/josjob_fe` | Flutter client, layanan API, session dan outbox onboarding |
 | `config/`, `rel/`, `deployment/` | Konfigurasi, helper release dan berkas deployment |
 | `docs/`, `PRD/`, `e2e/` | Dokumentasi teknis, spesifikasi produk dan Playwright |
 
-Migrasi database berada di `apps/stellar/priv/repo/migrations`.
+Migrasi database berada di `apps/josjob/priv/repo/migrations`.
 [Project map](docs/PROJECT_MAP.md) menyediakan penelusuran fitur dan sumber;
 beberapa inventarisnya mendeskripsikan snapshot lama. Gunakan source dan test
 terkini untuk memverifikasi perilaku.
@@ -71,7 +75,7 @@ Windows pada dependensi Rust/NIF `xberg`.
 ```dotenv
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
-POSTGRES_DB=stellar_dev
+POSTGRES_DB=josjob_dev
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5438
 PORT=4000
@@ -89,7 +93,7 @@ preview lokal; deployment memerlukan `SECRET_KEY_BASE` dan
 
 ```bash
 docker compose -f docker-compose.fullstack.yml --env-file envs/.env up -d --build
-docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f stellar_be
+docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f josjob_be
 ```
 
 | Layanan | Alamat lokal |
@@ -97,6 +101,10 @@ docker compose -f docker-compose.fullstack.yml --env-file envs/.env logs -f stel
 | Flutter web | http://localhost:8081 |
 | Phoenix API dan login web | http://localhost:4000 |
 | ParadeDB/PostgreSQL | `localhost:5438` |
+
+Untuk mencoba lowongan dan proses hiring secara manual, lihat
+[akun dan data demo lokal](docs/manual-job-testing.md): 12 lowongan serta lima
+lamaran pada tahapan hiring yang berbeda. Seed demo dijalankan secara eksplisit.
 
 Backend menunggu database sehat, menjalankan migrasi, mencoba seed, lalu
 menjalankan server. Kegagalan seed dicatat tetapi tidak menghentikan server;
@@ -142,19 +150,19 @@ seed di host, export/set variabel tersebut pada shell sebelum `mix ecto.setup`.
 ## Pengembangan Flutter
 
 Gunakan Flutter dengan Dart yang memenuhi `^3.12.0` sesuai
-[`pubspec.yaml`](apps/stellar_fe/pubspec.yaml).
+[`pubspec.yaml`](apps/josjob_fe/pubspec.yaml).
 
 ```bash
-cd apps/stellar_fe
+cd apps/josjob_fe
 flutter pub get
 flutter run -d chrome --web-port=8081 --dart-define=API_BASE_URL=http://localhost:4000
 ```
 
 `API_BASE_URL` dan `GOOGLE_CLIENT_ID` adalah konfigurasi saat build. Untuk
 Google sign-in, tambahkan `--dart-define=GOOGLE_CLIENT_ID=<google-web-client-id>`.
-Pada Docker, isi variabel yang sama di `envs/.env`, lalu rebuild `stellar_fe`.
+Pada Docker, isi variabel yang sama di `envs/.env`, lalu rebuild `josjob_fe`.
 Mengubah environment backend saja tidak memperbarui bundle Flutter.
-Lihat [panduan frontend](apps/stellar_fe/README.md) untuk defines file dan aset
+Lihat [panduan frontend](apps/josjob_fe/README.md) untuk defines file dan aset
 SQLite WASM/Drift.
 
 ## Autentikasi dan integrasi
@@ -168,13 +176,22 @@ Untuk OAuth browser, isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan
 `http://localhost:4000/auth/user/google/callback` pada Google OAuth client.
 Untuk Flutter web, daftarkan juga origin `http://localhost:8081`.
 
+TEMPORARY — login email/password di CMS (hanya sign-in, tanpa registrasi):
+aktif hanya bila `CMS_PASSWORD_LOGIN=true` di `envs/.env` (default: mati),
+lalu restart backend. Form-nya muncul di halaman login `/` di bawah tombol
+Google, dan `POST /auth/user/password/sign_in` memverifikasi Bcrypt lawan
+`hashed_password` (akun seed bisa masuk; akun yang hanya daftar via Google
+tidak bisa). Matikan lagi dan hapus fiturnya setelah Google OAuth jalan —
+rute auth web tidak punya rate limiting, jadi flag ini membuka permukaan
+brute-force selama menyala.
+
 | Endpoint API | Kegunaan |
 | --- | --- |
 | `POST /api/auth/register` | Registrasi email/password |
 | `POST /api/auth/login` | Login email/password |
 | `POST /api/auth/google` | Login menggunakan Google `id_token` |
 | `POST /api/auth/refresh` | Rotasi refresh token dan penerbitan pasangan token baru |
-| `/api/jobs` | Browse dan CRUD lowongan dengan Bearer access token |
+| `/api/jobs` | Browse/detail lowongan aktif publik; pengelolaan memakai Bearer token dan izin organisasi |
 
 TTL default access token adalah 1 jam dan refresh token 30 hari, dapat diubah
 melalui `ACCESS_TOKEN_TTL` dan `REFRESH_TOKEN_TTL` (detik).
@@ -190,7 +207,22 @@ Konfigurasi integrasi ada di [`config/runtime.exs`](config/runtime.exs):
 | Cloudflare Stream VOD | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STREAM_TOKEN` |
 | Cloudflare Realtime | `CLOUDFLARE_REALTIME_APP_ID`, `CLOUDFLARE_REALTIME_APP_SECRET`, `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_TOKEN` |
 | Storage dokumen | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`; opsional `S3_REGION`, `S3_PUBLIC_BASE_URL` |
-| Email undangan | `SMTP_RELAY`, `SMTP_USERNAME`, `SMTP_PASSWORD`; opsi TLS/port dan alamat pengirim di runtime config |
+| Email undangan (Resend API) | `RESEND_API_KEY` (wajib untuk kirim); `MAIL_FROM_ADDRESS`, opsional `MAIL_FROM_NAME` |
+| Login password CMS (sementara) | `CMS_PASSWORD_LOGIN=true` untuk menyalakan (default mati); hapus setelah Google OAuth jalan |
+
+Email undangan dikirim lewat Resend API (tanpa server SMTP). Aktif bila
+`RESEND_API_KEY` di-set; kosong → email hanya tersimpan lokal (`/dev/mailbox`).
+
+1. Buat akun di [resend.com](https://resend.com), lalu **API Keys → Create API
+   Key** (permission *Sending access*), salin key `re_...` ke `RESEND_API_KEY`
+   di `envs/.env`.
+2. Untuk tes awal cukup set `MAIL_FROM_ADDRESS=onboarding@resend.dev` (alamat
+   pengirim bawaan Resend; tanpa itu pun dipakai sebagai default bila key
+   di-set). Batasannya: email hanya terkirim ke alamat email pemilik akun
+   Resend.
+3. Untuk produksi, verifikasi domain di dashboard Resend (**Domains → Add
+   Domain**, pasang record DNS yang diminta), lalu set `MAIL_FROM_ADDRESS` ke
+   alamat di domain terverifikasi (mis. `noreply@<domain-terverifikasi>`).
 
 RAG memerlukan Atomic Server; URL dan `ATOMIC_API_TOKEN` dikonfigurasi di
 [`config/config.exs`](config/config.exs), termasuk pembacaan environment saat
@@ -204,17 +236,22 @@ Dari root, jalankan pemeriksaan backend yang diwajibkan repositori:
 mix precommit
 ```
 
+Untuk Windows, gunakan Linux/WSL untuk dependency native dan lihat
+[panduan testing backend](docs/BACKEND_TESTING.md). Alias test di root
+membuat database test dan menjalankan migrasi sebelum app umbrella pertama
+dimulai, sehingga checkout dengan database kosong dapat langsung diuji.
+
 Alias ini berjalan dalam environment test dan menjalankan compile dengan
 warnings sebagai error, `deps.unlock --unused`, format dan test. Periksa diff
 setelahnya karena alias dapat mengubah file. `mix test` dapat dipakai untuk
 menjalankan suite secara terpisah.
 
-Database test memakai `stellar_test` dengan suffix opsional
+Database test memakai `josjob_test` dengan suffix opsional
 `MIX_TEST_PARTITION`. Konfigurasi test membaca `POSTGRES_*` langsung dari
 environment proses; set pada shell jika berbeda dari default
 `postgres/postgres` di `localhost:5438`.
 
-Dari `apps/stellar_fe`:
+Dari `apps/josjob_fe`:
 
 ```bash
 flutter analyze
@@ -237,12 +274,13 @@ default port `4000` pada konfigurasi Playwright perlu di-override.
 
 ## Dokumentasi dan deployment
 
+- [Panduan transisi nama aplikasi dan instalasi lama](docs/REBRANDING.md)
 - [Project map dan hubungan fitur](docs/PROJECT_MAP.md)
 - [PRD utama](PRD/PRD.md) dan [keputusan produk](PRD/DECISIONS.md)
 - [API autentikasi](docs/api/auth.md), [pembelajaran](docs/api/learning.md), dan [lowongan](docs/api/jobs.md)
 - [Konfigurasi Compose full stack](docker-compose.fullstack.yml) dan [Compose deployment dev](docker-compose.dev.yml)
 
-Release backend bernama `stellar`; helper migrasi, seed dan server berada di
+Release backend bernama `josjob`; helper migrasi, seed dan server berada di
 `rel/overlays/bin`. Checkout ini tidak menyertakan workflow CI/CD, sehingga
 pipeline deploy otomatis tidak dapat diasumsikan tersedia.
 

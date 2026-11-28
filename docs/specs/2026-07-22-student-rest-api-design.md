@@ -1,29 +1,29 @@
 # Student REST API (Catalog + Enrollment) — Design
 
 **Status:** approved design, ready for implementation plan
-**Scope:** student-facing JSON API in `apps/stellar_web` — browse the course catalog,
+**Scope:** student-facing JSON API in `apps/josjob_web` — browse the course catalog,
 view course detail (classes + materials), self-enroll / unenroll, and list own
 enrollments. All endpoints are Bearer-authenticated and org-scoped.
 
-**Not in scope:** wiring the Flutter app (`stellar_fe` is UI-only per CLAUDE.md — no
+**Not in scope:** wiring the Flutter app (`josjob_fe` is UI-only per CLAUDE.md — no
 backend calls), paid access/payments, notifications, advanced pagination/filtering.
 
-Depends on: `StellarLrn.Learning` domain, `StellarDoc.Documents`, `Stellar.Orgs.Membership`,
-existing `:api_auth` plug (`StellarWeb.Plugs.ApiAuth` → `conn.assigns.current_user`).
+Depends on: `JosjobLrn.Learning` domain, `JosjobDoc.Documents`, `Josjob.Orgs.Membership`,
+existing `:api_auth` plug (`JosjobWeb.Plugs.ApiAuth` → `conn.assigns.current_user`).
 
 ---
 
 ## 1. Placement & auth
 
-- Controllers: `StellarWeb.Api.CatalogController`, `StellarWeb.Api.EnrollmentController`
-  (pattern: `use StellarWeb, :controller`, respond `json(conn, %{data: ...})`, mirroring
-  `StellarWeb.Api.IndustryController`).
+- Controllers: `JosjobWeb.Api.CatalogController`, `JosjobWeb.Api.EnrollmentController`
+  (pattern: `use JosjobWeb, :controller`, respond `json(conn, %{data: ...})`, mirroring
+  `JosjobWeb.Api.IndustryController`).
 - All routes under the existing `:api_auth` pipeline (Bearer access token). No new pipeline.
-- Domain helper: add `StellarLrn.Learning.seats_left/1`.
+- Domain helper: add `JosjobLrn.Learning.seats_left/1`.
 
 ### Visibility rule
 `user_org_ids(user)` = org ids of the user's **active** memberships
-(`Stellar.Orgs.Membership` where `user_id == user.id and status == :active`).
+(`Josjob.Orgs.Membership` where `user_id == user.id and status == :active`).
 - A **course** is visible when `is_active == true` AND it is linked (via
   `course_organizations`) to at least one of the user's orgs.
 - A **class** is visible / enrollable when its `organization_id` ∈ `user_org_ids`.
@@ -64,7 +64,7 @@ Active courses shared to the user's orgs.
 ```
 - `classes` = classes of this course whose `organization_id` ∈ user orgs.
 - `materials` (course) = documents where `course_id == course.id`.
-- per-class `materials` = `StellarLrn.Learning.materials_for_class(class)`.
+- per-class `materials` = `JosjobLrn.Learning.materials_for_class(class)`.
 - `enrolled` = current user has an enrollment in that class.
 
 ### POST `/api/classes/:id/enroll`
@@ -94,7 +94,7 @@ Removes `current_user`'s enrollment for the class.
 
 ## 3. `seats_left/1` (domain helper, no migration)
 
-`StellarLrn.Learning.seats_left(class_or_id)`:
+`JosjobLrn.Learning.seats_left(class_or_id)`:
 - `nil` when `capacity` is `nil` (unlimited).
 - else `max(0, capacity - count(active enrollments for the class))`.
 
@@ -102,12 +102,12 @@ Removes `current_user`'s enrollment for the class.
 
 ## 4. Files (indicative)
 
-- Create: `apps/stellar_web/lib/stellar_web/controllers/api/catalog_controller.ex`
-- Create: `apps/stellar_web/lib/stellar_web/controllers/api/enrollment_controller.ex`
-- Modify: `apps/stellar_web/lib/stellar_web/router.ex` (routes under `:api_auth`)
-- Modify: `apps/stellar_lrn/lib/stellar_lrn/learning.ex` (add `seats_left/1`)
+- Create: `apps/josjob_web/lib/josjob_web/controllers/api/catalog_controller.ex`
+- Create: `apps/josjob_web/lib/josjob_web/controllers/api/enrollment_controller.ex`
+- Modify: `apps/josjob_web/lib/josjob_web/router.ex` (routes under `:api_auth`)
+- Modify: `apps/josjob_lrn/lib/josjob_lrn/learning.ex` (add `seats_left/1`)
 
-Routes (inside the existing `scope "/api", StellarWeb.Api`):
+Routes (inside the existing `scope "/api", JosjobWeb.Api`):
 ```elixir
 scope "/catalog" do
   pipe_through :api_auth
@@ -127,7 +127,7 @@ end
 
 ## 5. Verification
 - `mix compile --warnings-as-errors` and `mix format --check-formatted` clean.
-- **Temporary request-tests** on the TEST DB via `StellarWeb.ConnCase`, minting a Bearer
+- **Temporary request-tests** on the TEST DB via `JosjobWeb.ConnCase`, minting a Bearer
   access token with `AshAuthentication.Jwt.token_for_user/1` (or the `:sign_in`/token flow)
   and setting the `authorization` header; removed after they pass. Cover:
   - catalog scoping: a user sees only active courses linked to their org; a course in

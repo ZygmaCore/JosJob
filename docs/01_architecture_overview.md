@@ -85,7 +85,7 @@ graph TD
 > [!NOTE]
 > **Media tier — current implementation.** The "Media Processing / Membrane" tier
 > above is the forward-looking design. Today, **Video-on-Demand is handled by
-> managed Cloudflare Stream** in the dedicated **`apps/stellar_ms`** umbrella app
+> managed Cloudflare Stream** in the dedicated **`apps/josjob_ms`** umbrella app
 > (upload → transcode → HLS/CDN), not a self-hosted Membrane/S3 pipeline. Live
 > WebRTC streaming via Membrane remains planned but unbuilt. See
 > [`04_media_streaming.md`](./04_media_streaming.md) and

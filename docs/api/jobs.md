@@ -2,16 +2,23 @@
 
 This implements the job-listing slice of `PRD/backdev/PRD.md` sections 3, 6
 and 7, and `PRD/frontdev/PRD.md` section 4. CV analysis, ranked recommendations,
-saved jobs, and applications are separate work. No match scores are fabricated.
+and saved jobs remain separate work. Applications and the hiring pipeline are
+implemented in the [applications and chat contract](applications-and-chat.md).
+No match scores are fabricated.
 
-All endpoints require a Bearer access token. Reads are scoped to active
-organization memberships with `jobs:read`, `jobs:post` or `jobs:manage`.
-Unprovisioned users receive an empty collection. Platform superusers bypass
-the permission restriction. Inaccessible job IDs return 404.
+The Jobs dashboard overview consumes [a scoped summary API](jobs-overview.md)
+and reuses this listing/detail contract for its latest vacancies.
+
+Active vacancy lists and details are public across organizations, without login
+or membership (decision D22, 2026-11-18). An optional Bearer access token adds the
+caller's employer capabilities. Invalid or refresh credentials return 401 when
+supplied; visitors omit the Authorization header. Draft and expired details are
+visible only to authorized organization posters/managers or platform superusers.
+Other callers receive 404 for those listings.
 
 | Method / path | Behavior |
 | --- | --- |
-| `GET /api/jobs` | Paginated active job listings in the caller's authorized organizations |
+| `GET /api/jobs` | Public paginated active job listings across organizations |
 | `GET /api/jobs/:id` | Full listing, company name, skills, responsibilities and management capability |
 | `POST /api/jobs` | Create in a specified organization with `jobs:post` |
 | `PATCH /api/jobs/:id` | Update fields with `jobs:manage` in the owning organization |
@@ -34,7 +41,7 @@ descending, undisclosed amounts last. Both use stable tie-breakers.
 `page` starts at 1 (maximum 10,000); `page_size` defaults to 12 (maximum 50).
 Invalid values return 400 with `error: "invalid_params"` and `fields`.
 
-`scope=manage` returns all statuses only in organizations where the caller can
+`scope=manage` requires login (401 for visitors) and returns all statuses only in organizations where the caller can
 post/manage; `status=draft|active|expired` may narrow that management view.
 The ordinary browse scope always restricts results to active listings.
 
@@ -54,8 +61,10 @@ Organization and creator are assigned after permission checks and cannot be
 changed by an update. API callers cannot set `synthetic` or publication timestamps.
 Validation failures return 422 with `error: "validation_failed"` and field errors.
 
-The UI is available at `/jobs` and the dashboard's vacancies destination.
-The client uses Session refresh/retry, debounced server search, pagination,
+The UI is available publicly at `/jobs`, from the landing page's Explore jobs
+button, and in the dashboard's vacancies destination. Visitors may search and
+open details; Sign in to apply opens login before any private profile request.
+The client uses optional authentication, Session refresh/retry for signed-in users, debounced server search, pagination,
 fresh detail fetches, an employer editor, and confirmed deletion.
 
 Listings start as drafts. The current editor permits an authorized employer to
@@ -65,7 +74,7 @@ listing slice. The open PRD publication-policy question has not been recorded
 as a team decision.
 
 The former hard-coded board data is preserved under
-`apps/stellar_fe/test/fixtures/legacy_job_samples.dart` as clearly labeled
+`apps/josjob_fe/test/fixtures/legacy_job_samples.dart` as clearly labeled
 synthetic fixtures and is never imported by production UI. No synthetic jobs
 are inserted into a database automatically.
 
@@ -90,3 +99,18 @@ project dependency locks and SDK requirements were preserved.
 
 Publication policy and final retention/removal of legacy fixtures remain subject
 to the open PRD questions presented to the user during this work.
+
+## CV relevance sorting (2026-11-23, D23)
+
+Signed-in candidates can request `GET /api/jobs?sort=relevance`. This reuses the
+latest saved extracted CV; optional `cv_id` must belong to the caller. It makes
+no AI/embedding requests. Existing browse filters apply and all filtered jobs
+are ordered by same/related category, required-skill coverage and recency before
+pagination. Less relevant jobs remain visible below.
+
+Each listing may include `relevance` (label, categories, matched/missing skills,
+skill score and explanation). Metadata includes `relevance_status`, selected CV
+and categories. A candidate without a saved CV gets newest jobs with
+`relevance_status: "cv_required"`. Guests can still browse newest/salary listings;
+relevance sorting requires authentication. Employer management uses its existing
+sorts. See [CV relevance](cv-job-rankings.md) for extraction reuse and limitations.

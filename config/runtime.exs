@@ -23,13 +23,13 @@ source!([
 # Port HTTP endpoint (berlaku semua environment).
 port = String.to_integer(env!("PORT", :string, nil) || "4000")
 
-config :stellar_web, StellarWeb.Endpoint, http: [port: port]
+config :josjob_web, JosjobWeb.Endpoint, http: [port: port]
 
 # PHX_SERVER=true (di-set oleh skrip `bin/server`) menyalakan endpoint Phoenix
 # saat berjalan sebagai release. Tanpa ini, release hanya memuat aplikasi tanpa
 # melayani HTTP.
 if env!("PHX_SERVER", :string, nil) do
-  config :stellar_web, StellarWeb.Endpoint, server: true
+  config :josjob_web, JosjobWeb.Endpoint, server: true
 end
 
 # Koneksi DB — SATU skema variabel (POSTGRES_*) untuk semua environment. Nilai
@@ -50,38 +50,45 @@ if config_env() != :test do
           password: env!("POSTGRES_PASSWORD", :string, nil) || "postgres",
           hostname: env!("POSTGRES_HOST", :string, nil) || "localhost",
           port: String.to_integer(env!("POSTGRES_PORT", :string, nil) || "5438"),
-          database: env!("POSTGRES_DB", :string, nil) || "stellar_dev"
+          database: env!("POSTGRES_DB", :string, nil) || "josjob_dev"
         ]
 
       url ->
         [url: url]
     end
 
-  config :stellar, Stellar.Repo, db_conn ++ [pool_size: pool_size, socket_options: maybe_ipv6]
+  config :josjob, Josjob.Repo, db_conn ++ [pool_size: pool_size, socket_options: maybe_ipv6]
 end
 
 # TTL token API (detik). Bisa di-override via env; default: access 1 jam,
 # refresh 30 hari.
-config :stellar, Stellar.Accounts.Tokens,
+config :josjob, Josjob.Accounts.Tokens,
   access_ttl_seconds: String.to_integer(env!("ACCESS_TOKEN_TTL", :string, nil) || "3600"),
   refresh_ttl_seconds: String.to_integer(env!("REFRESH_TOKEN_TTL", :string, nil) || "2592000")
 
 # Google id_token verification (flow mobile): `client_id` = aud yang divalidasi.
-config :stellar, Stellar.Accounts.GoogleAuth, client_id: env!("GOOGLE_CLIENT_ID", :string, nil)
+config :josjob, Josjob.Accounts.GoogleAuth, client_id: env!("GOOGLE_CLIENT_ID", :string, nil)
 
 # Kredensial Google OAuth (flow redirect web/CMS). Dibaca dari envs/.env sehingga
 # tombol "Sign in with Google" pakai kredensial nyata tanpa export manual.
-config :stellar, :google_oauth,
+config :josjob, :google_oauth,
   client_id: env!("GOOGLE_CLIENT_ID", :string, nil),
   client_secret: env!("GOOGLE_CLIENT_SECRET", :string, nil),
   # BASE ke AuthPlug (ash menambah "/user/google/callback").
   redirect_uri: env!("GOOGLE_REDIRECT_URI", :string, nil) || "http://localhost:4000/auth"
 
+# TEMPORARY (hapus bersama strategi `password` di Josjob.Accounts.User):
+# login email/password di CMS. Aktif HANYA bila CMS_PASSWORD_LOGIN=true di
+# envs/.env (default: mati). Menyalakannya membuka permukaan brute-force baru
+# (rute auth web tidak punya rate limiting) — nyalakan hanya di dev, dan
+# matikan lagi setelah Google OAuth jalan.
+config :josjob, :cms_password_login, env!("CMS_PASSWORD_LOGIN", :string, nil) in ["true", "1"]
+
 # Cloudflare Stream (VOD terkelola: upload -> transcode -> HLS/CDN). App media
-# streaming = :stellar_ms. Dibaca dari envs/.env. Bila kosong ->
-# StellarMs.configured?() = false -> upload & seed video nyata di-skip
+# streaming = :josjob_ms. Dibaca dari envs/.env. Bila kosong ->
+# JosjobMs.configured?() = false -> upload & seed video nyata di-skip
 # (fungsi mengembalikan {:error, :not_configured}).
-config :stellar_ms, StellarMs.CloudflareStream,
+config :josjob_ms, JosjobMs.CloudflareStream,
   account_id: env!("CLOUDFLARE_ACCOUNT_ID", :string, nil),
   api_token: env!("CLOUDFLARE_STREAM_TOKEN", :string, nil),
   # Bila di-set -> auth Global API Key (X-Auth-Email/Key) untuk testing lokal;
@@ -91,10 +98,10 @@ config :stellar_ms, StellarMs.CloudflareStream,
   webhook_secret: env!("CLOUDFLARE_STREAM_WEBHOOK_SECRET", :string, nil)
 
 # Cloudflare Realtime (live streaming WebRTC: SFU fan-out + TURN NAT traversal).
-# App media streaming = :stellar_ms. Dibaca dari envs/.env. Bila kosong ->
-# StellarMs.Realtime.configured?() = false -> sesi live di-skip (channel membalas
+# App media streaming = :josjob_ms. Dibaca dari envs/.env. Bila kosong ->
+# JosjobMs.Realtime.configured?() = false -> sesi live di-skip (channel membalas
 # `configured: false`, fungsi mengembalikan {:error, :not_configured}).
-config :stellar_ms, StellarMs.CloudflareRealtime,
+config :josjob_ms, JosjobMs.CloudflareRealtime,
   # SFU (dashboard Cloudflare > Realtime > buat App): app_id + app_secret.
   app_id: env!("CLOUDFLARE_REALTIME_APP_ID", :string, nil),
   app_secret: env!("CLOUDFLARE_REALTIME_APP_SECRET", :string, nil),
@@ -105,7 +112,7 @@ config :stellar_ms, StellarMs.CloudflareRealtime,
 # Kredensial Stripe (payment gateway). Dibaca dari envs/.env sehingga secret
 # tidak perlu di-export manual. Bila kosong, Stripe.Client mengembalikan
 # {:error, :missing_stripe_secret_key} dan webhook ditolak.
-config :stellar, Stellar.Payments.Stripe,
+config :josjob, Josjob.Payments.Stripe,
   secret_key: env!("STRIPE_SECRET_KEY", :string, nil),
   publishable_key: env!("STRIPE_PUBLISHABLE_KEY", :string, nil),
   webhook_secret: env!("STRIPE_WEBHOOK_SECRET", :string, nil),
@@ -114,13 +121,33 @@ config :stellar, Stellar.Payments.Stripe,
 # Base URL app Flutter — dipakai membangun tautan accept undangan teacher
 # (`<fe_base_url>/invite?token=...`). Kosong → default config.exs (localhost:8081).
 if fe_base_url = env!("FE_BASE_URL", :string, nil) do
-  config :stellar, :fe_base_url, fe_base_url
+  config :josjob, :fe_base_url, fe_base_url
 end
 
+# RAG ranking: embeddings + the standalone CV extraction service.
+# `RAG_EMBEDDING_MODEL` is read instead of `GEMINI_MODEL` because the shared
+# envs/.env pins GEMINI_MODEL to an embedding model for a different concern;
+# this service wants its own switch. The API key is shared.
+# Di :test sengaja dilewati: config/test.exs memakai embedding lokal deterministik
+# supaya suite tidak pernah memanggil Gemini sungguhan.
+if config_env() != :test do
+  config :josjob_rag, :embeddings,
+    provider: :auto,
+    model: env!("RAG_EMBEDDING_MODEL", :string, "gemini-embedding-2"),
+    dimensions: 1536,
+    api_key: env!("GEMINI_API_KEY", :string, nil) || env!("GOOGLE_API_KEY", :string, nil),
+    base_url: env!("GEMINI_BASE_URL", :string, "https://generativelanguage.googleapis.com")
+end
+
+config :josjob_rag, :pdf_service,
+  base_url: env!("RAGPDF_BASE_URL", :string, "http://localhost:4010"),
+  api_token: env!("RAGPDF_API_TOKEN", :string, nil),
+  receive_timeout: 120_000
+
 # Object storage S3-compatible (Cloudflare R2 / AWS S3 / MinIO) untuk upload
-# dokumen non-video (pdf/doc). App media = :stellar_ms. Kosong →
-# StellarMs.Storage.configured?() = false → upload dokumen file nyata di-skip.
-config :stellar_ms, StellarMs.S3Storage,
+# dokumen non-video (pdf/doc). App media = :josjob_ms. Kosong →
+# JosjobMs.Storage.configured?() = false → upload dokumen file nyata di-skip.
+config :josjob_ms, JosjobMs.S3Storage,
   endpoint: env!("S3_ENDPOINT", :string, nil),
   region: env!("S3_REGION", :string, nil) || "auto",
   bucket: env!("S3_BUCKET", :string, nil),
@@ -130,81 +157,52 @@ config :stellar_ms, StellarMs.S3Storage,
   # dipakai `<endpoint>/<bucket>` (cocok untuk MinIO / bucket publik).
   public_base_url: env!("S3_PUBLIC_BASE_URL", :string, nil)
 
-# SMTP mailer (Zoho Mail) — mengirim email undangan teacher (satu-satunya email
-# yang dikirim app, via Stellar.Mailer.deliver/1). Aktif HANYA bila SMTP_RELAY +
-# SMTP_USERNAME di-set; kosong → tetap adapter default (Local di dev/config.exs)
+# Email pengiriman (Resend API) — mengirim email undangan teacher (satu-satunya
+# email yang dikirim app, via Josjob.Mailer.deliver/1). Aktif HANYA bila
+# RESEND_API_KEY di-set; kosong → tetap adapter default (Local di dev/config.exs)
 # sehingga email hanya muncul di /dev/mailbox.
 #
-# Zoho: relay `smtp.zoho.com` (region lain: smtp.zoho.eu / smtp.zoho.in /
-# smtp.zoho.com.au — sesuaikan data center akun; akun bisnis custom-domain bisa
-# pakai smtppro.zoho.com). Port 465 = SSL implisit, 587 = STARTTLS. Jika 2FA
-# aktif WAJIB App Password (Zoho > Security > App Passwords), bukan password akun.
+# Kenapa Resend, bukan SMTP: tim tidak punya server SMTP. Resend adalah HTTP API
+# (POST https://api.resend.com/emails) — tanpa server mail sendiri.
+# Adapter: Swoosh.Adapters.Resend (bawaan Swoosh >= 1.20; lock kita 1.29.3),
+# tanpa dep baru. Adapter API butuh HTTP client: prod.exs sudah memakai
+# Swoosh.ApiClient.Req; di sini di-set juga supaya dev yang mengisi key tetap
+# jalan walau config/dev.exs mematikan api_client (false).
+#
+# Batasan Resend: tanpa domain terverifikasi, pengiriman hanya dari
+# `onboarding@resend.dev` dan hanya ke alamat email pemilik akun Resend.
+# Untuk produksi: verifikasi domain di dashboard Resend (Domains → Add Domain,
+# pasang record DNS yang diminta), lalu set MAIL_FROM_ADDRESS ke alamat di
+# domain itu. Lihat README ("Email undangan").
 # `env!` dotenvy mengembalikan "" untuk key yang ADA tapi kosong (envs/.env
 # mengirim kredensial kosong sebagai placeholder) — `present` memperlakukan "" =
 # tak-diisi agar guard & fallback `||` bekerja benar (bukan "" yang truthy).
 present = fn v -> if v in [nil, ""], do: nil, else: v end
 
-smtp_relay = present.(env!("SMTP_RELAY", :string, nil))
-smtp_username = present.(env!("SMTP_USERNAME", :string, nil))
+resend_api_key = present.(env!("RESEND_API_KEY", :string, nil))
 
-if smtp_relay && smtp_username do
-  smtp_port = String.to_integer(present.(env!("SMTP_PORT", :string, nil)) || "465")
+if resend_api_key && config_env() != :test do
+  config :josjob, Josjob.Mailer,
+    adapter: Swoosh.Adapters.Resend,
+    api_key: resend_api_key
 
-  # 465 → SSL implisit; selain itu STARTTLS. Paksa via SMTP_SSL=true/false.
-  smtp_ssl =
-    case present.(env!("SMTP_SSL", :string, nil)) do
-      nil -> smtp_port == 465
-      v -> v in ~w(true 1)
-    end
-
-  # TLS: gen_smtp mewarisi default OTP `verify_peer` tapi TIDAK mengisi CA store,
-  # jadi handshake gagal ({:options, :incompatible, [verify: :verify_peer,
-  # cacerts: :undefined]}). Sediakan CA bundle sistem + match_fun wildcard ala
-  # HTTPS (sertifikat Zoho = *.zoho.com). CA default = path image Debian; override
-  # via SMTP_CACERTFILE.
-  cacertfile =
-    present.(env!("SMTP_CACERTFILE", :string, nil)) ||
-      "/etc/ssl/certs/ca-certificates.crt"
-
-  tls_opts = [
-    verify: :verify_peer,
-    cacertfile: cacertfile,
-    depth: 9,
-    server_name_indication: String.to_charlist(smtp_relay),
-    customize_hostname_check: [
-      match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-    ]
-  ]
-
-  # 465 (ssl implisit) memakai opsi TLS via `sockopts` (saat connect); STARTTLS
-  # (587) via `tls_options` (saat upgrade). Dipisah agar opsi ssl tak bocor ke
-  # koneksi TCP polos 587 (gen_tcp menolak opsi ssl).
-  transport = if smtp_ssl, do: [sockopts: tls_opts], else: [tls_options: tls_opts]
-
-  mailer_opts =
-    [
-      adapter: Swoosh.Adapters.SMTP,
-      relay: smtp_relay,
-      username: smtp_username,
-      password: present.(env!("SMTP_PASSWORD", :string, nil)),
-      port: smtp_port,
-      ssl: smtp_ssl,
-      tls: if(smtp_ssl, do: :never, else: :always),
-      auth: :always,
-      retries: 2,
-      no_mx_lookups: true
-    ] ++ transport
-
-  config :stellar, Stellar.Mailer, mailer_opts
+  # Adapter API butuh client HTTP; dev.exs mematikannya (false) karena adapter
+  # default Local tidak butuh. Nyalakan Req di sini supaya key yang di-set di
+  # dev langsung bisa kirim (runtime.exs dievaluasi setelah dev/prod.exs).
+  config :swoosh, :api_client, Swoosh.ApiClient.Req
 end
 
-# Alamat pengirim (From). Zoho MENOLAK from yang bukan alamat akun / alias
-# terverifikasi → default ke SMTP_USERNAME. Override nama/alamat via MAIL_FROM_*.
-mail_from_address = present.(env!("MAIL_FROM_ADDRESS", :string, nil)) || smtp_username
+# Alamat pengirim (From). Resend MENOLAK from yang domain-nya belum terverifikasi
+# (kecuali `onboarding@resend.dev`). Default: MAIL_FROM_ADDRESS; bila kosong dan
+# Resend aktif (bukan :test) → `onboarding@resend.dev` — hanya bisa kirim ke
+# pemilik akun, cukup untuk tes awal. Override nama via MAIL_FROM_NAME.
+mail_from_address =
+  present.(env!("MAIL_FROM_ADDRESS", :string, nil)) ||
+    if(resend_api_key && config_env() != :test, do: "onboarding@resend.dev")
 
 if mail_from_address do
-  mail_from_name = present.(env!("MAIL_FROM_NAME", :string, nil)) || "Stellar"
-  config :stellar, :mail_from, {mail_from_name, mail_from_address}
+  mail_from_name = present.(env!("MAIL_FROM_NAME", :string, nil)) || "JosJob"
+  config :josjob, :mail_from, {mail_from_name, mail_from_address}
 end
 
 if config_env() == :prod do
@@ -246,7 +244,7 @@ if config_env() == :prod do
       list -> String.split(list, ",", trim: true)
     end
 
-  config :stellar_web, StellarWeb.Endpoint,
+  config :josjob_web, JosjobWeb.Endpoint,
     url: [host: phx_host, port: url_port, scheme: url_scheme],
     check_origin: check_origin,
     http: [
@@ -263,7 +261,7 @@ if config_env() == :prod do
   # If you are doing OTP releases, you need to instruct Phoenix
   # to start each relevant endpoint:
   #
-  #     config :stellar_web, StellarWeb.Endpoint, server: true
+  #     config :josjob_web, JosjobWeb.Endpoint, server: true
   #
   # Then you can assemble a release by calling `mix release`.
   # See `mix help release` for more information.
@@ -273,7 +271,7 @@ if config_env() == :prod do
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
   #
-  #     config :stellar_web, StellarWeb.Endpoint,
+  #     config :josjob_web, JosjobWeb.Endpoint,
   #       https: [
   #         ...,
   #         port: 443,
@@ -295,20 +293,18 @@ if config_env() == :prod do
   # We also recommend setting `force_ssl` in your config/prod.exs,
   # ensuring no data is ever sent via http, always redirecting to https:
   #
-  #     config :stellar_web, StellarWeb.Endpoint,
+  #     config :josjob_web, JosjobWeb.Endpoint,
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
   # ## Configuring the mailer
   #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
+  # The mailer is configured in this file (above) from `RESEND_API_KEY`:
   #
-  #     config :stellar, Stellar.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
+  #     config :josjob, Josjob.Mailer,
+  #       adapter: Swoosh.Adapters.Resend,
+  #       api_key: System.get_env("RESEND_API_KEY")
   #
   # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
   # and Finch out-of-the-box. This configuration is typically done at
@@ -325,7 +321,7 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  config :stellar, :token_signing_secret, token_signing_secret
+  config :josjob, :token_signing_secret, token_signing_secret
 
-  config :stellar, :dns_cluster_query, env!("DNS_CLUSTER_QUERY", :string, nil)
+  config :josjob, :dns_cluster_query, env!("DNS_CLUSTER_QUERY", :string, nil)
 end

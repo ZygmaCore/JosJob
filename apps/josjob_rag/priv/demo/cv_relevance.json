@@ -1,0 +1,641 @@
+{
+  "version": "josjob-cv-relevance-v1",
+  "candidates": [
+    {
+      "slug": "backend",
+      "name": "Ari Pratama [Demo]",
+      "email": "backend@cv-demo.josjob.test",
+      "headline": "Backend Developer - fictional demo candidate",
+      "summary": "Built fictional Phoenix APIs and maintained PostgreSQL-backed services. Synthetic CV for testing category and skill relevance; not a real person.",
+      "skills": [
+        "Elixir",
+        "Phoenix",
+        "PostgreSQL",
+        "SQL",
+        "Git",
+        "REST API"
+      ],
+      "experience": [
+        {
+          "title": "Backend Developer",
+          "company": "Fictional Backend Developer Studio",
+          "start_date": "2024-01",
+          "end_date": "2026-10",
+          "description": "Built fictional Phoenix APIs and maintained PostgreSQL-backed services."
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor",
+          "institution": "Fictional Demo Institute",
+          "field": "Computer Science",
+          "start_date": "2020",
+          "end_date": "2023"
+        }
+      ]
+    },
+    {
+      "slug": "frontend",
+      "name": "Bella Putri [Demo]",
+      "email": "frontend@cv-demo.josjob.test",
+      "headline": "Frontend Developer - fictional demo candidate",
+      "summary": "Created fictional accessible React interfaces and responsive layouts. Synthetic CV for testing category and skill relevance; not a real person.",
+      "skills": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "HTML",
+        "CSS",
+        "Git"
+      ],
+      "experience": [
+        {
+          "title": "Frontend Developer",
+          "company": "Fictional Frontend Developer Studio",
+          "start_date": "2024-01",
+          "end_date": "2026-10",
+          "description": "Created fictional accessible React interfaces and responsive layouts."
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor",
+          "institution": "Fictional Demo Institute",
+          "field": "Software Engineering",
+          "start_date": "2020",
+          "end_date": "2023"
+        }
+      ]
+    },
+    {
+      "slug": "design",
+      "name": "Citra Lestari [Demo]",
+      "email": "design@cv-demo.josjob.test",
+      "headline": "Product Designer - fictional demo candidate",
+      "summary": "Designed fictional product flows, prototypes and usability research. Synthetic CV for testing category and skill relevance; not a real person.",
+      "skills": [
+        "Figma",
+        "UI Design",
+        "UX Research",
+        "Prototyping",
+        "Design Systems",
+        "Graphic Design"
+      ],
+      "experience": [
+        {
+          "title": "Product Designer",
+          "company": "Fictional Product Designer Studio",
+          "start_date": "2024-01",
+          "end_date": "2026-10",
+          "description": "Designed fictional product flows, prototypes and usability research."
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor",
+          "institution": "Fictional Demo Institute",
+          "field": "Visual Communication Design",
+          "start_date": "2020",
+          "end_date": "2023"
+        }
+      ]
+    },
+    {
+      "slug": "data",
+      "name": "Danu Saputra [Demo]",
+      "email": "data@cv-demo.josjob.test",
+      "headline": "Data Analyst - fictional demo candidate",
+      "summary": "Prepared fictional datasets, SQL reports and analytical dashboards. Synthetic CV for testing category and skill relevance; not a real person.",
+      "skills": [
+        "Python",
+        "SQL",
+        "Pandas",
+        "Tableau",
+        "Power BI",
+        "Data Analysis"
+      ],
+      "experience": [
+        {
+          "title": "Data Analyst",
+          "company": "Fictional Data Analyst Studio",
+          "start_date": "2024-01",
+          "end_date": "2026-10",
+          "description": "Prepared fictional datasets, SQL reports and analytical dashboards."
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor",
+          "institution": "Fictional Demo Institute",
+          "field": "Statistics",
+          "start_date": "2020",
+          "end_date": "2023"
+        }
+      ]
+    },
+    {
+      "slug": "finance",
+      "name": "Eka Wulandari [Demo]",
+      "email": "finance@cv-demo.josjob.test",
+      "headline": "Accountant - fictional demo candidate",
+      "summary": "Maintained fictional ledgers, reconciliations and financial reports. Synthetic CV for testing category and skill relevance; not a real person.",
+      "skills": [
+        "Accounting",
+        "Bookkeeping",
+        "Financial Analysis",
+        "Taxation",
+        "Excel",
+        "Financial Reporting"
+      ],
+      "experience": [
+        {
+          "title": "Accountant",
+          "company": "Fictional Accountant Studio",
+          "start_date": "2024-01",
+          "end_date": "2026-10",
+          "description": "Maintained fictional ledgers, reconciliations and financial reports."
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor",
+          "institution": "Fictional Demo Institute",
+          "field": "Accounting",
+          "start_date": "2020",
+          "end_date": "2023"
+        }
+      ]
+    },
+    {
+      "slug": "hospitality",
+      "name": "Farah Sari [Demo]",
+      "email": "hospitality@cv-demo.josjob.test",
+      "headline": "Barista - fictional demo candidate",
+      "summary": "Prepared fictional cafe drinks and maintained safe, organized workstations. Synthetic CV for testing category and skill relevance; not a real person.",
+      "skills": [
+        "Barista Skills",
+        "Food Safety",
+        "Food Preparation",
+        "Coffee Brewing",
+        "Latte Art",
+        "Stock Replenishment"
+      ],
+      "experience": [
+        {
+          "title": "Barista",
+          "company": "Fictional Barista Studio",
+          "start_date": "2024-01",
+          "end_date": "2026-10",
+          "description": "Prepared fictional cafe drinks and maintained safe, organized workstations."
+        }
+      ],
+      "education": [
+        {
+          "degree": "Diploma",
+          "institution": "Fictional Demo Institute",
+          "field": "Hospitality",
+          "start_date": "2020",
+          "end_date": "2023"
+        }
+      ]
+    }
+  ],
+  "jobs": [
+    {
+      "key": "backend-1",
+      "title": "Elixir Backend Engineer [CV Demo]",
+      "target": "backend",
+      "industry": "Technology",
+      "location": "Bandung",
+      "employment_type": "full-time",
+      "work_mode": "remote",
+      "salary_min": 8000000,
+      "salary_max": 12000000,
+      "requirements": [
+        "Elixir",
+        "Phoenix",
+        "PostgreSQL",
+        "Git"
+      ],
+      "posted_days_ago": 15,
+      "status": "active",
+      "description": "Fictional elixir backend engineer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "backend-2",
+      "title": "Backend API Developer [CV Demo]",
+      "target": "backend",
+      "industry": "Technology",
+      "location": "Jakarta",
+      "employment_type": "contract",
+      "work_mode": "hybrid",
+      "salary_min": 8500000,
+      "salary_max": 12500000,
+      "requirements": [
+        "Elixir",
+        "SQL",
+        "Docker",
+        "Kubernetes"
+      ],
+      "posted_days_ago": 1,
+      "status": "active",
+      "description": "Fictional backend api developer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "backend-3",
+      "title": "Backend Platform Engineer [CV Demo]",
+      "target": "backend",
+      "industry": "Technology",
+      "location": "Surabaya",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 9000000,
+      "salary_max": 13000000,
+      "requirements": [
+        "Java",
+        "Spring",
+        "Redis",
+        "Kubernetes"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Fictional backend platform engineer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "frontend-1",
+      "title": "React Frontend Developer [CV Demo]",
+      "target": "frontend",
+      "industry": "Technology",
+      "location": "Bandung",
+      "employment_type": "full-time",
+      "work_mode": "remote",
+      "salary_min": 7000000,
+      "salary_max": 11000000,
+      "requirements": [
+        "React",
+        "TypeScript",
+        "HTML",
+        "CSS"
+      ],
+      "posted_days_ago": 15,
+      "status": "active",
+      "description": "Fictional react frontend developer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "frontend-2",
+      "title": "Frontend Web Developer [CV Demo]",
+      "target": "frontend",
+      "industry": "Technology",
+      "location": "Jakarta",
+      "employment_type": "contract",
+      "work_mode": "hybrid",
+      "salary_min": 7500000,
+      "salary_max": 11500000,
+      "requirements": [
+        "JavaScript",
+        "CSS",
+        "Vue",
+        "Testing Library"
+      ],
+      "posted_days_ago": 1,
+      "status": "active",
+      "description": "Fictional frontend web developer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "frontend-3",
+      "title": "Frontend Platform Developer [CV Demo]",
+      "target": "frontend",
+      "industry": "Technology",
+      "location": "Surabaya",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 8000000,
+      "salary_max": 12000000,
+      "requirements": [
+        "Angular",
+        "RxJS",
+        "Cypress",
+        "GraphQL"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Fictional frontend platform developer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "design-1",
+      "title": "Product Designer [CV Demo]",
+      "target": "design",
+      "industry": "Design",
+      "location": "Bandung",
+      "employment_type": "full-time",
+      "work_mode": "remote",
+      "salary_min": 6500000,
+      "salary_max": 10500000,
+      "requirements": [
+        "Figma",
+        "UI Design",
+        "UX Research",
+        "Prototyping"
+      ],
+      "posted_days_ago": 15,
+      "status": "active",
+      "description": "Fictional product designer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "design-2",
+      "title": "UI Designer [CV Demo]",
+      "target": "design",
+      "industry": "Design",
+      "location": "Jakarta",
+      "employment_type": "contract",
+      "work_mode": "hybrid",
+      "salary_min": 7000000,
+      "salary_max": 11000000,
+      "requirements": [
+        "Figma",
+        "Prototyping",
+        "Illustrator",
+        "Motion Design"
+      ],
+      "posted_days_ago": 1,
+      "status": "active",
+      "description": "Fictional ui designer opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "design-3",
+      "title": "UX Researcher [CV Demo]",
+      "target": "design",
+      "industry": "Design",
+      "location": "Surabaya",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 7500000,
+      "salary_max": 11500000,
+      "requirements": [
+        "UX Research",
+        "Accessibility Audits",
+        "Service Design",
+        "Analytics"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Fictional ux researcher opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "data-1",
+      "title": "Data Analyst [CV Demo]",
+      "target": "data",
+      "industry": "Analytics",
+      "location": "Bandung",
+      "employment_type": "full-time",
+      "work_mode": "remote",
+      "salary_min": 7000000,
+      "salary_max": 11000000,
+      "requirements": [
+        "Python",
+        "SQL",
+        "Pandas",
+        "Tableau"
+      ],
+      "posted_days_ago": 15,
+      "status": "active",
+      "description": "Fictional data analyst opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "data-2",
+      "title": "Data Reporting Analyst [CV Demo]",
+      "target": "data",
+      "industry": "Analytics",
+      "location": "Jakarta",
+      "employment_type": "contract",
+      "work_mode": "hybrid",
+      "salary_min": 7500000,
+      "salary_max": 11500000,
+      "requirements": [
+        "SQL",
+        "Power BI",
+        "dbt",
+        "Airflow"
+      ],
+      "posted_days_ago": 1,
+      "status": "active",
+      "description": "Fictional data reporting analyst opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "data-3",
+      "title": "Data Scientist [CV Demo]",
+      "target": "data",
+      "industry": "Analytics",
+      "location": "Surabaya",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 8000000,
+      "salary_max": 12000000,
+      "requirements": [
+        "Machine Learning",
+        "TensorFlow",
+        "Statistics",
+        "Spark"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Fictional data scientist opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "finance-1",
+      "title": "Financial Accountant [CV Demo]",
+      "target": "finance",
+      "industry": "Finance",
+      "location": "Bandung",
+      "employment_type": "full-time",
+      "work_mode": "remote",
+      "salary_min": 6000000,
+      "salary_max": 10000000,
+      "requirements": [
+        "Accounting",
+        "Bookkeeping",
+        "Taxation",
+        "Financial Reporting"
+      ],
+      "posted_days_ago": 15,
+      "status": "active",
+      "description": "Fictional financial accountant opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "finance-2",
+      "title": "Accounting Associate [CV Demo]",
+      "target": "finance",
+      "industry": "Finance",
+      "location": "Jakarta",
+      "employment_type": "contract",
+      "work_mode": "hybrid",
+      "salary_min": 6500000,
+      "salary_max": 10500000,
+      "requirements": [
+        "Accounting",
+        "Excel",
+        "SAP",
+        "Auditing"
+      ],
+      "posted_days_ago": 1,
+      "status": "active",
+      "description": "Fictional accounting associate opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "finance-3",
+      "title": "Tax Accountant [CV Demo]",
+      "target": "finance",
+      "industry": "Finance",
+      "location": "Surabaya",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 7000000,
+      "salary_max": 11000000,
+      "requirements": [
+        "Taxation",
+        "IFRS",
+        "Oracle Financials",
+        "Financial Modeling"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Fictional tax accountant opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "hospitality-1",
+      "title": "Cafe Barista [CV Demo]",
+      "target": "hospitality",
+      "industry": "Hospitality",
+      "location": "Bandung",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 3500000,
+      "salary_max": 7500000,
+      "requirements": [
+        "Barista Skills",
+        "Coffee Brewing",
+        "Latte Art",
+        "Food Safety"
+      ],
+      "posted_days_ago": 15,
+      "status": "active",
+      "description": "Fictional cafe barista opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "hospitality-2",
+      "title": "Barista Team Member [CV Demo]",
+      "target": "hospitality",
+      "industry": "Hospitality",
+      "location": "Jakarta",
+      "employment_type": "contract",
+      "work_mode": "onsite",
+      "salary_min": 4000000,
+      "salary_max": 8000000,
+      "requirements": [
+        "Barista Skills",
+        "Food Preparation",
+        "Inventory Planning",
+        "POS Systems"
+      ],
+      "posted_days_ago": 1,
+      "status": "active",
+      "description": "Fictional barista team member opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "hospitality-3",
+      "title": "Head Barista [CV Demo]",
+      "target": "hospitality",
+      "industry": "Hospitality",
+      "location": "Surabaya",
+      "employment_type": "full-time",
+      "work_mode": "onsite",
+      "salary_min": 4500000,
+      "salary_max": 8500000,
+      "requirements": [
+        "Barista Skills",
+        "Team Leadership",
+        "Roasting",
+        "Budgeting"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Fictional head barista opening for the CV relevance demo. Work with the listed skills on sample projects. This is synthetic test data, not a real vacancy."
+    },
+    {
+      "key": "related-fullstack",
+      "title": "Full Stack Developer [CV Demo]",
+      "target": null,
+      "industry": "Technology",
+      "location": "Jakarta",
+      "employment_type": "full-time",
+      "work_mode": "hybrid",
+      "salary_min": 5000000,
+      "salary_max": 9000000,
+      "requirements": [
+        "Elixir",
+        "React",
+        "TypeScript",
+        "SQL"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Synthetic vacancy for checking related roles and publication filters. Not a real opening."
+    },
+    {
+      "key": "related-cloud",
+      "title": "DevOps Engineer [CV Demo]",
+      "target": null,
+      "industry": "Technology",
+      "location": "Jakarta",
+      "employment_type": "full-time",
+      "work_mode": "hybrid",
+      "salary_min": 5000000,
+      "salary_max": 9000000,
+      "requirements": [
+        "Docker",
+        "Kubernetes",
+        "Linux",
+        "Terraform"
+      ],
+      "posted_days_ago": 0,
+      "status": "active",
+      "description": "Synthetic vacancy for checking related roles and publication filters. Not a real opening."
+    },
+    {
+      "key": "draft-backend",
+      "title": "Backend Developer Draft [CV Demo]",
+      "target": null,
+      "industry": "Technology",
+      "location": "Jakarta",
+      "employment_type": "full-time",
+      "work_mode": "hybrid",
+      "salary_min": 5000000,
+      "salary_max": 9000000,
+      "requirements": [
+        "Elixir",
+        "Phoenix"
+      ],
+      "posted_days_ago": 0,
+      "status": "draft",
+      "description": "Synthetic vacancy for checking related roles and publication filters. Not a real opening."
+    },
+    {
+      "key": "expired-support",
+      "title": "Customer Support Specialist Expired [CV Demo]",
+      "target": null,
+      "industry": "Customer Service",
+      "location": "Jakarta",
+      "employment_type": "full-time",
+      "work_mode": "hybrid",
+      "salary_min": 5000000,
+      "salary_max": 9000000,
+      "requirements": [
+        "Customer Service",
+        "CRM"
+      ],
+      "posted_days_ago": 0,
+      "status": "expired",
+      "description": "Synthetic vacancy for checking related roles and publication filters. Not a real opening."
+    }
+  ]
+}

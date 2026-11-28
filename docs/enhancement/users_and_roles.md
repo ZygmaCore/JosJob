@@ -1,7 +1,7 @@
 # PRD — Users, Multi-Tenant & Roles/Permissions
 
 **Status:** Draft (disepakati untuk diimplementasi)
-**Konteks:** Stellar (Elixir umbrella, Ash Framework + AshPostgres, Phoenix). Platform Online Learning + AI Job Placement, **multi-tenant**.
+**Konteks:** JosJob (Elixir umbrella, Ash Framework + AshPostgres, Phoenix). Platform Online Learning + AI Job Placement, **multi-tenant**.
 
 ---
 
@@ -186,7 +186,7 @@ master/RBAC berikut menambah dua kolom seragam:
 `roles`, `permissions`, `skills`.
 
 - **Pengisian otomatis** dari **actor** (user yang login) lewat Ash change
-  `Stellar.Changes.StampActor`: `created_by` di-set saat create; `updated_by`
+  `Josjob.Changes.StampActor`: `created_by` di-set saat create; `updated_by`
   saat create **dan** update.
 - **Bukan FK** (plain `uuid`) — disengaja, agar jejak audit tetap utuh meski
   user terkait kelak dihapus. **Tidak** termasuk `default_accept` → tak bisa
@@ -194,7 +194,7 @@ master/RBAC berikut menambah dua kolom seragam:
 - **NULL** untuk baris hasil **seed / operasi sistem** (tanpa actor) dan baris
   lama sebelum kolom ini ada.
 - Ditampilkan di list admin sebagai **email** pembuat/pengubah (kolom
-  "Dibuat oleh" / "Diubah oleh"); resolusi id→email via `StellarWeb.Audit`.
+  "Dibuat oleh" / "Diubah oleh"); resolusi id→email via `JosjobWeb.Audit`.
 
 ---
 
@@ -257,7 +257,7 @@ master/RBAC berikut menambah dua kolom seragam:
 - Akses: dikelola **superuser** (platform) untuk fase awal; nantinya bisa dibuka ke role ber-izin `organizations:manage`.
 
 ### 6.6 Penegakan (Ash + Web)
-- **Ash policy**: custom check `Stellar.Authz.Checks.HasPermission("resource:action")` + bypass `Superuser`. Tenant aktif dibawa via konteks/actor.
+- **Ash policy**: custom check `Josjob.Authz.Checks.HasPermission("resource:action")` + bypass `Superuser`. Tenant aktif dibawa via konteks/actor.
 - **Web**: plug `RequirePermission` (dan/atau `RequireSuperuser`) sebelum controller/LiveView.
 - **Bukan** `ash_rbac` (itu code-defined; kita perlu data-driven).
 
@@ -302,7 +302,7 @@ Header: [🏢 PT Maju Jaya ▼]  → switch ke Politeknik kapan saja
 - ✅ Izin **tidak digabung lintas-org**; multi-role dalam satu org = union.
 - ✅ Multi-org: **default org + switcher** (bukan picker screen).
 - ✅ `user_details.organization` = **jsonb freeform** (riwayat kerja/organisasi), bukan relasi tenant.
-- ✅ **Audit trail** (§4.12): kolom `created_by`/`updated_by` (uuid, nullable, non-FK) di 7 modul master/RBAC, diisi otomatis dari actor via `Stellar.Changes.StampActor`.
+- ✅ **Audit trail** (§4.12): kolom `created_by`/`updated_by` (uuid, nullable, non-FK) di 7 modul master/RBAC, diisi otomatis dari actor via `Josjob.Changes.StampActor`.
 
 ## 10. Pertanyaan Terbuka
 1. Konfirmasi email jalur password: aktif sekarang atau menyusul?

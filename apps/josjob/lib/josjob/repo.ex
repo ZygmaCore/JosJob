@@ -1,0 +1,15 @@
+defmodule Josjob.Repo do
+  use AshPostgres.Repo,
+    otp_app: :josjob,
+    warn_on_missing_ash_functions?: false
+
+  # citext -> email case-insensitive (Ash :ci_string).
+  # vector -> pgvector embeddings for the RAG ranking pipeline.
+  def installed_extensions do
+    ["citext", "vector"]
+  end
+
+  def min_pg_version do
+    %Version{major: 16, minor: 0, patch: 0}
+  end
+end
